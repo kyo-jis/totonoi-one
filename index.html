@@ -13,6 +13,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Totonoi One">
   <link rel="apple-touch-icon" href="/apple-touch-icon-portal.png">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -190,13 +191,60 @@
       padding: .2rem .55rem;
     }
 
+    /* ── Pro Card ── */
+    .pro-card {
+      grid-column: 1 / -1;
+      background: linear-gradient(140deg, #1a1a2e 0%, #2a1a3e 100%);
+      border: 1px solid rgba(180,130,255,.25);
+      border-radius: 22px;
+      padding: 1.4rem 1.25rem;
+      animation-delay: .65s;
+      opacity: 0;
+      animation: fadeUp .4s ease .65s forwards;
+    }
+    .pro-card.is-pro {
+      border-color: rgba(94,207,160,.3);
+      background: linear-gradient(140deg, #0e2a1e 0%, #1a3a2a 100%);
+    }
+    .pro-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:.9rem; }
+    .pro-title { font-size:1rem; font-weight:500; }
+    .pro-badge { font-size:.65rem; padding:.25rem .65rem; border-radius:20px; background:rgba(180,130,255,.2); color:#c89aff; font-weight:500; }
+    .pro-badge.active { background:rgba(94,207,160,.2); color:#5ecfa0; }
+    .pro-perks { display:flex; flex-wrap:wrap; gap:.4rem; margin-bottom:1rem; }
+    .pro-perk { font-size:.68rem; color:rgba(240,238,232,.6); background:rgba(255,255,255,.06); border-radius:20px; padding:.2rem .55rem; }
+    .btn-upgrade-main { width:100%; padding:.85rem; background:linear-gradient(135deg,#9b6dff,#c89aff); color:#fff; border:none; border-radius:12px; font-size:.9rem; font-weight:600; font-family:var(--font); cursor:pointer; letter-spacing:.01em; }
+    .pro-link { display:block; text-align:center; font-size:.72rem; color:rgba(240,238,232,.4); margin-top:.6rem; cursor:pointer; background:none; border:none; font-family:var(--font); width:100%; }
+
+    /* ── Auth chip ── */
+    .auth-chip { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); }
+    .auth-chip.logged-in { border-color:rgba(94,207,160,.4); color:#5ecfa0; }
+    .header-row { display:flex; justify-content:flex-end; padding:.75rem 1.25rem 0; }
+
+    /* ── Modal ── */
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); backdrop-filter:blur(6px); z-index:100; display:none; align-items:flex-end; }
+    .modal-overlay.show { display:flex; }
+    .modal { background:#1a1a24; border:1px solid #35354a; border-radius:24px 24px 0 0; padding:1.5rem 1.25rem 2rem; width:100%; animation:slideUp .3s ease; }
+    @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+    .modal-handle { width:36px; height:4px; background:#35354a; border-radius:2px; margin:0 auto 1.25rem; }
+    .form-group { margin-bottom:1rem; }
+    .form-group label { display:block; font-size:.75rem; color:var(--muted); letter-spacing:.05em; text-transform:uppercase; margin-bottom:.4rem; }
+    .form-group input { width:100%; background:#22222e; border:1px solid #35354a; border-radius:10px; padding:.75rem 1rem; font-size:.95rem; color:#f0eee8; font-family:var(--font); outline:none; }
+    .form-group input:focus { border-color:#9b6dff; }
+    .btn-primary { width:100%; padding:.9rem; background:#9b6dff; color:#fff; border:none; border-radius:12px; font-size:.95rem; font-weight:500; font-family:var(--font); cursor:pointer; }
+    .btn-cancel { width:100%; padding:.75rem; background:none; color:var(--muted); border:none; font-size:.88rem; font-family:var(--font); cursor:pointer; margin-top:.25rem; }
+
+    /* ── Promo (hidden) ── */
+    .promo-wrap { max-height:0; overflow:hidden; transition:max-height .3s ease; }
+    .promo-wrap.open { max-height:120px; }
+
     /* ── Footer ── */
     footer {
       text-align: center;
-      padding: 2rem 1.5rem;
+      padding: 2rem 1.5rem 1rem;
       font-size: .72rem;
       color: var(--muted);
     }
+    .footer-admin { font-size:.62rem; color:rgba(106,104,128,.3); background:none; border:none; font-family:var(--font); cursor:pointer; margin-top:.4rem; display:block; width:100%; }
 
     /* ── Animation ── */
     @keyframes fadeUp {
@@ -206,6 +254,10 @@
   </style>
 </head>
 <body>
+
+  <div class="header-row">
+    <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
+  </div>
 
   <header>
     <div class="logo-wrap">
@@ -321,9 +373,200 @@
       <span class="bc-arrow">→</span>
     </a>
 
+    <!-- Pro Plan Card -->
+    <div class="bc pro-card" id="proCard">
+      <div class="pro-top">
+        <p class="pro-title">✨ Totonoi Pro</p>
+        <span class="pro-badge" id="proBadge">無料プラン</span>
+      </div>
+      <div class="pro-perks">
+        <span class="pro-perk">登録無制限</span>
+        <span class="pro-perk">全期間グラフ</span>
+        <span class="pro-perk">エクスポート</span>
+        <span class="pro-perk">広告なし</span>
+      </div>
+      <div id="upgradeArea">
+        <button class="btn-upgrade-main" onclick="startCheckout()">¥480/月 でアップグレード</button>
+        <button class="pro-link" onclick="deactivatePro()" id="deactivateBtn" style="display:none;">プランを解除</button>
+      </div>
+    </div>
+
   </main>
 
-  <footer>© 2026 Totonoi One</footer>
+  <footer>
+    © 2026 Totonoi One
+    <button class="footer-admin" onclick="togglePromo()">・・・</button>
+    <div class="promo-wrap" id="promoWrap">
+      <div style="display:flex;gap:.5rem;margin-top:.6rem;">
+        <input type="password" id="promoInput" placeholder="管理者コード" style="flex:1;background:#1a1a24;border:1px solid #35354a;border-radius:8px;padding:.55rem .85rem;font-size:.82rem;color:#f0eee8;font-family:var(--font);outline:none;">
+        <button onclick="applyCode()" style="background:#9b6dff;color:#fff;border:none;border-radius:8px;padding:.55rem .9rem;font-size:.82rem;font-weight:500;font-family:var(--font);cursor:pointer;white-space:nowrap;">適用</button>
+      </div>
+      <p id="promoMsg" style="font-size:.68rem;margin-top:.35rem;min-height:.9rem;color:var(--muted);"></p>
+    </div>
+  </footer>
+
+  <!-- Auth Modal -->
+  <div class="modal-overlay" id="authModal" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div style="display:flex;background:#22222e;border-radius:10px;padding:3px;margin-bottom:1.25rem;border:1px solid #35354a;">
+        <button id="tabLogin" onclick="setAuthMode('login')" style="flex:1;padding:.55rem;border:none;border-radius:8px;font-family:var(--font);font-size:.82rem;cursor:pointer;background:#2a2a38;color:#f0eee8;font-weight:500;">ログイン</button>
+        <button id="tabSignup" onclick="setAuthMode('signup')" style="flex:1;padding:.55rem;border:none;border-radius:8px;font-family:var(--font);font-size:.82rem;cursor:pointer;background:none;color:var(--muted);font-weight:300;">新規登録</button>
+      </div>
+      <div class="form-group"><label>メールアドレス</label><input type="email" id="authEmail" placeholder="your@email.com"></div>
+      <div class="form-group"><label>パスワード（6文字以上）</label><input type="password" id="authPassword" placeholder="••••••••"></div>
+      <button onclick="handleGoogleAuth()" style="width:100%;padding:.85rem;background:#fff;color:#1a1a24;border:none;border-radius:12px;font-size:.9rem;font-weight:500;font-family:var(--font);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.6rem;margin-bottom:.75rem;">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Google でログイン
+      </button>
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;color:var(--muted);font-size:.75rem;"><div style="flex:1;height:1px;background:#35354a;"></div>または<div style="flex:1;height:1px;background:#35354a;"></div></div>
+      <button class="btn-primary" id="authSubmitBtn" onclick="handleAuth()">ログイン</button>
+      <button class="btn-cancel" onclick="document.getElementById('authModal').classList.remove('show')">キャンセル</button>
+    </div>
+  </div>
+
+  <script>
+    var _sb = window.supabase.createClient(
+      'https://foknpmvpgbkwgpmlgzrn.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZva25wbXZwZ2Jrd2dwbWxnenJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyODc4NTksImV4cCI6MjA5NTg2Mzg1OX0.6KP9_m4Q6x0hs7IsinNhZsODmZCjrvAL1CxtbQ32-80'
+    );
+    var currentUser = null;
+    var isPro = localStorage.getItem('isPro') === 'true';
+    var ADMIN_CODES = ['ADMIN2024', 'MYLIFETOOLS'];
+
+    function updateProUI() {
+      var card = document.getElementById('proCard');
+      var badge = document.getElementById('proBadge');
+      var upgradeArea = document.getElementById('upgradeArea');
+      var deactivateBtn = document.getElementById('deactivateBtn');
+      if (isPro) {
+        card.classList.add('is-pro');
+        badge.textContent = '✅ Proプラン';
+        badge.classList.add('active');
+        upgradeArea.querySelector('.btn-upgrade-main').style.display = 'none';
+        deactivateBtn.style.display = 'block';
+      } else {
+        card.classList.remove('is-pro');
+        badge.textContent = '無料プラン';
+        badge.classList.remove('active');
+        upgradeArea.querySelector('.btn-upgrade-main').style.display = 'block';
+        deactivateBtn.style.display = 'none';
+      }
+    }
+
+    async function startCheckout() {
+      if (!currentUser) { openAuthModal(); showToast('まずログインしてください'); return; }
+      showToast('決済ページへ移動中...');
+      try {
+        var res = await fetch('/api/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: currentUser.id, userEmail: currentUser.email })
+        });
+        var data = await res.json();
+        if (data.url) window.location.href = data.url;
+        else showToast('⚠️ エラーが発生しました');
+      } catch(e) { showToast('⚠️ 通信エラーが発生しました'); }
+    }
+
+    function deactivatePro() {
+      if (!confirm('有料プランを解除しますか？')) return;
+      localStorage.removeItem('isPro'); isPro = false; updateProUI();
+    }
+
+    function togglePromo() {
+      var w = document.getElementById('promoWrap');
+      w.classList.toggle('open');
+    }
+
+    function applyCode() {
+      var code = document.getElementById('promoInput').value.trim().toUpperCase();
+      var msg = document.getElementById('promoMsg');
+      if (!code) { msg.style.color='var(--muted)'; msg.textContent='コードを入力してください'; return; }
+      if (ADMIN_CODES.indexOf(code) !== -1) {
+        localStorage.setItem('isPro', 'true'); isPro = true;
+        msg.style.color='#5ecfa0'; msg.textContent='✅ 有料プランが有効になりました！';
+        document.getElementById('promoInput').value = '';
+        updateProUI();
+      } else {
+        msg.style.color='#ff7c6e'; msg.textContent='❌ コードが正しくありません';
+      }
+    }
+
+    function showToast(msg) {
+      var t = document.createElement('div');
+      t.style.cssText = 'position:fixed;top:1.5rem;left:50%;transform:translateX(-50%);background:#22222e;border:1px solid #35354a;border-radius:12px;padding:.75rem 1.25rem;font-size:.85rem;font-weight:500;z-index:300;color:#f0eee8;white-space:nowrap;font-family:var(--font);';
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(function(){ t.remove(); }, 2500);
+    }
+
+    var _authMode = 'login';
+    function setAuthMode(mode) {
+      _authMode = mode;
+      document.getElementById('tabLogin').style.cssText += mode==='login' ? ';background:#2a2a38;color:#f0eee8;font-weight:500;' : ';background:none;color:var(--muted);font-weight:300;';
+      document.getElementById('tabSignup').style.cssText += mode==='signup' ? ';background:#2a2a38;color:#f0eee8;font-weight:500;' : ';background:none;color:var(--muted);font-weight:300;';
+      document.getElementById('authSubmitBtn').textContent = mode==='login' ? 'ログイン' : 'アカウントを作成';
+    }
+
+    function openAuthModal() {
+      if (currentUser) {
+        if (confirm(currentUser.email + '\nログアウトしますか？')) _sb.auth.signOut();
+        return;
+      }
+      document.getElementById('authModal').classList.add('show');
+    }
+
+    async function handleGoogleAuth() {
+      await _sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } });
+    }
+
+    async function handleAuth() {
+      var email = document.getElementById('authEmail').value.trim();
+      var pass  = document.getElementById('authPassword').value;
+      if (!email || !pass) { showToast('メールとパスワードを入力してください'); return; }
+      var result = _authMode === 'login'
+        ? await _sb.auth.signInWithPassword({ email, password: pass })
+        : await _sb.auth.signUp({ email, password: pass });
+      if (result.error) { showToast('⚠️ ' + result.error.message); return; }
+      document.getElementById('authModal').classList.remove('show');
+      showToast(_authMode === 'signup' ? '✅ 登録完了！' : '✅ ログインしました');
+    }
+
+    function updateAuthUI() {
+      var btn = document.getElementById('authBtn');
+      if (currentUser) { btn.textContent = currentUser.email.split('@')[0]; btn.classList.add('logged-in'); }
+      else { btn.textContent = 'ログイン'; btn.classList.remove('logged-in'); }
+    }
+
+    _sb.auth.onAuthStateChange(function(event, session) {
+      currentUser = session ? session.user : null;
+      updateAuthUI();
+      if (currentUser && event === 'SIGNED_IN') {
+        _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle().then(function(p) {
+          if (p.data) { isPro = p.data.is_pro; localStorage.setItem('isPro', String(isPro)); updateProUI(); }
+        });
+      }
+    });
+
+    _sb.auth.getSession().then(function(res) {
+      currentUser = res.data.session ? res.data.session.user : null;
+      updateAuthUI();
+      if (currentUser) {
+        _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle().then(function(p) {
+          if (p.data) { isPro = p.data.is_pro; localStorage.setItem('isPro', String(isPro)); updateProUI(); }
+        });
+      }
+    });
+
+    if (location.search.includes('pro=success')) {
+      localStorage.setItem('isPro', 'true'); isPro = true;
+      showToast('✅ Proプランへようこそ！');
+      history.replaceState(null, '', location.pathname);
+    }
+
+    updateProUI();
+  </script>
 
 </body>
 </html>

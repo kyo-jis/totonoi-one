@@ -259,9 +259,9 @@
   <div class="total-bar" id="totalBar"></div>
 </div>
 
-<div class="free-banner">
+<div class="free-banner" id="freeBanner">
   <p class="free-banner-text"><strong id="countText">0/5</strong> 件登録中（無料プラン）</p>
-  <button class="upgrade-btn" onclick="startCheckout()">アップグレード</button>
+  <a href="index.html" class="upgrade-btn">アップグレード</a>
 </div>
 
 <div class="tabs">
@@ -350,32 +350,14 @@
     <div class="analytics-section">
       <p class="analytics-title">プラン</p>
       <div class="bar-chart" style="padding:1rem 1.1rem;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
           <div>
-            <p style="font-size:.95rem;font-weight:500;">無料プラン</p>
-            <p style="font-size:.75rem;color:var(--muted);margin-top:.2rem;">登録5件・3ヶ月グラフ・広告あり</p>
+            <p style="font-size:.95rem;font-weight:500;" id="planLabel">無料プラン</p>
+            <p style="font-size:.75rem;color:var(--muted);margin-top:.2rem;" id="planDesc">登録5件・3ヶ月グラフ・広告あり</p>
           </div>
-          <span style="font-size:.7rem;padding:.25rem .6rem;border-radius:20px;background:rgba(108,142,255,.15);color:var(--accent);">現在</span>
+          <span style="font-size:.7rem;padding:.25rem .6rem;border-radius:20px;background:rgba(108,142,255,.15);color:var(--accent);" id="planBadge">現在</span>
         </div>
-        <div id="upgradeSection">
-          <button onclick="startCheckout()" class="btn-primary" style="margin-top:0;">有料プランにアップグレード</button>
-          <p style="font-size:.72rem;color:var(--muted);text-align:center;margin-top:.5rem;">登録無制限・全期間グラフ・広告なし・エクスポート</p>
-        </div>
-        <div id="proActiveSection" style="display:none;">
-          <div style="text-align:center;padding:.5rem 0;">
-            <p style="font-size:1rem;font-weight:500;color:var(--green);">✅ 有料プラン有効中</p>
-            <p style="font-size:.75rem;color:var(--muted);margin-top:.3rem;">全機能が利用できます</p>
-          </div>
-          <button onclick="deactivatePro()" class="btn-cancel" style="margin-top:.5rem;border:1px solid var(--border);border-radius:10px;">プランを解除</button>
-        </div>
-        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
-          <p style="font-size:.72rem;color:var(--muted);margin-bottom:.5rem;letter-spacing:.05em;text-transform:uppercase;">プロモ・管理者コード</p>
-          <div style="display:flex;gap:.5rem;">
-            <input type="password" id="promoCodeInput" placeholder="コードを入力" style="flex:1;padding:.65rem .9rem;font-size:.88rem;">
-            <button onclick="applyCode()" style="background:var(--accent);color:#fff;border:none;border-radius:10px;padding:.65rem 1rem;font-size:.85rem;font-weight:500;font-family:var(--font);cursor:pointer;white-space:nowrap;">適用</button>
-          </div>
-          <p id="codeMsg" style="font-size:.72rem;margin-top:.4rem;min-height:1rem;"></p>
-        </div>
+        <a href="index.html" style="display:block;margin-top:.9rem;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:.75rem;font-size:.85rem;color:var(--accent);text-decoration:none;">ダッシュボードでプランを管理 →</a>
       </div>
     </div>
     <div class="analytics-section">
@@ -1144,57 +1126,30 @@ function sendContact(){
   window.location.href='mailto:your@email.com?subject='+encodeURIComponent('[Subly] '+type)+'&body='+encodeURIComponent(msg);
 }
 
-// ── Pro管理 ──
-// 管理者コード（本番では難読化推奨）
-var ADMIN_CODES = ['ADMIN2024', 'MYLIFETOOLS'];
-
-function applyCode() {
-  var code = document.getElementById('promoCodeInput').value.trim().toUpperCase();
-  var msg = document.getElementById('codeMsg');
-  if (!code) { msg.style.color='var(--muted)'; msg.textContent='コードを入力してください'; return; }
-  if (ADMIN_CODES.indexOf(code) !== -1) {
-    localStorage.setItem('isPro', 'true');
-    isPro = true;
-    msg.style.color='var(--green)'; msg.textContent='✅ 有料プランが有効になりました！';
-    document.getElementById('promoCodeInput').value='';
-    updateProUI();
-  } else {
-    msg.style.color='var(--accent2)'; msg.textContent='❌ コードが正しくありません';
-  }
-}
-
-function deactivatePro() {
-  if (!confirm('有料プランを解除しますか？')) return;
-  localStorage.removeItem('isPro');
-  isPro = false;
-  updateProUI();
-}
+// ── Pro管理 ── ダッシュボード(index.html)で管理
 
 function updateProUI() {
-  // 広告バナー
   var ad = document.getElementById('adBanner');
   if (ad) ad.style.display = isPro ? 'none' : 'flex';
 
-  // FABのbottom調整
   var fab = document.querySelector('.fab');
   if (fab) fab.style.bottom = isPro ? '1.25rem' : 'calc(72px + env(safe-area-inset-bottom))';
 
-  // body padding
   document.body.style.paddingBottom = isPro ? '80px' : '130px';
 
-  // プランセクション切替
-  var upgradeSection = document.getElementById('upgradeSection');
-  var proActiveSection = document.getElementById('proActiveSection');
-  var freeBanner = document.querySelector('.free-banner');
-  if (upgradeSection) upgradeSection.style.display = isPro ? 'none' : 'block';
-  if (proActiveSection) proActiveSection.style.display = isPro ? 'block' : 'none';
+  var freeBanner = document.getElementById('freeBanner');
   if (freeBanner) freeBanner.style.display = isPro ? 'none' : 'flex';
 
-  // 登録件数制限解除
   FREE_LIMIT = isPro ? 999 : 5;
 
-  // カウント更新
   document.getElementById('countText').textContent = subs.length + (isPro ? '件' : '/5');
+
+  var planLabel = document.getElementById('planLabel');
+  var planDesc  = document.getElementById('planDesc');
+  var planBadge = document.getElementById('planBadge');
+  if (planLabel) planLabel.textContent = isPro ? 'Proプラン' : '無料プラン';
+  if (planDesc)  planDesc.textContent  = isPro ? '全機能が利用できます' : '登録5件・3ヶ月グラフ・広告あり';
+  if (planBadge) { planBadge.textContent = isPro ? '✅ 有効中' : '現在'; planBadge.style.background = isPro ? 'rgba(94,207,160,.15)' : 'rgba(108,142,255,.15)'; planBadge.style.color = isPro ? 'var(--green)' : 'var(--accent)'; }
 }
 
 init();
@@ -1297,27 +1252,7 @@ async function handleGoogleAuth() {
   });
 }
 
-async function startCheckout() {
-  if (!currentUser) { openAuthModal(); showAuthToast('まずログインしてください'); return; }
-  showAuthToast('決済ページへ移動中...');
-  try {
-    var res = await fetch('/api/create-checkout-session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: currentUser.id, userEmail: currentUser.email })
-    });
-    var data = await res.json();
-    if (data.url) window.location.href = data.url;
-    else showAuthToast('⚠️ エラーが発生しました');
-  } catch(e) { showAuthToast('⚠️ 通信エラーが発生しました'); }
-}
-
-// 決済成功後の処理
-if (location.search.includes('pro=success') && currentUser) {
-  localStorage.setItem('isPro', 'true'); isPro = true; updateProUI();
-  showAuthToast('✅ Proプランへようこそ！');
-  history.replaceState(null, '', location.pathname);
-}
+function startCheckout() { window.location.href = 'index.html'; }
 
 var _authMode = 'login';
 function setAuthMode(mode) {

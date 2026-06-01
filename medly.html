@@ -787,20 +787,7 @@ async function handleGoogleAuth() {
   });
 }
 
-async function startCheckout() {
-  if (!currentUser) { openAuthModal(); showToast('まずログインしてください'); return; }
-  showToast('決済ページへ移動中...');
-  try {
-    var res = await fetch('/api/create-checkout-session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: currentUser.id, userEmail: currentUser.email })
-    });
-    var data = await res.json();
-    if (data.url) window.location.href = data.url;
-    else showToast('⚠️ エラーが発生しました');
-  } catch(e) { showToast('⚠️ 通信エラーが発生しました'); }
-}
+function startCheckout() { window.location.href = 'index.html'; }
 
 var _authMode = 'login';
 function setAuthMode(mode) {
