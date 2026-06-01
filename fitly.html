@@ -72,11 +72,15 @@
     .btn-yt { font-size:.65rem; color:var(--accent2); background:rgba(255,124,110,.12); border:1px solid rgba(255,124,110,.2); border-radius:6px; padding:.25rem .5rem; cursor:pointer; font-family:var(--font); text-decoration:none; display:inline-block; }
 
     /* Set Row */
-    .set-header { display:grid; grid-template-columns:28px 1fr 1fr 1fr 36px; gap:.4rem; margin-bottom:.4rem; }
+    .set-header { display:grid; gap:.4rem; margin-bottom:.4rem; }
     .set-header-label { font-size:.62rem; color:var(--muted); text-align:center; text-transform:uppercase; letter-spacing:.05em; }
-    .set-row { display:grid; grid-template-columns:28px 1fr 1fr 1fr 36px; gap:.4rem; align-items:center; margin-bottom:.4rem; }
+    .set-row { display:grid; gap:.4rem; align-items:center; margin-bottom:.4rem; }
+    .set-cols-3 { grid-template-columns:28px 1fr 1fr 1fr 36px; }
+    .set-cols-2 { grid-template-columns:28px 1fr 1fr 36px; }
+    .set-cols-note { grid-template-columns:28px 68px 1fr 36px; }
     .set-num { font-size:.78rem; color:var(--muted); text-align:center; }
     .set-input { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:.5rem .4rem; font-size:.88rem; color:var(--text); font-family:var(--font); text-align:center; outline:none; width:100%; }
+    .set-input.set-input-text { text-align:left; padding:.5rem .6rem; }
     .set-input:focus { border-color:var(--accent); }
     .set-check { width:32px; height:32px; border-radius:8px; border:2px solid var(--border); background:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:.9rem; transition:all .2s; }
     .set-check.done { background:var(--accent); border-color:var(--accent); }
@@ -1166,9 +1170,21 @@ function startFromMenu(idx) {
   if (!menu) return;
   currentWorkout.exercises = menu.exercises.map(function(e) {
     var prev = getLastRecord(e.id);
-    var nSets = prev.lastSets || 3;
+    var layout = setLayout(e.cat);
+    var nSets = prev.lastSets || (e.cat === 'cardio' || e.cat === 'stretch' || e.cat === 'mindfulness' ? 1 : 3);
     var sets = [];
-    for (var i = 0; i < nSets; i++) sets.push({weight: prev.lastWeight||'', reps: prev.lastReps||'', rir:'', done:false});
+    for (var i = 0; i < nSets; i++) {
+      var s = {done: false};
+      layout.fields.forEach(function(f) {
+        if (f === 'duration') s[f] = prev.lastDuration || '';
+        else if (f === 'distance') s[f] = prev.lastDistance || '';
+        else if (f === 'note') s[f] = '';
+        else if (f === 'weight') s[f] = prev.lastWeight || '';
+        else if (f === 'reps') s[f] = prev.lastReps || '';
+        else s[f] = '';
+      });
+      sets.push(s);
+    }
     var restTime = (exerciseSettings[e.id] && exerciseSettings[e.id].restTime) ? exerciseSettings[e.id].restTime : DEFAULT_REST[e.cat] || 90;
     return { id: e.id, name: e.name, cat: e.cat, part: e.part, keyword: e.keyword||'', sets: sets, restTime: restTime };
   });
@@ -1254,10 +1270,17 @@ function saveWorkout() {
   currentWorkout.exercises.forEach(function(ex) {
     if (!exerciseSettings[ex.id]) exerciseSettings[ex.id] = {};
     var lastDone = ex.sets.filter(function(s){ return s.done; });
-    if (lastDone.length) {
-      exerciseSettings[ex.id].lastWeight = lastDone[lastDone.length-1].weight;
-      exerciseSettings[ex.id].lastReps = lastDone[lastDone.length-1].reps;
-      exerciseSettings[ex.id].lastSets = lastDone.length;
+    if (!lastDone.length) return;
+    var last = lastDone[lastDone.length-1];
+    exerciseSettings[ex.id].lastSets = lastDone.length;
+    if (ex.cat === 'cardio') {
+      exerciseSettings[ex.id].lastDuration = last.duration || '';
+      exerciseSettings[ex.id].lastDistance = last.distance || '';
+    } else if (ex.cat === 'stretch' || ex.cat === 'mindfulness') {
+      exerciseSettings[ex.id].lastDuration = last.duration || '';
+    } else {
+      exerciseSettings[ex.id].lastWeight = last.weight || '';
+      exerciseSettings[ex.id].lastReps = last.reps || '';
     }
   });
   localStorage.setItem('exerciseSettings', JSON.stringify(exerciseSettings));
@@ -1275,32 +1298,75 @@ function saveWorkout() {
   showToast('✅ ワークアウトを保存しました！');
 }
 
+// ── Set layout by category ──
+function setLayout(cat) {
+  if (cat === 'cardio') {
+    return { cls: 'set-cols-2', headers: ['時間(分)', '距離(km)'], fields: ['duration','distance'], types: ['number','number'], placeholders: ['—','—'] };
+  }
+  if (cat === 'stretch') {
+    return { cls: 'set-cols-note', headers: ['秒数', '様子'], fields: ['duration','note'], types: ['number','text'], placeholders: ['30','良好・張り等'] };
+  }
+  if (cat === 'mindfulness') {
+    return { cls: 'set-cols-note', headers: ['時間(分)', '様子'], fields: ['duration','note'], types: ['number','text'], placeholders: ['10','リラックス等'] };
+  }
+  if (cat === 'bodyweight') {
+    return { cls: 'set-cols-3', headers: ['加重(kg)', '回数', 'RIR'], fields: ['weight','reps','rir'], types: ['number','number','number'], placeholders: ['0','回',''] };
+  }
+  // strength / machine
+  return { cls: 'set-cols-3', headers: ['重量(kg)', '回数', 'RIR'], fields: ['weight','reps','rir'], types: ['number','number','number'], placeholders: ['','回',''] };
+}
+
+// 前回表示テキストもカテゴリに合わせる
+function prevRecordText(cat, rec) {
+  if (!rec) return '';
+  if (cat === 'cardio') {
+    if (!rec.lastDuration && !rec.lastDistance) return '';
+    return (rec.lastDuration ? rec.lastDuration+'分' : '') + (rec.lastDistance ? ' / '+rec.lastDistance+'km' : '');
+  }
+  if (cat === 'stretch' || cat === 'mindfulness') {
+    if (!rec.lastDuration) return '';
+    return rec.lastDuration + (cat==='stretch' ? '秒' : '分');
+  }
+  if (!rec.lastWeight && !rec.lastReps) return '';
+  return rec.lastWeight+'kg × '+rec.lastReps+'回 × '+rec.lastSets+'セット';
+}
+
 // ── Exercise Cards ──
 function renderExerciseCards() {
   var el = document.getElementById('exerciseList');
   if (!currentWorkout.exercises.length) { el.innerHTML = ''; return; }
   el.innerHTML = currentWorkout.exercises.map(function(ex, ei) {
-    var settings = exerciseSettings[ex.id] || {};
+    var layout = setLayout(ex.cat);
     var pr = personalRecords[ex.id];
-    var prHTML = pr
+    var prHTML = pr && layout.cls === 'set-cols-3' && ex.cat !== 'bodyweight'
       ? '<span class="pr-badge">🏆 PR '+pr.weight+'kg×'+pr.reps+'回 推定1RM:'+pr.est1RM+'kg</span> '
       : '';
     var lastRec = getLastRecord(ex.id);
-    var prevHTML = lastRec.lastWeight
-      ? '<div class="prev-record">'+prHTML+'前回: <span>'+lastRec.lastWeight+'kg × '+lastRec.lastReps+'回 × '+lastRec.lastSets+'セット</span></div>'
+    var prevText = prevRecordText(ex.cat, lastRec);
+    var prevHTML = prevText
+      ? '<div class="prev-record">'+prHTML+'前回: <span>'+prevText+'</span></div>'
       : (prHTML ? '<div class="prev-record">'+prHTML+'</div>' : '');
     var ytURL = 'https://www.youtube.com/results?search_query='+encodeURIComponent((ex.keyword||ex.name)+' やり方 フォーム');
+
     var setsHTML = ex.sets.map(function(s, si) {
       var doneClass = s.done ? ' done' : '';
       var rowClass = s.done ? ' completed' : '';
-      return '<div class="set-row'+rowClass+'" id="setrow-'+ei+'-'+si+'">'
+      var inputs = layout.fields.map(function(f, fi) {
+        var isText = layout.types[fi] === 'text';
+        var val = s[f] || '';
+        var cls = 'set-input' + (isText ? ' set-input-text' : '');
+        return '<input type="'+(isText?'text':'number')+'" class="'+cls+'" placeholder="'+layout.placeholders[fi]+'" value="'+val+'" onchange="updateSet('+ei+','+si+',\''+f+'\',this.value)">';
+      }).join('');
+      return '<div class="set-row '+layout.cls+rowClass+'" id="setrow-'+ei+'-'+si+'">'
         +'<span class="set-num">'+(si+1)+'</span>'
-        +'<input type="number" class="set-input" placeholder="'+(ex.cat==='bodyweight'?'0':'')+'" value="'+(s.weight||'')+'" onchange="updateSet('+ei+','+si+',\'weight\',this.value)">'
-        +'<input type="number" class="set-input" placeholder="回" value="'+(s.reps||'')+'" onchange="updateSet('+ei+','+si+',\'reps\',this.value)">'
-        +'<input type="number" class="set-input" placeholder="s" value="'+(s.rir||'')+'" onchange="updateSet('+ei+','+si+',\'rir\',this.value)">'
+        +inputs
         +'<button class="set-check'+doneClass+'" onclick="completeSet('+ei+','+si+')">'+(s.done?'✓':'')+'</button>'
         +'</div>';
     }).join('');
+
+    var headerCells = layout.headers.map(function(h){ return '<span class="set-header-label">'+h+'</span>'; }).join('');
+    var headerHTML = '<div class="set-header '+layout.cls+'"><span></span>'+headerCells+'<span></span></div>';
+
     return '<div class="exercise-card">'
       +'<div class="exercise-header">'
       +'<div><p class="exercise-name">'+ex.name+'</p>'
@@ -1310,7 +1376,7 @@ function renderExerciseCards() {
       +'<button class="btn-icon" onclick="removeExercise('+ei+')">🗑</button>'
       +'</div></div>'
       +prevHTML
-      +'<div class="set-header"><span></span><span class="set-header-label">'+(ex.cat==='bodyweight'?'加重(kg)':'重量(kg)')+'</span><span class="set-header-label">回数</span><span class="set-header-label">RIR</span><span></span></div>'
+      +headerHTML
       +setsHTML
       +'<button class="btn-add-set" onclick="addSet('+ei+')">＋ セットを追加</button>'
       +'</div>';
@@ -1320,15 +1386,21 @@ function renderExerciseCards() {
 function getLastRecord(exId) {
   // exerciseSettings を優先、なければ workoutHistory を遡る
   var s = exerciseSettings[exId];
-  if (s && s.lastWeight) return s;
+  if (s && (s.lastWeight || s.lastDuration)) return s;
   for (var i = 0; i < workoutHistory.length; i++) {
     var exes = workoutHistory[i].exercises || [];
     for (var j = 0; j < exes.length; j++) {
-      if (exes[j].id === exId) {
-        var done = (exes[j].sets || []).filter(function(s){ return s.done && s.reps; });
-        if (done.length) {
-          return { lastWeight: done[done.length-1].weight || '', lastReps: done[done.length-1].reps || '', lastSets: done.length };
-        }
+      if (exes[j].id !== exId) continue;
+      var done = (exes[j].sets || []).filter(function(s){ return s.done; });
+      if (!done.length) continue;
+      var last = done[done.length-1];
+      // weight系（strength/machine/bodyweight）
+      if (last.weight || last.reps) {
+        return { lastWeight: last.weight||'', lastReps: last.reps||'', lastSets: done.length };
+      }
+      // duration系（cardio/stretch/mindfulness）
+      if (last.duration) {
+        return { lastDuration: last.duration, lastDistance: last.distance||'', lastNote: last.note||'', lastSets: done.length };
       }
     }
   }
@@ -1337,10 +1409,20 @@ function getLastRecord(exId) {
 
 function addExerciseToWorkout(ex) {
   var settings = getLastRecord(ex.id);
-  var defaultSets = settings.lastSets || 3;
+  var layout = setLayout(ex.cat);
+  var defaultSets = settings.lastSets || (ex.cat === 'cardio' ? 1 : ex.cat === 'stretch' || ex.cat === 'mindfulness' ? 1 : 3);
   var sets = [];
-  for (var i=0;i<defaultSets;i++) {
-    sets.push({weight: settings.lastWeight||'', reps: settings.lastReps||'', rir:'', done:false});
+  for (var i = 0; i < defaultSets; i++) {
+    var s = {done: false};
+    layout.fields.forEach(function(f) {
+      if (f === 'duration') s[f] = settings.lastDuration || '';
+      else if (f === 'distance') s[f] = settings.lastDistance || '';
+      else if (f === 'note') s[f] = '';
+      else if (f === 'weight') s[f] = settings.lastWeight || '';
+      else if (f === 'reps') s[f] = settings.lastReps || '';
+      else s[f] = '';
+    });
+    sets.push(s);
   }
   var savedSettings = exerciseSettings[ex.id] || {};
   var restTime = savedSettings.restTime
@@ -1362,7 +1444,10 @@ function removeExercise(ei) {
 function addSet(ei) {
   var ex = currentWorkout.exercises[ei];
   var last = ex.sets[ex.sets.length-1] || {};
-  ex.sets.push({weight: last.weight||'', reps: last.reps||'', rir:'', done:false});
+  var layout = setLayout(ex.cat);
+  var newSet = {done: false};
+  layout.fields.forEach(function(f){ newSet[f] = last[f] || ''; });
+  ex.sets.push(newSet);
   renderExerciseCards();
 }
 
