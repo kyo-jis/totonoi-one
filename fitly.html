@@ -698,89 +698,200 @@ var CAT_BADGES   = {strength:'badge-strength',machine:'badge-strength',bodyweigh
 var DEFAULT_REST = {strength:90, machine:90, bodyweight:60, cardio:0, stretch:0, mindfulness:0};
 
 var EXERCISE_DB = [
-  // 胸
+  // ── フリーウェイト（胸） ──
   {id:'bench',name:'ベンチプレス',cat:'strength',part:'chest',keyword:'bench press'},
   {id:'incline_bench',name:'インクラインベンチプレス',cat:'strength',part:'chest',keyword:'incline bench press'},
+  {id:'decline_bench',name:'デクラインベンチプレス',cat:'strength',part:'chest',keyword:'decline bench press'},
+  {id:'dumbbell_press',name:'ダンベルプレス',cat:'strength',part:'chest',keyword:'dumbbell chest press'},
+  {id:'incline_db_press',name:'インクラインダンベルプレス',cat:'strength',part:'chest',keyword:'incline dumbbell press'},
   {id:'dumbbell_fly',name:'ダンベルフライ',cat:'strength',part:'chest',keyword:'dumbbell fly'},
+  {id:'incline_db_fly',name:'インクラインダンベルフライ',cat:'strength',part:'chest',keyword:'incline dumbbell fly'},
   {id:'cable_cross',name:'ケーブルクロスオーバー',cat:'strength',part:'chest',keyword:'cable crossover'},
-  {id:'pushup',name:'腕立て伏せ',cat:'bodyweight',part:'chest',keyword:'push up form'},
-  {id:'dip',name:'ディップス',cat:'bodyweight',part:'chest',keyword:'dips exercise'},
-  // 背中
+  // ── フリーウェイト（背中） ──
   {id:'deadlift',name:'デッドリフト',cat:'strength',part:'back',keyword:'deadlift form'},
+  {id:'rdl',name:'ルーマニアンデッドリフト',cat:'strength',part:'back',keyword:'romanian deadlift'},
+  {id:'sumo_dl',name:'スモウデッドリフト',cat:'strength',part:'back',keyword:'sumo deadlift'},
   {id:'pulldown',name:'ラットプルダウン',cat:'strength',part:'back',keyword:'lat pulldown'},
+  {id:'bent_row',name:'ベントオーバーロウ',cat:'strength',part:'back',keyword:'bent over row'},
   {id:'row',name:'シーテッドロウ',cat:'strength',part:'back',keyword:'seated row'},
-  {id:'pullup',name:'懸垂',cat:'bodyweight',part:'back',keyword:'pull up form'},
   {id:'dumbbell_row',name:'ダンベルロウ',cat:'strength',part:'back',keyword:'dumbbell row'},
-  // 肩
+  {id:'tbar_row',name:'Tバーロウ',cat:'strength',part:'back',keyword:'T bar row'},
+  {id:'pullover',name:'ダンベルプルオーバー',cat:'strength',part:'back',keyword:'dumbbell pullover'},
+  // ── フリーウェイト（肩） ──
   {id:'ohp',name:'オーバーヘッドプレス',cat:'strength',part:'shoulder',keyword:'overhead press'},
+  {id:'db_shoulder_press',name:'ダンベルショルダープレス',cat:'strength',part:'shoulder',keyword:'dumbbell shoulder press'},
+  {id:'arnold_press',name:'アーノルドプレス',cat:'strength',part:'shoulder',keyword:'arnold press'},
   {id:'lateral_raise',name:'サイドレイズ',cat:'strength',part:'shoulder',keyword:'lateral raise'},
   {id:'front_raise',name:'フロントレイズ',cat:'strength',part:'shoulder',keyword:'front raise'},
+  {id:'rear_delt_fly',name:'リアデルトフライ',cat:'strength',part:'shoulder',keyword:'rear delt fly dumbbell'},
   {id:'face_pull',name:'フェイスプル',cat:'strength',part:'shoulder',keyword:'face pull'},
-  // 腕
+  {id:'upright_row',name:'アップライトロウ',cat:'strength',part:'shoulder',keyword:'upright row'},
+  // ── フリーウェイト（腕） ──
   {id:'curl',name:'バーベルカール',cat:'strength',part:'arm',keyword:'barbell curl'},
   {id:'hammer_curl',name:'ハンマーカール',cat:'strength',part:'arm',keyword:'hammer curl'},
+  {id:'incline_db_curl',name:'インクラインダンベルカール',cat:'strength',part:'arm',keyword:'incline dumbbell curl'},
+  {id:'conc_curl',name:'コンセントレーションカール',cat:'strength',part:'arm',keyword:'concentration curl'},
   {id:'tricep_push',name:'トライセプスプッシュダウン',cat:'strength',part:'arm',keyword:'tricep pushdown'},
   {id:'skull_crusher',name:'スカルクラッシャー',cat:'strength',part:'arm',keyword:'skull crusher'},
-  // 脚
-  {id:'squat',name:'スクワット',cat:'strength',part:'leg',keyword:'squat form'},
-  {id:'leg_press',name:'レッグプレス',cat:'strength',part:'leg',keyword:'leg press'},
+  {id:'tricep_kickback',name:'トライセプスキックバック',cat:'strength',part:'arm',keyword:'tricep kickback'},
+  {id:'overhead_ext',name:'オーバーヘッドエクステンション',cat:'strength',part:'arm',keyword:'overhead tricep extension'},
+  {id:'wrist_curl',name:'リストカール',cat:'strength',part:'arm',keyword:'wrist curl forearm'},
+  // ── フリーウェイト（脚） ──
+  {id:'squat',name:'バーベルスクワット',cat:'strength',part:'leg',keyword:'barbell squat form'},
+  {id:'goblet_squat',name:'ゴブレットスクワット',cat:'strength',part:'leg',keyword:'goblet squat'},
+  {id:'front_squat',name:'フロントスクワット',cat:'strength',part:'leg',keyword:'front squat'},
+  {id:'hip_thrust',name:'バーベルヒップスラスト',cat:'strength',part:'leg',keyword:'barbell hip thrust'},
+  {id:'db_hip_thrust',name:'ダンベルヒップスラスト',cat:'strength',part:'leg',keyword:'dumbbell hip thrust'},
+  {id:'db_lunge',name:'ダンベルランジ',cat:'strength',part:'leg',keyword:'dumbbell lunge'},
+  {id:'db_split_squat',name:'ダンベルスプリットスクワット',cat:'strength',part:'leg',keyword:'dumbbell split squat'},
+  {id:'rdl_db',name:'ダンベルRDL',cat:'strength',part:'leg',keyword:'dumbbell romanian deadlift'},
+  {id:'db_calf',name:'ダンベルカーフレイズ',cat:'strength',part:'leg',keyword:'dumbbell calf raise'},
+  // ── フリーウェイト（体幹） ──
+  {id:'woodchop',name:'ウッドチョップ',cat:'strength',part:'core',keyword:'cable wood chop'},
+  {id:'pallof_press',name:'パロフプレス',cat:'strength',part:'core',keyword:'pallof press'},
+  {id:'side_bend',name:'サイドベンド',cat:'strength',part:'core',keyword:'dumbbell side bend'},
+  // ── 自重（胸） ──
+  {id:'pushup',name:'腕立て伏せ',cat:'bodyweight',part:'chest',keyword:'push up form'},
+  {id:'wide_pushup',name:'ワイド腕立て',cat:'bodyweight',part:'chest',keyword:'wide push up'},
+  {id:'decline_pushup',name:'デクライン腕立て',cat:'bodyweight',part:'chest',keyword:'decline push up'},
+  {id:'dip',name:'ディップス',cat:'bodyweight',part:'chest',keyword:'dips chest exercise'},
+  // ── 自重（背中） ──
+  {id:'pullup',name:'懸垂（チンアップ）',cat:'bodyweight',part:'back',keyword:'pull up chin up form'},
+  {id:'inverted_row',name:'インバーテッドロウ',cat:'bodyweight',part:'back',keyword:'inverted row bodyweight'},
+  {id:'superman',name:'スーパーマン',cat:'bodyweight',part:'back',keyword:'superman exercise back'},
+  {id:'bird_dog',name:'バードドッグ',cat:'bodyweight',part:'back',keyword:'bird dog exercise'},
+  // ── 自重（肩） ──
+  {id:'pike_pushup',name:'パイクプッシュアップ',cat:'bodyweight',part:'shoulder',keyword:'pike push up shoulder'},
+  {id:'shoulder_tap',name:'ショルダータップ',cat:'bodyweight',part:'shoulder',keyword:'shoulder tap plank'},
+  // ── 自重（腕） ──
+  {id:'diamond_pushup',name:'ダイヤモンド腕立て',cat:'bodyweight',part:'arm',keyword:'diamond push up tricep'},
+  {id:'chin_up',name:'チンアップ（逆手懸垂）',cat:'bodyweight',part:'arm',keyword:'chin up bicep'},
+  // ── 自重（脚） ──
   {id:'lunge',name:'ランジ',cat:'bodyweight',part:'leg',keyword:'lunge exercise'},
-  {id:'leg_curl',name:'レッグカール',cat:'strength',part:'leg',keyword:'leg curl'},
-  {id:'leg_extension',name:'レッグエクステンション',cat:'strength',part:'leg',keyword:'leg extension'},
-  {id:'calf_raise',name:'カーフレイズ',cat:'bodyweight',part:'leg',keyword:'calf raise'},
-  {id:'hip_thrust',name:'ヒップスラスト',cat:'strength',part:'leg',keyword:'hip thrust'},
-  // 体幹
+  {id:'walking_lunge',name:'ウォーキングランジ',cat:'bodyweight',part:'leg',keyword:'walking lunge'},
+  {id:'jump_squat',name:'ジャンプスクワット',cat:'bodyweight',part:'leg',keyword:'jump squat plyometric'},
+  {id:'sumo_squat',name:'スモウスクワット',cat:'bodyweight',part:'leg',keyword:'sumo squat bodyweight'},
+  {id:'step_up',name:'ステップアップ',cat:'bodyweight',part:'leg',keyword:'step up exercise leg'},
+  {id:'glute_bridge',name:'グルートブリッジ',cat:'bodyweight',part:'leg',keyword:'glute bridge exercise'},
+  {id:'single_glute',name:'片脚グルートブリッジ',cat:'bodyweight',part:'leg',keyword:'single leg glute bridge'},
+  {id:'calf_raise',name:'カーフレイズ',cat:'bodyweight',part:'leg',keyword:'calf raise standing'},
+  {id:'nordic_curl',name:'ノルディックカール',cat:'bodyweight',part:'leg',keyword:'nordic curl hamstring'},
+  {id:'wall_sit',name:'ウォールシット',cat:'bodyweight',part:'leg',keyword:'wall sit exercise'},
+  // ── 自重（体幹） ──
   {id:'plank',name:'プランク',cat:'bodyweight',part:'core',keyword:'plank exercise'},
+  {id:'side_plank',name:'サイドプランク',cat:'bodyweight',part:'core',keyword:'side plank exercise'},
   {id:'crunch',name:'クランチ',cat:'bodyweight',part:'core',keyword:'crunch exercise'},
-  {id:'leg_raise',name:'レッグレイズ',cat:'bodyweight',part:'core',keyword:'leg raise'},
+  {id:'bicycle_crunch',name:'バイシクルクランチ',cat:'bodyweight',part:'core',keyword:'bicycle crunch abs'},
+  {id:'leg_raise',name:'レッグレイズ',cat:'bodyweight',part:'core',keyword:'leg raise abs'},
+  {id:'toe_touch',name:'トゥタッチ',cat:'bodyweight',part:'core',keyword:'toe touch crunch abs'},
   {id:'russian_twist',name:'ロシアンツイスト',cat:'bodyweight',part:'core',keyword:'russian twist'},
+  {id:'dead_bug',name:'デッドバグ',cat:'bodyweight',part:'core',keyword:'dead bug exercise core'},
   {id:'ab_wheel',name:'腹筋ローラー',cat:'bodyweight',part:'core',keyword:'ab wheel rollout'},
-  // 有酸素
+  {id:'hollow_hold',name:'ホロウホールド',cat:'bodyweight',part:'core',keyword:'hollow body hold'},
+  {id:'mountain_climber',name:'マウンテンクライマー',cat:'bodyweight',part:'core',keyword:'mountain climber exercise'},
+  {id:'burpee',name:'バーピー',cat:'bodyweight',part:'full',keyword:'burpee exercise'},
+  {id:'inchworm',name:'インチワーム',cat:'bodyweight',part:'full',keyword:'inchworm exercise'},
+  // ── 有酸素 ──
   {id:'running',name:'ランニング',cat:'cardio',part:'full',keyword:'running technique'},
-  {id:'cycling',name:'自転車・サイクリング',cat:'cardio',part:'full',keyword:'cycling workout'},
+  {id:'treadmill',name:'トレッドミル',cat:'cardio',part:'full',keyword:'treadmill running'},
+  {id:'cycling',name:'サイクリング',cat:'cardio',part:'full',keyword:'cycling workout'},
+  {id:'stationary_bike',name:'エアロバイク',cat:'cardio',part:'full',keyword:'stationary bike workout'},
   {id:'swimming',name:'水泳',cat:'cardio',part:'full',keyword:'swimming technique'},
   {id:'walking',name:'ウォーキング',cat:'cardio',part:'full',keyword:'walking exercise'},
+  {id:'brisk_walk',name:'速歩き',cat:'cardio',part:'full',keyword:'brisk walking exercise'},
   {id:'jump_rope',name:'縄跳び',cat:'cardio',part:'full',keyword:'jump rope workout'},
-  {id:'rowing',name:'ローイングマシン',cat:'cardio',part:'full',keyword:'rowing machine'},
+  {id:'rowing_machine',name:'ローイングマシン',cat:'cardio',part:'full',keyword:'rowing machine technique'},
+  {id:'elliptical',name:'エリプティカル',cat:'cardio',part:'full',keyword:'elliptical machine workout'},
+  {id:'stair_stepper',name:'ステッパー・階段',cat:'cardio',part:'leg',keyword:'stair stepper exercise'},
   {id:'hiit',name:'HIIT',cat:'cardio',part:'full',keyword:'HIIT workout'},
-  // ストレッチ
-  {id:'hamstring_str',name:'ハムストリングストレッチ',cat:'stretch',part:'leg',keyword:'hamstring stretch'},
-  {id:'hip_str',name:'股関節ストレッチ',cat:'stretch',part:'leg',keyword:'hip flexor stretch'},
+  {id:'sprint',name:'スプリント・ダッシュ',cat:'cardio',part:'full',keyword:'sprint interval training'},
+  // ── ストレッチ（胸） ──
+  {id:'chest_str',name:'胸のストレッチ（ドア枠）',cat:'stretch',part:'chest',keyword:'doorway chest stretch'},
+  {id:'chest_str2',name:'大胸筋ストレッチ',cat:'stretch',part:'chest',keyword:'pec major stretch'},
+  {id:'cross_arm_str',name:'クロスアームストレッチ',cat:'stretch',part:'chest',keyword:'cross arm shoulder stretch'},
+  // ── ストレッチ（背中） ──
+  {id:'spine_str',name:'脊椎ストレッチ（ツイスト）',cat:'stretch',part:'back',keyword:'spine rotation stretch'},
+  {id:'child_pose',name:'チャイルドポーズ',cat:'stretch',part:'back',keyword:'child pose yoga stretch'},
+  {id:'cat_cow',name:'キャットカウ',cat:'stretch',part:'back',keyword:'cat cow yoga stretch'},
+  {id:'lat_str',name:'広背筋ストレッチ',cat:'stretch',part:'back',keyword:'lat stretch side'},
+  {id:'lumbar_str',name:'腰のストレッチ（仰向け膝倒し）',cat:'stretch',part:'back',keyword:'lumbar rotation stretch'},
+  {id:'knee_chest',name:'ニートゥーチェスト',cat:'stretch',part:'back',keyword:'knee to chest lower back stretch'},
+  // ── ストレッチ（肩） ──
   {id:'shoulder_str',name:'肩甲骨ストレッチ',cat:'stretch',part:'shoulder',keyword:'shoulder blade stretch'},
-  {id:'chest_str',name:'胸のストレッチ',cat:'stretch',part:'chest',keyword:'chest stretch'},
-  {id:'spine_str',name:'脊椎ストレッチ',cat:'stretch',part:'back',keyword:'spine stretch'},
-  // マインドフルネス
-  {id:'yoga',name:'ヨガ',cat:'mindfulness',part:'full',keyword:'yoga beginner'},
-  {id:'meditation',name:'瞑想',cat:'mindfulness',part:'full',keyword:'meditation technique'},
-  {id:'breathing',name:'呼吸法',cat:'mindfulness',part:'full',keyword:'breathing exercise'},
-  // マシン（胸）
+  {id:'deltoid_str',name:'三角筋ストレッチ',cat:'stretch',part:'shoulder',keyword:'deltoid stretch across body'},
+  {id:'tricep_str',name:'上腕三頭筋ストレッチ',cat:'stretch',part:'shoulder',keyword:'overhead tricep stretch'},
+  {id:'neck_str',name:'首ストレッチ',cat:'stretch',part:'shoulder',keyword:'neck stretch cervical'},
+  {id:'shoulder_roll',name:'肩甲骨回し',cat:'stretch',part:'shoulder',keyword:'shoulder blade rolls exercise'},
+  // ── ストレッチ（腕） ──
+  {id:'forearm_str',name:'前腕ストレッチ',cat:'stretch',part:'arm',keyword:'forearm flexor stretch'},
+  {id:'wrist_str',name:'手首ストレッチ',cat:'stretch',part:'arm',keyword:'wrist stretch flexibility'},
+  // ── ストレッチ（脚） ──
+  {id:'hamstring_str',name:'ハムストリングストレッチ',cat:'stretch',part:'leg',keyword:'hamstring stretch standing'},
+  {id:'quad_str',name:'大腿四頭筋ストレッチ',cat:'stretch',part:'leg',keyword:'quad stretch standing'},
+  {id:'hip_str',name:'股関節・腸腰筋ストレッチ',cat:'stretch',part:'leg',keyword:'hip flexor stretch lunge'},
+  {id:'pigeon_pose',name:'ピジョンポーズ（梨状筋）',cat:'stretch',part:'leg',keyword:'pigeon pose piriformis stretch'},
+  {id:'it_band_str',name:'腸脛靭帯ストレッチ',cat:'stretch',part:'leg',keyword:'IT band stretch side lying'},
+  {id:'adductor_str',name:'内転筋ストレッチ（開脚）',cat:'stretch',part:'leg',keyword:'adductor stretch groin'},
+  {id:'calf_str',name:'ふくらはぎストレッチ',cat:'stretch',part:'leg',keyword:'calf stretch wall'},
+  {id:'achilles_str',name:'アキレス腱ストレッチ',cat:'stretch',part:'leg',keyword:'achilles tendon stretch'},
+  {id:'glute_str',name:'臀部ストレッチ',cat:'stretch',part:'leg',keyword:'glute stretch seated figure four'},
+  // ── ストレッチ（体幹） ──
+  {id:'side_str',name:'体側ストレッチ',cat:'stretch',part:'core',keyword:'side stretch standing'},
+  {id:'thoracic_rot',name:'胸椎回旋ストレッチ',cat:'stretch',part:'core',keyword:'thoracic rotation stretch'},
+  {id:'bridge_str',name:'ブリッジ（脊椎伸展）',cat:'stretch',part:'core',keyword:'bridge exercise stretch back'},
+  {id:'cobra_pose',name:'コブラポーズ',cat:'stretch',part:'core',keyword:'cobra pose yoga stretch'},
+  // ── ストレッチ（全身） ──
+  {id:'full_body_str',name:'全身伸び',cat:'stretch',part:'full',keyword:'full body stretch morning'},
+  {id:'foam_roll_back',name:'フォームローリング（背中）',cat:'stretch',part:'back',keyword:'foam rolling upper back'},
+  {id:'foam_roll_leg',name:'フォームローリング（脚）',cat:'stretch',part:'leg',keyword:'foam rolling legs'},
+  // ── マインドフルネス ──
+  {id:'yoga',name:'ヨガ',cat:'mindfulness',part:'full',keyword:'yoga beginner flow'},
+  {id:'meditation',name:'瞑想',cat:'mindfulness',part:'full',keyword:'meditation technique mindfulness'},
+  {id:'breathing',name:'呼吸法（腹式）',cat:'mindfulness',part:'full',keyword:'diaphragmatic breathing exercise'},
+  {id:'box_breathing',name:'ボックスブリージング',cat:'mindfulness',part:'full',keyword:'box breathing 4x4'},
+  {id:'body_scan',name:'ボディスキャン',cat:'mindfulness',part:'full',keyword:'body scan meditation'},
+  {id:'pmr',name:'漸進的筋弛緩法',cat:'mindfulness',part:'full',keyword:'progressive muscle relaxation'},
+  {id:'visualization',name:'イメージトレーニング',cat:'mindfulness',part:'full',keyword:'visualization sport performance'},
+  {id:'journaling',name:'振り返り・日記',cat:'mindfulness',part:'full',keyword:'journaling workout reflection'},
+  // ── マシン（胸） ──
   {id:'m_chest_press',name:'チェストプレスマシン',cat:'machine',part:'chest',keyword:'chest press machine'},
+  {id:'m_incline_press',name:'インクラインチェストプレス',cat:'machine',part:'chest',keyword:'incline chest press machine'},
   {id:'m_pec_deck',name:'ペックデック（バタフライ）',cat:'machine',part:'chest',keyword:'pec deck fly machine'},
   {id:'m_cable_fly',name:'ケーブルフライ',cat:'machine',part:'chest',keyword:'cable chest fly'},
-  {id:'m_cable_cross',name:'ケーブルクロスオーバー',cat:'machine',part:'chest',keyword:'cable crossover'},
-  // マシン（背中）
+  {id:'m_cable_cross',name:'ケーブルクロスオーバー（マシン）',cat:'machine',part:'chest',keyword:'cable crossover chest'},
+  // ── マシン（背中） ──
   {id:'m_lat_pulldown',name:'ラットプルダウン（マシン）',cat:'machine',part:'back',keyword:'lat pulldown machine'},
   {id:'m_seated_row',name:'シーテッドケーブルロウ',cat:'machine',part:'back',keyword:'seated cable row'},
   {id:'m_chest_row',name:'チェストサポーテッドロウ',cat:'machine',part:'back',keyword:'chest supported row machine'},
-  {id:'m_cable_pullover',name:'ケーブルプルオーバー',cat:'machine',part:'back',keyword:'cable pullover'},
-  // マシン（肩）
+  {id:'m_cable_pullover',name:'ケーブルプルオーバー',cat:'machine',part:'back',keyword:'cable pullover back'},
+  {id:'m_assisted_pullup',name:'アシストチンアップ',cat:'machine',part:'back',keyword:'assisted pull up machine'},
+  // ── マシン（肩） ──
   {id:'m_shoulder_press',name:'マシンショルダープレス',cat:'machine',part:'shoulder',keyword:'machine shoulder press'},
   {id:'m_cable_lateral',name:'ケーブルサイドレイズ',cat:'machine',part:'shoulder',keyword:'cable lateral raise'},
   {id:'m_rear_delt',name:'リアデルトフライマシン',cat:'machine',part:'shoulder',keyword:'rear delt fly machine'},
-  // マシン（腕）
+  {id:'m_cable_front',name:'ケーブルフロントレイズ',cat:'machine',part:'shoulder',keyword:'cable front raise'},
+  // ── マシン（腕） ──
   {id:'m_cable_curl',name:'ケーブルカール',cat:'machine',part:'arm',keyword:'cable bicep curl'},
   {id:'m_preacher',name:'プリーチャーカール',cat:'machine',part:'arm',keyword:'preacher curl machine'},
   {id:'m_cable_tricep',name:'ケーブルトライセプスプッシュダウン',cat:'machine',part:'arm',keyword:'cable tricep pushdown'},
-  // マシン（脚）
+  {id:'m_tricep_ext',name:'マシントライセプスエクステンション',cat:'machine',part:'arm',keyword:'machine tricep extension'},
+  // ── マシン（脚） ──
+  {id:'m_leg_press',name:'レッグプレスマシン',cat:'machine',part:'leg',keyword:'leg press machine'},
   {id:'m_hack_squat',name:'ハックスクワット',cat:'machine',part:'leg',keyword:'hack squat machine'},
   {id:'m_smith_squat',name:'スミスマシンスクワット',cat:'machine',part:'leg',keyword:'smith machine squat'},
+  {id:'m_leg_curl',name:'レッグカールマシン',cat:'machine',part:'leg',keyword:'lying leg curl machine'},
+  {id:'m_seated_leg_curl',name:'シーテッドレッグカール',cat:'machine',part:'leg',keyword:'seated leg curl machine'},
+  {id:'m_leg_ext',name:'レッグエクステンションマシン',cat:'machine',part:'leg',keyword:'leg extension machine'},
   {id:'m_adduction',name:'アダクション（内転）',cat:'machine',part:'leg',keyword:'hip adduction machine'},
   {id:'m_abduction',name:'アブダクション（外転）',cat:'machine',part:'leg',keyword:'hip abduction machine'},
-  {id:'m_seated_leg_curl',name:'シーテッドレッグカール',cat:'machine',part:'leg',keyword:'seated leg curl machine'},
+  {id:'m_hip_thrust',name:'マシンヒップスラスト',cat:'machine',part:'leg',keyword:'machine hip thrust glute'},
+  {id:'m_calf',name:'カーフレイズマシン（スタンディング）',cat:'machine',part:'leg',keyword:'standing calf raise machine'},
   {id:'m_seated_calf',name:'シーテッドカーフレイズ',cat:'machine',part:'leg',keyword:'seated calf raise machine'},
-  // マシン（体幹）
+  // ── マシン（体幹） ──
   {id:'m_cable_crunch',name:'ケーブルクランチ',cat:'machine',part:'core',keyword:'cable crunch abs'},
   {id:'m_ab_machine',name:'アブドミナルマシン',cat:'machine',part:'core',keyword:'abdominal crunch machine'},
+  {id:'m_cable_woodchop',name:'ケーブルウッドチョップ',cat:'machine',part:'core',keyword:'cable wood chop rotation'},
+  {id:'m_torso_rotation',name:'トルソーローテーションマシン',cat:'machine',part:'core',keyword:'torso rotation machine oblique'},
 ];
 
 // State
