@@ -437,7 +437,7 @@
       <button class="timer-adj-btn" onclick="adjustTimer(-5)">−</button>
       <p class="timer-adj-label" style="margin-top:.3rem;">5秒</p>
     </div>
-    <div class="timer-adj-label" id="timerSetLabel">設定: 90秒</div>
+    <div class="timer-adj-label" id="timerSetLabel">休憩: 90秒</div>
     <div>
       <button class="timer-adj-btn" onclick="adjustTimer(5)">＋</button>
       <p class="timer-adj-label" style="margin-top:.3rem;">5秒</p>
@@ -447,6 +447,7 @@
     <button class="btn-timer-start" id="btnTimerMain" onclick="toggleTimer()">▶ スタート</button>
     <button class="btn-timer-stop" onclick="resetTimer()">リセット</button>
   </div>
+  <p style="font-size:.68rem;color:var(--muted);text-align:center;margin-top:.75rem;">⬆️ この秒数がワークアウト中の休憩タイマーのデフォルトになります</p>
 
   <div class="divider" style="margin-top:1.5rem;">ストレッチ / インターバル</div>
 
@@ -707,7 +708,8 @@ var PART_LABELS  = {chest:'💪 胸',back:'🦅 背中',shoulder:'🏋️ 肩',a
 var PART_ORDER   = ['chest','back','shoulder','arm','leg','core','full','other'];
 var CAT_LABELS   = {strength:'フリーウェイト',machine:'マシン',bodyweight:'自重',cardio:'有酸素',stretch:'ストレッチ',mindfulness:'マインドフル'};
 var CAT_BADGES   = {strength:'badge-strength',machine:'badge-strength',bodyweight:'badge-bodyweight',cardio:'badge-cardio',stretch:'badge-stretch',mindfulness:'badge-mindfulness'};
-var DEFAULT_REST = {strength:90, machine:90, bodyweight:60, cardio:0, stretch:0, mindfulness:0};
+var DEFAULT_REST = {strength:'pref', machine:'pref', bodyweight:60, cardio:0, stretch:0, mindfulness:0};
+function resolveRestTime(val) { return val === 'pref' ? defaultRestTime : (val || 0); }
 
 var EXERCISE_DB = [
   // ── フリーウェイト（胸） ──
@@ -935,10 +937,11 @@ var EXERCISE_DB = [
 var currentWorkout = {exercises:[], startTime:null, running:false};
 var workoutTimerInterval = null;
 var restTimerInterval = null;
+var defaultRestTime = parseInt(localStorage.getItem('fitlyRestTime') || '90');
 var restTimeLeft = 0;
-var restTotalTime = 90;
-var timerSeconds = 90;
-var timerTotal = 90;
+var restTotalTime = defaultRestTime;
+var timerSeconds = defaultRestTime;
+var timerTotal = defaultRestTime;
 var timerInterval = null;
 var timerRunning = false;
 var selectedCat = 'all';
@@ -1113,6 +1116,24 @@ function checkAndUpdatePRs(exercises) {
 function init() {
   buildCatFilter();
   buildSoundSelector();
+  // 保存済み休憩時間をタイマーUIに反映
+  var savedLabel = defaultRestTime >= 60
+    ? Math.floor(defaultRestTime/60)+'分'+(defaultRestTime%60?defaultRestTime%60+'秒':'')
+    : defaultRestTime+'秒';
+  document.getElementById('timerSetLabel').textContent = '休憩: ' + savedLabel;
+  timerSeconds = defaultRestTime; timerTotal = defaultRestTime;
+  updateTimerDisplay();
+  // 対応するプリセットボタンをアクティブに
+  document.querySelectorAll('.timer-preset').forEach(function(b){
+    b.classList.remove('active');
+    if (parseInt(b.textContent) === defaultRestTime ||
+        (b.textContent==='1m'&&defaultRestTime===60) ||
+        (b.textContent==='90s'&&defaultRestTime===90) ||
+        (b.textContent==='2m'&&defaultRestTime===120) ||
+        (b.textContent==='3m'&&defaultRestTime===180)) {
+      b.classList.add('active');
+    }
+  });
   renderWorkoutDashboard();
   renderExerciseModal();
   renderMenuList();
@@ -1380,7 +1401,7 @@ function startFromMenu(idx) {
       });
       sets.push(s);
     }
-    var restTime = (exerciseSettings[e.id] && exerciseSettings[e.id].restTime) ? exerciseSettings[e.id].restTime : DEFAULT_REST[e.cat] || 90;
+    var restTime = (exerciseSettings[e.id] && exerciseSettings[e.id].restTime) ? exerciseSettings[e.id].restTime : resolveRestTime(DEFAULT_REST[e.cat]);
     return { id: e.id, name: e.name, cat: e.cat, part: e.part, keyword: e.keyword||'', sets: sets, restTime: restTime };
   });
   activateWorkoutUI();
@@ -1704,6 +1725,10 @@ function setRestTime(s) {
   updateRestDisplay();
   if (restTimerInterval) { clearInterval(restTimerInterval); }
   startRestTimerFromCurrent();
+  // タイマータブにも同期
+  saveRestTimeSetting(s);
+  timerSeconds = s; timerTotal = s;
+  updateTimerDisplay();
 }
 
 function startRestTimerFromCurrent() {
@@ -1732,21 +1757,30 @@ function skipRest() {
 }
 
 // ── Independent Timer ──
+function saveRestTimeSetting(s) {
+  defaultRestTime = s;
+  localStorage.setItem('fitlyRestTime', s);
+  // 休憩オーバーレイにも反映（次のセットから）
+  restTotalTime = s;
+  var label = s >= 60 ? Math.floor(s/60)+'分'+(s%60 ? s%60+'秒' : '') : s+'秒';
+  document.getElementById('timerSetLabel').textContent = '休憩: ' + label;
+}
+
 function setTimerPreset(s) {
   timerSeconds = s; timerTotal = s;
   document.querySelectorAll('.timer-preset').forEach(function(b){ b.classList.remove('active'); });
   event.target.classList.add('active');
-  document.getElementById('timerSetLabel').textContent = '設定: '+(s>=60?Math.floor(s/60)+'分'+(s%60?s%60+'秒':''):s+'秒');
   updateTimerDisplay();
   if (timerRunning) { clearInterval(timerInterval); timerRunning=false; document.getElementById('btnTimerMain').textContent='▶ スタート'; }
   document.getElementById('timerProgressBar').style.width='100%';
+  saveRestTimeSetting(s);
 }
 
 function adjustTimer(delta) {
   timerSeconds = Math.max(15, timerSeconds + delta);
   timerTotal = timerSeconds;
-  document.getElementById('timerSetLabel').textContent = '設定: '+timerSeconds+'秒';
   updateTimerDisplay();
+  saveRestTimeSetting(timerSeconds);
 }
 
 function updateTimerDisplay() {
