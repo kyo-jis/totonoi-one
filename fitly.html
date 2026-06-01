@@ -344,18 +344,16 @@
         <p class="wd-stat-val" id="wdStreak">0</p>
         <p class="wd-stat-label">🔥 連続日数</p>
       </div>
-      <div class="wd-stat">
-        <p class="wd-stat-val" id="wdWeek">0</p>
-        <p class="wd-stat-label">今週の日数</p>
-      </div>
-      <div class="wd-stat">
-        <p class="wd-stat-val" id="wdTotal">0</p>
-        <p class="wd-stat-label">累計日数</p>
+      <div class="wd-stat" style="grid-column:span 2;">
+        <div id="wdWeekDots" style="display:flex;gap:6px;justify-content:center;margin-bottom:.35rem;"></div>
+        <p class="wd-stat-label">今週 <span id="wdWeek" style="color:var(--text);font-weight:600;"></span></p>
       </div>
     </div>
 
-    <!-- 前回のワークアウト -->
-    <div id="wdLastCard" class="wd-last" style="display:none;"></div>
+    <!-- 累計日数 -->
+    <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:.75rem;">
+      <p style="font-size:.7rem;color:var(--muted);">累計 <span id="wdTotal" style="color:var(--accent);font-weight:600;"></span></p>
+    </div>
 
     <div class="wd-cal">
       <p class="wd-cal-title">📅 直近2週間</p>
@@ -1175,45 +1173,45 @@ function renderWorkoutDashboard() {
   }
   document.getElementById('wdStreak').textContent = streak;
 
-  // 今週の日数（ユニーク日・文字列比較でタイムゾーン問題を回避）
+  // 今週の日数（月〜日の7日間）
   var weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - now.getDay()); // 日曜始まり
+  // 月曜始まり
+  var dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1;
+  weekStart.setDate(now.getDate() - dayOfWeek);
   weekStart.setHours(0,0,0,0);
   var weekStartStr = weekStart.getFullYear() + '-'
     + String(weekStart.getMonth()+1).padStart(2,'0') + '-'
     + String(weekStart.getDate()).padStart(2,'0');
+
+  // 今週7日のdateStr配列を生成
+  var weekDays = [];
+  for (var wi = 0; wi < 7; wi++) {
+    var wd = new Date(weekStart);
+    wd.setDate(weekStart.getDate() + wi);
+    var wds = wd.getFullYear() + '-'
+      + String(wd.getMonth()+1).padStart(2,'0') + '-'
+      + String(wd.getDate()).padStart(2,'0');
+    weekDays.push({ ds: wds, label: ['月','火','水','木','金','土','日'][wi] });
+  }
+
   var weekDaySet = {};
   history.forEach(function(w){ if (w.date && w.date >= weekStartStr) weekDaySet[w.date] = true; });
-  document.getElementById('wdWeek').textContent = Object.keys(weekDaySet).length + '日';
+  var weekCount = Object.keys(weekDaySet).length;
 
-  // 累計日数（ユニーク日）
-  document.getElementById('wdTotal').textContent = Object.keys(dateSet).length + '日';
-
-  // ── 前回のワークアウトカード ──
-  var lastCard = document.getElementById('wdLastCard');
-  if (history.length > 0) {
-    var last = history[0];
-    var lastDate = new Date(last.date);
-    var diffDays = Math.floor((now - lastDate) / 86400000);
-    var diffLabel = diffDays === 0 ? '今日' : diffDays === 1 ? '昨日' : diffDays + '日前';
-    var durLabel = last.duration ? Math.round(last.duration / 60) + '分' : '';
-    var partSet = {};
-    (last.exercises || []).forEach(function(ex){ if (ex.part) partSet[ex.part] = true; });
-    var partLabels = { chest:'胸', back:'背中', shoulder:'肩', arm:'腕', leg:'脚', core:'体幹', full:'全身', other:'その他' };
-    var partTags = Object.keys(partSet).map(function(p){
-      return '<span class="wd-last-part">'+(partLabels[p]||p)+'</span>';
+  // 今週の曜日ドット描画
+  var dotsEl = document.getElementById('wdWeekDots');
+  if (dotsEl) {
+    dotsEl.innerHTML = weekDays.map(function(d) {
+      var done = dateSet[d.ds];
+      var isToday = d.ds === todayStr;
+      return '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;">'
+        + '<span style="font-size:.52rem;color:' + (isToday ? 'var(--accent)' : 'var(--muted)') + ';font-weight:' + (isToday ? '700' : '400') + ';">' + d.label + '</span>'
+        + '<div style="width:11px;height:11px;border-radius:50%;background:' + (done ? 'var(--accent)' : 'var(--surface3)') + ';' + (isToday && !done ? 'border:2px solid var(--accent);' : '') + '"></div>'
+        + '</div>';
     }).join('');
-    var exCount = (last.exercises||[]).length;
-    lastCard.innerHTML = '<div class="wd-last-icon">💪</div>'
-      + '<div class="wd-last-info">'
-      + '<p class="wd-last-title">'+(last.name||'ワークアウト')+'</p>'
-      + '<p class="wd-last-meta">'+diffLabel+(durLabel?' · '+durLabel:'')+(exCount?' · '+exCount+'種目':'')+'</p>'
-      + (partTags ? '<div class="wd-last-parts">'+partTags+'</div>' : '')
-      + '</div>';
-    lastCard.style.display = 'flex';
-  } else {
-    lastCard.style.display = 'none';
   }
+  document.getElementById('wdWeek').textContent = weekCount + '日';
+  document.getElementById('wdTotal').textContent = Object.keys(dateSet).length + '日';
 
   // ── 部位アイコン付きカレンダー（直近14日・タップで詳細） ──
   var days = ['日','月','火','水','木','金','土'];
