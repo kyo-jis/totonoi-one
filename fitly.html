@@ -554,6 +554,29 @@
   <button class="rest-skip" onclick="skipRest()">スキップ →</button>
 </div>
 
+<!-- 履歴編集モーダル -->
+<div class="modal-overlay" id="historyEditModal" onclick="closeModalOutside(event,'historyEditModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <p class="modal-title">履歴を編集</p>
+    <div class="form-row" style="margin-bottom:.75rem;">
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">日付</label>
+        <input type="date" id="heDate" style="width:100%;">
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">メモ（任意）</label>
+        <input type="text" id="heName" placeholder="例：胸の日" style="width:100%;">
+      </div>
+    </div>
+    <div id="heExerciseList"></div>
+    <div style="display:flex;gap:.5rem;margin-top:1rem;">
+      <button class="btn-primary" onclick="saveHistoryEdit()" style="margin-top:0;">保存する</button>
+      <button class="btn-cancel" onclick="closeModal('historyEditModal')" style="margin-top:0;flex:none;width:auto;padding:.9rem 1rem;">キャンセル</button>
+    </div>
+  </div>
+</div>
+
 <!-- 日別ワークアウト詳細モーダル -->
 <div class="modal-overlay" id="dayDetailModal" onclick="closeModalOutside(event,'dayDetailModal')">
   <div class="modal">
@@ -2108,20 +2131,127 @@ function renderHistory() {
     return;
   }
   el.innerHTML=filtered.map(function(w){
+    var realIdx=workoutHistory.indexOf(w);
     var d=new Date(w.date);
-    var dateStr=d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-    var dur=Math.floor(w.duration/60)+'分';
+    var dateStr=(d.getMonth()+1)+'月'+d.getDate()+'日';
+    var dur=w.duration?Math.floor(w.duration/60)+'分':'—';
     var tags=(w.exercises||[]).map(function(e){ return '<span class="history-ex-tag">'+e.name+'</span>'; }).join('');
     return '<div class="history-card">'
-      +'<p class="history-date">'+dateStr+'</p>'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;">'
+      +'<p class="history-date" style="margin-bottom:0;">'+(w.name?'<strong style="color:var(--text);">'+w.name+'</strong> · ':'')+dateStr+'</p>'
+      +'<div style="display:flex;gap:.35rem;">'
+      +'<button onclick="openHistoryEdit('+realIdx+')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:.25rem .55rem;font-size:.7rem;color:var(--muted);cursor:pointer;font-family:var(--font);">編集</button>'
+      +'<button onclick="deleteHistory('+realIdx+')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:.25rem .55rem;font-size:.7rem;color:var(--accent2);cursor:pointer;font-family:var(--font);">削除</button>'
+      +'</div></div>'
       +'<div class="history-stats">'
       +'<span class="history-stat">⏱ <span>'+dur+'</span></span>'
-      +'<span class="history-stat">🏋️ <span>'+w.totalSets+'セット</span></span>'
-      +'<span class="history-stat">📦 <span>'+w.totalVolume.toLocaleString()+'kg</span></span>'
+      +'<span class="history-stat">🏋️ <span>'+((w.totalSets||0)+'セット')+'</span></span>'
+      +'<span class="history-stat">📦 <span>'+((w.totalVolume||0).toLocaleString())+'kg</span></span>'
       +'</div>'
       +'<div class="history-exercises" style="margin-top:.5rem;">'+tags+'</div>'
       +'</div>';
   }).join('');
+}
+
+function deleteHistory(idx) {
+  if (!confirm('この記録を削除しますか？')) return;
+  workoutHistory.splice(idx, 1);
+  localStorage.setItem('fitlyHistory', JSON.stringify(workoutHistory));
+  dbSave('history', workoutHistory);
+  renderHistory();
+  renderWorkoutDashboard();
+  showToast('🗑 記録を削除しました');
+}
+
+// ── History Edit ──
+var heIdx = -1;
+
+function openHistoryEdit(idx) {
+  heIdx = idx;
+  var w = workoutHistory[idx];
+  document.getElementById('heDate').value = w.date || '';
+  document.getElementById('heName').value = w.name || '';
+  renderHeExercises();
+  document.getElementById('historyEditModal').classList.add('show');
+}
+
+function renderHeExercises() {
+  var w = workoutHistory[heIdx];
+  var html = (w.exercises || []).map(function(ex, ei) {
+    var layout = setLayout(ex.cat);
+    var h1 = layout.headers[0], h2 = layout.headers[1], h3 = layout.headers[2] || '';
+    var is3col = layout.cls === 'set-cols-3';
+    var setsHTML = (ex.sets || []).map(function(s, si) {
+      var f = layout.fields;
+      var inp = function(fi) {
+        var isText = layout.types && layout.types[fi] === 'text';
+        return '<input type="'+(isText?'text':'number')+'" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.4rem .3rem;font-size:.82rem;color:var(--text);font-family:var(--font);text-align:center;outline:none;min-width:0;" value="'+(s[f[fi]]||'')+'" placeholder="'+layout.placeholders[fi]+'" onchange="heUpdateSet('+ei+','+si+',\''+f[fi]+'\',this.value)">';
+      };
+      return '<div style="display:flex;align-items:center;gap:.35rem;margin-bottom:.35rem;">'
+        +'<span style="font-size:.72rem;color:var(--muted);width:18px;text-align:center;">'+(si+1)+'</span>'
+        +inp(0)+(f[1]?inp(1):'')+(is3col&&f[2]?inp(2):'')
+        +'<button onclick="heRemoveSet('+ei+','+si+')" style="background:none;border:none;color:var(--muted);font-size:.85rem;cursor:pointer;padding:0 .2rem;">✕</button>'
+        +'</div>';
+    }).join('');
+    var colLabels = '<div style="display:flex;gap:.35rem;margin-bottom:.25rem;padding-left:22px;">'
+      +'<span style="flex:1;font-size:.58rem;color:var(--muted);text-align:center;">'+h1+'</span>'
+      +(f[1]?'<span style="flex:1;font-size:.58rem;color:var(--muted);text-align:center;">'+h2+'</span>':'')
+      +(is3col&&f[2]?'<span style="flex:1;font-size:.58rem;color:var(--muted);text-align:center;">'+h3+'</span>':'')
+      +'<span style="width:24px;"></span></div>';
+    return '<div style="background:var(--surface2);border-radius:12px;padding:.75rem .85rem;margin-bottom:.65rem;">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">'
+      +'<p style="font-size:.88rem;font-weight:500;">'+ex.name+'</p>'
+      +'<button onclick="heAddSet('+ei+')" style="background:none;border:1px solid var(--border);border-radius:7px;padding:.2rem .55rem;font-size:.68rem;color:var(--accent);cursor:pointer;font-family:var(--font);">＋セット</button>'
+      +'</div>'
+      +colLabels+setsHTML
+      +'</div>';
+  }).join('');
+  document.getElementById('heExerciseList').innerHTML = html ||
+    '<p style="font-size:.82rem;color:var(--muted);text-align:center;padding:.75rem 0;">種目がありません</p>';
+}
+
+function heUpdateSet(ei, si, field, val) {
+  workoutHistory[heIdx].exercises[ei].sets[si][field] = val;
+}
+
+function heAddSet(ei) {
+  var ex = workoutHistory[heIdx].exercises[ei];
+  var last = ex.sets[ex.sets.length - 1] || {};
+  var layout = setLayout(ex.cat);
+  var s = {done: true};
+  layout.fields.forEach(function(f) { s[f] = last[f] || ''; });
+  ex.sets.push(s);
+  renderHeExercises();
+}
+
+function heRemoveSet(ei, si) {
+  var sets = workoutHistory[heIdx].exercises[ei].sets;
+  if (sets.length <= 1) { showToast('最低1セット必要です'); return; }
+  sets.splice(si, 1);
+  renderHeExercises();
+}
+
+function saveHistoryEdit() {
+  var w = workoutHistory[heIdx];
+  w.date = document.getElementById('heDate').value || w.date;
+  w.name = document.getElementById('heName').value.trim();
+  // ボリューム・セット数を再計算
+  var totalVol = 0, totalSets = 0;
+  (w.exercises || []).forEach(function(ex) {
+    (ex.sets || []).forEach(function(s) {
+      totalSets++;
+      if (s.weight && s.reps) totalVol += parseFloat(s.weight) * parseInt(s.reps);
+    });
+  });
+  w.totalVolume = totalVol;
+  w.totalSets = totalSets;
+  workoutHistory.sort(function(a, b) { return b.date.localeCompare(a.date); });
+  localStorage.setItem('fitlyHistory', JSON.stringify(workoutHistory));
+  dbSave('history', workoutHistory);
+  closeModal('historyEditModal');
+  renderHistory();
+  renderWorkoutDashboard();
+  showToast('✅ 記録を更新しました');
 }
 
 // ── Analysis ──
