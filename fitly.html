@@ -514,10 +514,11 @@ var isPro = localStorage.getItem('isPro') === 'true';
 var FREE_MENU_LIMIT = 3;
 var FREE_HISTORY_DAYS = 14;
 
-var PART_LABELS = {chest:'胸',back:'背中',shoulder:'肩',arm:'腕',leg:'脚',core:'体幹',full:'全身',other:'その他'};
-var CAT_LABELS = {strength:'筋トレ',bodyweight:'自重',cardio:'有酸素',stretch:'ストレッチ',mindfulness:'マインドフル'};
-var CAT_BADGES = {strength:'badge-strength',bodyweight:'badge-bodyweight',cardio:'badge-cardio',stretch:'badge-stretch',mindfulness:'badge-mindfulness'};
-var DEFAULT_REST = {strength:90, bodyweight:60, cardio:0, stretch:0, mindfulness:0};
+var PART_LABELS  = {chest:'💪 胸',back:'🦅 背中',shoulder:'🏋️ 肩',arm:'💪 腕',leg:'🦵 脚',core:'🧘 体幹',full:'🌟 全身',other:'その他'};
+var PART_ORDER   = ['chest','back','shoulder','arm','leg','core','full','other'];
+var CAT_LABELS   = {strength:'フリーウェイト',machine:'マシン',bodyweight:'自重',cardio:'有酸素',stretch:'ストレッチ',mindfulness:'マインドフル'};
+var CAT_BADGES   = {strength:'badge-strength',machine:'badge-strength',bodyweight:'badge-bodyweight',cardio:'badge-cardio',stretch:'badge-stretch',mindfulness:'badge-mindfulness'};
+var DEFAULT_REST = {strength:90, machine:90, bodyweight:60, cardio:0, stretch:0, mindfulness:0};
 
 var EXERCISE_DB = [
   // 胸
@@ -575,6 +576,34 @@ var EXERCISE_DB = [
   {id:'yoga',name:'ヨガ',cat:'mindfulness',part:'full',keyword:'yoga beginner'},
   {id:'meditation',name:'瞑想',cat:'mindfulness',part:'full',keyword:'meditation technique'},
   {id:'breathing',name:'呼吸法',cat:'mindfulness',part:'full',keyword:'breathing exercise'},
+  // マシン（胸）
+  {id:'m_chest_press',name:'チェストプレスマシン',cat:'machine',part:'chest',keyword:'chest press machine'},
+  {id:'m_pec_deck',name:'ペックデック（バタフライ）',cat:'machine',part:'chest',keyword:'pec deck fly machine'},
+  {id:'m_cable_fly',name:'ケーブルフライ',cat:'machine',part:'chest',keyword:'cable chest fly'},
+  {id:'m_cable_cross',name:'ケーブルクロスオーバー',cat:'machine',part:'chest',keyword:'cable crossover'},
+  // マシン（背中）
+  {id:'m_lat_pulldown',name:'ラットプルダウン（マシン）',cat:'machine',part:'back',keyword:'lat pulldown machine'},
+  {id:'m_seated_row',name:'シーテッドケーブルロウ',cat:'machine',part:'back',keyword:'seated cable row'},
+  {id:'m_chest_row',name:'チェストサポーテッドロウ',cat:'machine',part:'back',keyword:'chest supported row machine'},
+  {id:'m_cable_pullover',name:'ケーブルプルオーバー',cat:'machine',part:'back',keyword:'cable pullover'},
+  // マシン（肩）
+  {id:'m_shoulder_press',name:'マシンショルダープレス',cat:'machine',part:'shoulder',keyword:'machine shoulder press'},
+  {id:'m_cable_lateral',name:'ケーブルサイドレイズ',cat:'machine',part:'shoulder',keyword:'cable lateral raise'},
+  {id:'m_rear_delt',name:'リアデルトフライマシン',cat:'machine',part:'shoulder',keyword:'rear delt fly machine'},
+  // マシン（腕）
+  {id:'m_cable_curl',name:'ケーブルカール',cat:'machine',part:'arm',keyword:'cable bicep curl'},
+  {id:'m_preacher',name:'プリーチャーカール',cat:'machine',part:'arm',keyword:'preacher curl machine'},
+  {id:'m_cable_tricep',name:'ケーブルトライセプスプッシュダウン',cat:'machine',part:'arm',keyword:'cable tricep pushdown'},
+  // マシン（脚）
+  {id:'m_hack_squat',name:'ハックスクワット',cat:'machine',part:'leg',keyword:'hack squat machine'},
+  {id:'m_smith_squat',name:'スミスマシンスクワット',cat:'machine',part:'leg',keyword:'smith machine squat'},
+  {id:'m_adduction',name:'アダクション（内転）',cat:'machine',part:'leg',keyword:'hip adduction machine'},
+  {id:'m_abduction',name:'アブダクション（外転）',cat:'machine',part:'leg',keyword:'hip abduction machine'},
+  {id:'m_seated_leg_curl',name:'シーテッドレッグカール',cat:'machine',part:'leg',keyword:'seated leg curl machine'},
+  {id:'m_seated_calf',name:'シーテッドカーフレイズ',cat:'machine',part:'leg',keyword:'seated calf raise machine'},
+  // マシン（体幹）
+  {id:'m_cable_crunch',name:'ケーブルクランチ',cat:'machine',part:'core',keyword:'cable crunch abs'},
+  {id:'m_ab_machine',name:'アブドミナルマシン',cat:'machine',part:'core',keyword:'abdominal crunch machine'},
 ];
 
 // State
@@ -862,7 +891,7 @@ function renderExerciseCards() {
       var rowClass = s.done ? ' completed' : '';
       return '<div class="set-row'+rowClass+'" id="setrow-'+ei+'-'+si+'">'
         +'<span class="set-num">'+(si+1)+'</span>'
-        +'<input type="number" class="set-input" placeholder="kg" value="'+(s.weight||'')+'" onchange="updateSet('+ei+','+si+',\'weight\',this.value)">'
+        +'<input type="number" class="set-input" placeholder="'+(ex.cat==='bodyweight'?'0':'')+'" value="'+(s.weight||'')+'" onchange="updateSet('+ei+','+si+',\'weight\',this.value)">'
         +'<input type="number" class="set-input" placeholder="回" value="'+(s.reps||'')+'" onchange="updateSet('+ei+','+si+',\'reps\',this.value)">'
         +'<input type="number" class="set-input" placeholder="s" value="'+(s.rir||'')+'" onchange="updateSet('+ei+','+si+',\'rir\',this.value)">'
         +'<button class="set-check'+doneClass+'" onclick="completeSet('+ei+','+si+')">'+(s.done?'✓':'')+'</button>'
@@ -877,7 +906,7 @@ function renderExerciseCards() {
       +'<button class="btn-icon" onclick="removeExercise('+ei+')">🗑</button>'
       +'</div></div>'
       +prevHTML
-      +'<div class="set-header"><span></span><span class="set-header-label">重量</span><span class="set-header-label">回数</span><span class="set-header-label">RIR</span><span></span></div>'
+      +'<div class="set-header"><span></span><span class="set-header-label">'+(ex.cat==='bodyweight'?'加重(kg)':'重量(kg)')+'</span><span class="set-header-label">回数</span><span class="set-header-label">RIR</span><span></span></div>'
       +setsHTML
       +'<button class="btn-add-set" onclick="addSet('+ei+')">＋ セットを追加</button>'
       +'</div>';
@@ -1239,7 +1268,7 @@ function resetIntervalTimer() {
 
 // ── Add Exercise Modal ──
 function buildCatFilter() {
-  var cats = [{id:'all',label:'すべて'},{id:'strength',label:'筋トレ'},{id:'bodyweight',label:'自重'},{id:'cardio',label:'有酸素'},{id:'stretch',label:'ストレッチ'},{id:'mindfulness',label:'マインドフル'}];
+  var cats = [{id:'all',label:'すべて'},{id:'strength',label:'🏋️ フリー'},{id:'machine',label:'⚙️ マシン'},{id:'bodyweight',label:'🤸 自重'},{id:'cardio',label:'🏃 有酸素'},{id:'stretch',label:'🧘 ストレッチ'},{id:'mindfulness',label:'🌸 マインドフル'}];
   document.getElementById('catFilter').innerHTML = cats.map(function(c){
     return '<button class="cat-btn'+(c.id==='all'?' active':'')+'" onclick="selectCat(\''+c.id+'\',this)">'+c.label+'</button>';
   }).join('');
@@ -1268,16 +1297,39 @@ function renderExerciseModal(list) {
   list = list || EXERCISE_DB;
   var el = document.getElementById('exerciseListModal');
   if (!list.length) { el.innerHTML='<p style="font-size:.82rem;color:var(--muted);padding:1rem 0">見つかりませんでした</p>'; return; }
-  el.innerHTML = list.map(function(ex){
-    var ytURL='https://www.youtube.com/results?search_query='+encodeURIComponent((ex.keyword||ex.name)+' やり方');
+
+  function exRow(ex) {
+    var ytURL = 'https://www.youtube.com/results?search_query='+encodeURIComponent((ex.keyword||ex.name)+' やり方');
     return '<div class="exercise-list-item" onclick="addExerciseToWorkout('+JSON.stringify(ex).replace(/"/g,'&quot;')+')">'
       +'<div><p class="exercise-list-name">'+ex.name+'</p>'
-      +'<p class="exercise-list-meta">'+PART_LABELS[ex.part]+'</p></div>'
+      +'<p class="exercise-list-meta">'+CAT_LABELS[ex.cat]+'</p></div>'
       +'<div style="display:flex;align-items:center;gap:.5rem;">'
-      +'<span class="exercise-list-badge '+CAT_BADGES[ex.cat]+'">'+CAT_LABELS[ex.cat]+'</span>'
-      +'<a href="'+ytURL+'" target="_blank" onclick="event.stopPropagation()" class="btn-yt">▶</a>'
+      +'<a href="'+ytURL+'" target="_blank" onclick="event.stopPropagation()" class="btn-yt">▶ 動画</a>'
       +'</div></div>';
-  }).join('');
+  }
+
+  // カテゴリが絞られている場合は部位ごとにグループ表示
+  var isSingleCat = selectedCat !== 'all';
+  if (isSingleCat) {
+    var html = '';
+    PART_ORDER.forEach(function(part) {
+      var group = list.filter(function(ex){ return ex.part === part; });
+      if (!group.length) return;
+      html += '<p style="font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:.6rem 0 .2rem;border-top:1px solid var(--border);margin-top:.4rem;">'+PART_LABELS[part]+'</p>';
+      html += group.map(exRow).join('');
+    });
+    el.innerHTML = html;
+  } else {
+    el.innerHTML = list.map(function(ex){
+      var ytURL = 'https://www.youtube.com/results?search_query='+encodeURIComponent((ex.keyword||ex.name)+' やり方');
+      return '<div class="exercise-list-item" onclick="addExerciseToWorkout('+JSON.stringify(ex).replace(/"/g,'&quot;')+')">'
+        +'<div><p class="exercise-list-name">'+ex.name+'</p>'
+        +'<p class="exercise-list-meta">'+PART_LABELS[ex.part]+'・'+CAT_LABELS[ex.cat]+'</p></div>'
+        +'<div style="display:flex;align-items:center;gap:.5rem;">'
+        +'<a href="'+ytURL+'" target="_blank" onclick="event.stopPropagation()" class="btn-yt">▶</a>'
+        +'</div></div>';
+    }).join('');
+  }
 }
 
 function addCustomExercise() {
