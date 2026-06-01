@@ -176,6 +176,34 @@
     .btn-memo { background:rgba(179,136,255,.15); color:var(--accent); border:1px solid rgba(179,136,255,.2); border-radius:8px; padding:.35rem .7rem; font-size:.72rem; font-weight:500; font-family:var(--font); cursor:pointer; white-space:nowrap; }
     .preset-cat-label { font-size:.65rem; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin:0 0 .4rem; }
     .cat-section { margin-bottom:1rem; }
+    /* Encyc sub-tabs */
+    .encyc-tabs { display:flex; gap:0; margin-bottom:1rem; background:var(--surface); border-radius:12px; padding:3px; border:1px solid var(--border); }
+    .encyc-tab { flex:1; padding:.5rem .2rem; font-size:.72rem; color:var(--muted); background:none; border:none; border-radius:9px; cursor:pointer; font-family:var(--font); transition:all .2s; }
+    .encyc-tab.active { background:var(--surface2); color:var(--text); font-weight:500; }
+    /* Compat check */
+    .compat-section { margin-top:1.25rem; }
+    .compat-card { border-radius:14px; padding:.85rem 1rem; margin-bottom:.6rem; }
+    .compat-card.caution { background:rgba(255,124,110,.08); border:1px solid rgba(255,124,110,.25); }
+    .compat-card.overlap { background:rgba(245,200,66,.08); border:1px solid rgba(245,200,66,.2); }
+    .compat-card.synergy { background:rgba(94,207,160,.08); border:1px solid rgba(94,207,160,.2); }
+    .compat-title { font-size:.82rem; font-weight:500; margin-bottom:.3rem; }
+    .compat-detail { font-size:.75rem; color:var(--muted); line-height:1.55; }
+    /* Timing guide */
+    .timing-section { margin-bottom:1.25rem; }
+    .timing-header { display:flex; align-items:center; gap:.5rem; margin-bottom:.6rem; }
+    .timing-header-label { font-size:.88rem; font-weight:500; }
+    .timing-item { display:flex; gap:.75rem; padding:.55rem 0; border-bottom:1px solid var(--border); }
+    .timing-item:last-child { border-bottom:none; }
+    .timing-item-name { font-size:.82rem; font-weight:400; min-width:110px; flex-shrink:0; }
+    .timing-item-reason { font-size:.75rem; color:var(--muted); line-height:1.5; }
+    /* Compat guide (static) */
+    .compat-guide-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:.9rem 1rem; margin-bottom:.75rem; }
+    .compat-guide-type { font-size:.65rem; font-weight:500; letter-spacing:.08em; text-transform:uppercase; padding:.15rem .5rem; border-radius:20px; margin-bottom:.5rem; display:inline-block; }
+    .compat-guide-type.caution { background:rgba(255,124,110,.15); color:var(--accent2); }
+    .compat-guide-type.overlap { background:rgba(245,200,66,.12); color:var(--yellow); }
+    .compat-guide-type.synergy { background:rgba(94,207,160,.12); color:var(--green); }
+    .compat-guide-combo { font-size:.88rem; font-weight:500; margin-bottom:.3rem; }
+    .compat-guide-detail { font-size:.75rem; color:var(--muted); line-height:1.55; }
   </style>
 </head>
 <body>
@@ -234,6 +262,7 @@
   <div class="cat-filter" id="catFilter"></div>
   <p class="section-label">登録アイテム</p>
   <div id="itemList"></div>
+  <div id="compatCheck"></div>
 </div>
 
 <!-- スケジュール -->
@@ -250,8 +279,21 @@
 
 <!-- サプリ辞典 -->
 <div class="view" id="view-encyc">
-  <input type="text" class="search-input" id="encycSearch" placeholder="🔍 サプリ名で検索..." oninput="filterEncyc()">
-  <div id="encycList"></div>
+  <div class="encyc-tabs">
+    <button class="encyc-tab active" onclick="switchEncycTab('dict',this)">サプリ辞典</button>
+    <button class="encyc-tab" onclick="switchEncycTab('timing',this)">飲み方ガイド</button>
+    <button class="encyc-tab" onclick="switchEncycTab('compat',this)">相性ガイド</button>
+  </div>
+  <div id="encyc-dict">
+    <input type="text" class="search-input" id="encycSearch" placeholder="🔍 サプリ名で検索..." oninput="filterEncyc()">
+    <div id="encycList"></div>
+  </div>
+  <div id="encyc-timing" style="display:none;">
+    <div id="timingGuideList"></div>
+  </div>
+  <div id="encyc-compat" style="display:none;">
+    <div id="compatGuideList"></div>
+  </div>
 </div>
 
 <!-- 追加モーダル -->
@@ -502,6 +544,85 @@ var ENCYC_DB = [
   {name:'電解質（ナトリウム・カリウム）',use:'脱水防止・筋けいれん予防・パフォーマンス維持',timing:'運動中・後',note:'60分以上の運動や大量発汗時に必要。ナトリウム・カリウム・マグネシウムのバランスが重要。',tags:['水分補給','けいれん防止','持久力'],cat:'筋トレ'},
 ];
 
+var INTERACTION_RULES = [
+  // ⚠️ 時間をずらす
+  {a:['鉄'], b:['カルシウム'], type:'caution', combo:'鉄分 × カルシウム', detail:'カルシウムが鉄の吸収を大幅に阻害します。2時間以上ずらして摂取してください。'},
+  {a:['鉄'], b:['亜鉛'], type:'caution', combo:'鉄分 × 亜鉛', detail:'同じ輸送体を競合し互いの吸収を下げます。時間をずらして摂取してください。'},
+  {a:['鉄'], b:['マグネシウム'], type:'caution', combo:'鉄分 × マグネシウム', detail:'吸収が競合します。時間をずらすと効果的です。'},
+  {a:['鉄'], b:['ビタミンE'], type:'caution', combo:'鉄分 × ビタミンE', detail:'大量摂取時に相互阻害が起きます。時間をずらして摂取してください。'},
+  {a:['ZMA'], b:['カルシウム'], type:'caution', combo:'ZMA × カルシウム', detail:'カルシウムがZMAのZn・Mg吸収を阻害します。ZMAは就寝前空腹時、カルシウムは食事中が理想です。'},
+  {a:['カルシウム'], b:['亜鉛'], type:'caution', combo:'カルシウム × 亜鉛', detail:'カルシウムが亜鉛の吸収を競合します。時間をずらして摂取してください。'},
+  {a:['亜鉛'], b:['銅'], type:'caution', combo:'亜鉛 × 銅', detail:'亜鉛の過剰摂取は銅欠乏を引き起こします。バランスに注意してください。'},
+  {a:['カフェイン'], b:['クレアチン'], type:'caution', combo:'カフェイン × クレアチン', detail:'カフェインの利尿作用がクレアチンの効果を減じる可能性があります。時間をずらすか別々に摂取を。'},
+  {a:['プロバイオ'], b:['処方','抗生'], type:'caution', combo:'プロバイオティクス × 抗生物質', detail:'抗生物質が善玉菌を殺します。服用時間を2〜3時間ずらしてください。'},
+  // ⚠️ 重複注意
+  {a:['BCAA'], b:['EAA'], type:'overlap', combo:'BCAA × EAA', detail:'EAAにはBCAAが含まれています。同時摂取は重複でコスト増のみ。どちらか一方で十分です。'},
+  {a:['シトルリン'], b:['アルギニン'], type:'overlap', combo:'シトルリン × アルギニン', detail:'同じNO産生経路で重複します。シトルリンの方が効果的とされています。'},
+  {a:['ZMA'], b:['マグネシウム'], type:'overlap', combo:'ZMA × マグネシウム単体', detail:'ZMAにマグネシウムが含まれています。過剰摂取（下痢等）に注意してください。'},
+  {a:['ZMA'], b:['亜鉛'], type:'overlap', combo:'ZMA × 亜鉛単体', detail:'ZMAに亜鉛が含まれています。過剰摂取に注意してください。'},
+  {a:['クレアチン'], b:['クレアチンHCl'], type:'overlap', combo:'クレアチン × クレアチンHCl', detail:'同じ効果です。両方摂取する必要はありません。どちらか一方を選んでください。'},
+  {a:['マルチビタミン'], b:['ビタミンD','ビタミンC','ビタミンB','ビタミンE'], type:'overlap', combo:'マルチビタミン × 個別ビタミン', detail:'マルチビタミンに既に含まれている可能性があります。脂溶性ビタミン（D・E・K）の過剰摂取に注意してください。'},
+  // ✅ 相性が良い
+  {a:['鉄'], b:['ビタミンC'], type:'synergy', combo:'鉄分 + ビタミンC', detail:'ビタミンCが鉄の吸収を最大3倍に高めます。一緒に摂取するのが理想です。'},
+  {a:['ビタミンD'], b:['K2','K２','マグネシウム'], type:'synergy', combo:'ビタミンD + マグネシウム / K2', detail:'マグネシウムはビタミンDの活性化に必須。K2はカルシウムを骨へ誘導します。セット摂取推奨。'},
+  {a:['コラーゲン'], b:['ビタミンC'], type:'synergy', combo:'コラーゲン + ビタミンC', detail:'ビタミンCがコラーゲン合成を促進します。ビタミンCなしでは十分に合成されません。'},
+  {a:['クレアチン'], b:['プロテイン','ホエイ','カゼイン'], type:'synergy', combo:'クレアチン + プロテイン', detail:'筋タンパク合成のシナジー効果。筋肥大に最も効果的な組み合わせです。'},
+  {a:['βアラニン','ベータアラニン'], b:['クレアチン'], type:'synergy', combo:'βアラニン + クレアチン', detail:'持久力（βアラニン）と瞬発力（クレアチン）の補完。プレワークアウトの定番です。'},
+  {a:['シトルリン'], b:['βアラニン','ベータアラニン'], type:'synergy', combo:'シトルリン + βアラニン', detail:'血流改善と乳酸抑制のダブル効果。高強度トレーニング前に最強の組み合わせ。'},
+  {a:['マグネシウム'], b:['ビタミンB6','ビタミンB群'], type:'synergy', combo:'マグネシウム + ビタミンB6', detail:'B6がマグネシウムの吸収を助けます。ZMAに含まれる黄金比の組み合わせ。'},
+  {a:['オメガ3'], b:['ビタミンD'], type:'synergy', combo:'オメガ3 + ビタミンD', detail:'脂溶性同士で吸収がUP。食事と一緒に摂ると相乗効果があります。'},
+];
+
+var TIMING_GUIDE = [
+  { id:'morning-empty', icon:'🌅', label:'朝・空腹時', items:[
+    {name:'鉄分', reason:'空腹時が最も吸収率が高い。胃への刺激が心配な場合は少量の食事後に'},
+    {name:'プロバイオティクス', reason:'胃酸が少ない朝の空腹時に腸まで届きやすい'},
+    {name:'NMN', reason:'概日リズム（体内時計）に合わせて朝が最適'},
+    {name:'コラーゲン', reason:'空腹時の方がアミノ酸として吸収されやすい'},
+    {name:'ビタミンB群', reason:'午前中のエネルギー代謝に活用される。水溶性で尿排泄が早い'},
+  ]},
+  { id:'with-meal', icon:'🍽️', label:'食事と一緒（必須）', items:[
+    {name:'ビタミンD', reason:'脂溶性のため脂質がないとほぼ吸収されない'},
+    {name:'ビタミンE', reason:'同上・脂溶性。食事中の脂質と一緒に摂取'},
+    {name:'ビタミンK2', reason:'同上・脂溶性'},
+    {name:'オメガ3', reason:'脂肪と一緒で吸収UP。空腹摂取は胃もたれの原因にも'},
+    {name:'CoQ10', reason:'脂溶性。食事と一緒で吸収が3〜5倍に向上'},
+    {name:'ルテイン', reason:'脂溶性。必ず脂質と一緒に'},
+    {name:'亜鉛', reason:'空腹だと吐き気が出やすい。食後が安心'},
+    {name:'マルチビタミン', reason:'脂溶性成分の吸収のために。胃への刺激も軽減'},
+    {name:'カルシウム', reason:'胃酸が出ている食事中が吸収に最適'},
+  ]},
+  { id:'pre-workout', icon:'⚡', label:'運動30〜60分前', items:[
+    {name:'カフェイン', reason:'血中濃度がピークになるまで約45分。200〜400mg'},
+    {name:'シトルリン', reason:'NO産生・血流改善が最大化するまで約60分。6〜8g推奨'},
+    {name:'βアラニン', reason:'カルノシン合成を事前に高める。ピリピリ感は正常反応'},
+    {name:'アルギニン', reason:'シトルリンと同経路。30〜60分前に3〜6g'},
+    {name:'L-カルニチン', reason:'脂肪燃焼回路の準備。炭水化物と一緒だと吸収UP'},
+    {name:'BCAA / EAA', reason:'空腹トレーニング時に筋分解を防ぐ'},
+  ]},
+  { id:'post-workout', icon:'💪', label:'運動直後（30分以内）', items:[
+    {name:'ホエイプロテイン', reason:'吸収が速くアナボリックウィンドウを活用。30g前後'},
+    {name:'クレアチン', reason:'運動後も効果的。タイミングより継続が重要'},
+    {name:'グルタミン', reason:'トレーニングで消耗した分を即補充。5〜10g'},
+    {name:'HMB', reason:'筋分解抑制効果が最も高いタイミング'},
+    {name:'電解質', reason:'失った電解質を速やかに補給。水分と一緒に'},
+  ]},
+  { id:'bedtime', icon:'😴', label:'就寝30〜60分前', items:[
+    {name:'マグネシウム', reason:'副交感神経を優位にして入眠を助ける。300〜400mg'},
+    {name:'ZMA', reason:'空腹時・就寝前で最大吸収。カルシウムと離すこと'},
+    {name:'カゼインプロテイン', reason:'消化が遅く就寝中に筋肉へ持続供給。20〜40g'},
+    {name:'アシュワガンダ', reason:'コルチゾールを低下させ睡眠の質を向上。300〜600mg'},
+    {name:'グルタミン', reason:'就寝中の回復と成長ホルモン分泌を補助'},
+  ]},
+  { id:'caution', icon:'⚠️', label:'意外と知られていない注意点', items:[
+    {name:'鉄分 + お茶・コーヒー', reason:'タンニンが鉄の吸収を最大60%阻害。前後1時間は避ける'},
+    {name:'脂溶性ビタミン（空腹）', reason:'D・E・K・Aは脂質なしではほぼ吸収されない'},
+    {name:'プロバイオ + 熱湯', reason:'60℃以上で菌が死滅。白湯や冷水で摂取を'},
+    {name:'カルシウム + 鉄分（同時）', reason:'最重要の組み合わせNG。必ず2時間以上ずらす'},
+    {name:'ZMA + 食後すぐ', reason:'食事中のカルシウムでZMAの吸収が大幅低下'},
+  ]},
+];
+
 var items = JSON.parse(localStorage.getItem('medlyItems') || '[]');
 
 var todayStr = new Date().toDateString();
@@ -518,6 +639,8 @@ function init() {
   renderSchedule();
   renderPurchaseHistory();
   renderEncyc();
+  renderTimingGuide();
+  renderCompatGuide();
   updateSummary();
   updateProUI();
 }
@@ -645,6 +768,7 @@ function renderList() {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">💊</div><p>まだ登録がありません。<br>＋ボタンで追加してください。</p></div>';
     return;
   }
+  renderCompatCheck();
   el.innerHTML = filtered.map(function(item) {
     var days = daysRemaining(item);
     var p = pct(item);
@@ -753,6 +877,91 @@ function encycCard(e) {
     +'<p class="encyc-desc">'+e.note+'</p>'
     +'<div class="encyc-tags">'+e.tags.map(function(t){ return '<span class="encyc-tag">#'+t+'</span>'; }).join('')+'</div>'
     +'</div>';
+}
+
+// ── Encyc sub-tabs ──
+function switchEncycTab(name, btn) {
+  ['dict','timing','compat'].forEach(function(t){
+    document.getElementById('encyc-'+t).style.display = t===name ? 'block' : 'none';
+  });
+  document.querySelectorAll('.encyc-tab').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+}
+
+// ── Timing Guide ──
+function renderTimingGuide() {
+  var el = document.getElementById('timingGuideList');
+  if (!el) return;
+  el.innerHTML = TIMING_GUIDE.map(function(section){
+    return '<div class="timing-section">'
+      +'<div class="timing-header"><span style="font-size:1.2rem;">'+section.icon+'</span>'
+      +'<span class="timing-header-label">'+section.label+'</span></div>'
+      +'<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.25rem 1rem;">'
+      +section.items.map(function(item){
+        return '<div class="timing-item">'
+          +'<span class="timing-item-name">'+item.name+'</span>'
+          +'<span class="timing-item-reason">'+item.reason+'</span>'
+          +'</div>';
+      }).join('')
+      +'</div></div>';
+  }).join('');
+}
+
+// ── Compat Guide (static) ──
+function renderCompatGuide() {
+  var el = document.getElementById('compatGuideList');
+  if (!el) return;
+  var typeLabel = {caution:'⚠️ 時間をずらす', overlap:'🔄 重複注意', synergy:'✅ 相性が良い'};
+  el.innerHTML = INTERACTION_RULES.map(function(r){
+    return '<div class="compat-guide-card">'
+      +'<span class="compat-guide-type '+r.type+'">'+typeLabel[r.type]+'</span>'
+      +'<p class="compat-guide-combo">'+r.combo+'</p>'
+      +'<p class="compat-guide-detail">'+r.detail+'</p>'
+      +'</div>';
+  }).join('');
+}
+
+// ── Compat Check (登録アイテムのみ) ──
+function itemMatchesKeys(item, keys) {
+  var name = item.name.toLowerCase();
+  return keys.some(function(k){ return name.includes(k.toLowerCase()); });
+}
+
+function renderCompatCheck() {
+  var el = document.getElementById('compatCheck');
+  if (!el || !items.length) { if(el) el.innerHTML=''; return; }
+  var results = [];
+  INTERACTION_RULES.forEach(function(rule){
+    var aItems = items.filter(function(i){ return itemMatchesKeys(i, rule.a); });
+    var bItems = items.filter(function(i){ return itemMatchesKeys(i, rule.b); });
+    if (!aItems.length || !bItems.length) return;
+    // タイミング重複チェック
+    var hasTimingOverlap = aItems.some(function(a){
+      return bItems.some(function(b){
+        return (a.timing||[]).some(function(t){ return (b.timing||[]).indexOf(t) !== -1; });
+      });
+    });
+    if (hasTimingOverlap || rule.type === 'overlap') {
+      results.push(rule);
+    }
+  });
+  if (!results.length) { el.innerHTML=''; return; }
+  var cautions  = results.filter(function(r){ return r.type==='caution'; });
+  var overlaps  = results.filter(function(r){ return r.type==='overlap'; });
+  var synergies = results.filter(function(r){ return r.type==='synergy'; });
+  var html = '<div class="compat-section"><p class="section-label">相性チェック</p>';
+  function cards(list) {
+    return list.map(function(r){
+      return '<div class="compat-card '+r.type+'">'
+        +'<p class="compat-title">'
+        +(r.type==='caution'?'⚠️ ':r.type==='overlap'?'🔄 ':'✅ ')
+        +r.combo+'</p>'
+        +'<p class="compat-detail">'+r.detail+'</p>'
+        +'</div>';
+    }).join('');
+  }
+  html += cards(cautions) + cards(overlaps) + cards(synergies) + '</div>';
+  el.innerHTML = html;
 }
 
 function filterEncyc() {
