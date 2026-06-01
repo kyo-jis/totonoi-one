@@ -315,18 +315,61 @@
   </div>
   <div class="timer-adjust">
     <div>
-      <button class="timer-adj-btn" onclick="adjustTimer(-15)">−</button>
-      <p class="timer-adj-label" style="margin-top:.3rem;">15秒</p>
+      <button class="timer-adj-btn" onclick="adjustTimer(-5)">−</button>
+      <p class="timer-adj-label" style="margin-top:.3rem;">5秒</p>
     </div>
     <div class="timer-adj-label" id="timerSetLabel">設定: 90秒</div>
     <div>
-      <button class="timer-adj-btn" onclick="adjustTimer(15)">＋</button>
-      <p class="timer-adj-label" style="margin-top:.3rem;">15秒</p>
+      <button class="timer-adj-btn" onclick="adjustTimer(5)">＋</button>
+      <p class="timer-adj-label" style="margin-top:.3rem;">5秒</p>
     </div>
   </div>
   <div class="timer-controls">
     <button class="btn-timer-start" id="btnTimerMain" onclick="toggleTimer()">▶ スタート</button>
     <button class="btn-timer-stop" onclick="resetTimer()">リセット</button>
+  </div>
+
+  <div class="divider" style="margin-top:1.5rem;">ストレッチ / インターバル</div>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.25rem 1rem;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.6rem;margin-bottom:1rem;">
+      <div>
+        <p class="timer-adj-label" style="margin-bottom:.35rem;text-align:center;">動作（秒）</p>
+        <div style="display:flex;align-items:center;gap:.35rem;">
+          <button class="timer-adj-btn" style="width:32px;height:32px;font-size:.9rem;" onclick="adjInterval('work',-5)">−</button>
+          <span id="ivWorkSec" style="flex:1;text-align:center;font-size:1.1rem;font-weight:600;">30</span>
+          <button class="timer-adj-btn" style="width:32px;height:32px;font-size:.9rem;" onclick="adjInterval('work',5)">＋</button>
+        </div>
+      </div>
+      <div>
+        <p class="timer-adj-label" style="margin-bottom:.35rem;text-align:center;">休憩（秒）</p>
+        <div style="display:flex;align-items:center;gap:.35rem;">
+          <button class="timer-adj-btn" style="width:32px;height:32px;font-size:.9rem;" onclick="adjInterval('rest',-5)">−</button>
+          <span id="ivRestSec" style="flex:1;text-align:center;font-size:1.1rem;font-weight:600;">5</span>
+          <button class="timer-adj-btn" style="width:32px;height:32px;font-size:.9rem;" onclick="adjInterval('rest',5)">＋</button>
+        </div>
+      </div>
+      <div>
+        <p class="timer-adj-label" style="margin-bottom:.35rem;text-align:center;">セット数</p>
+        <div style="display:flex;align-items:center;gap:.35rem;">
+          <button class="timer-adj-btn" style="width:32px;height:32px;font-size:.9rem;" onclick="adjInterval('rounds',-1)">−</button>
+          <span id="ivRounds" style="flex:1;text-align:center;font-size:1.1rem;font-weight:600;">5</span>
+          <button class="timer-adj-btn" style="width:32px;height:32px;font-size:.9rem;" onclick="adjInterval('rounds',1)">＋</button>
+        </div>
+      </div>
+    </div>
+    <div id="ivDisplay" style="text-align:center;margin-bottom:.9rem;display:none;">
+      <p id="ivPhaseLabel" style="font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem;"></p>
+      <p id="ivTimeDisplay" style="font-size:3.5rem;font-weight:600;letter-spacing:-.04em;line-height:1;"></p>
+      <p id="ivRoundDisplay" style="font-size:.78rem;color:var(--muted);margin-top:.4rem;"></p>
+      <div style="width:100%;height:5px;background:var(--surface2);border-radius:3px;margin-top:.75rem;overflow:hidden;">
+        <div id="ivProgressBar" style="height:100%;border-radius:3px;transition:width .9s linear;width:100%;"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:.5rem;">
+      <button id="btnIvStart" onclick="toggleIntervalTimer()" style="flex:1;padding:.8rem;background:var(--accent);color:#1a1a24;border:none;border-radius:12px;font-size:.88rem;font-weight:600;font-family:var(--font);cursor:pointer;">▶ スタート</button>
+      <button onclick="resetIntervalTimer()" style="padding:.8rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;font-size:.85rem;color:var(--text);font-family:var(--font);cursor:pointer;">リセット</button>
+    </div>
   </div>
 </div>
 
@@ -377,9 +420,9 @@
     <button class="rest-preset" onclick="setRestTime(180)">3分</button>
   </div>
   <div class="rest-adjust">
-    <button class="rest-adj-btn" onclick="adjustRest(-15)">−</button>
-    <span class="rest-adj-label">15秒調整</span>
-    <button class="rest-adj-btn" onclick="adjustRest(15)">＋</button>
+    <button class="rest-adj-btn" onclick="adjustRest(-5)">−</button>
+    <span class="rest-adj-label">5秒調整</span>
+    <button class="rest-adj-btn" onclick="adjustRest(5)">＋</button>
   </div>
   <button class="rest-skip" onclick="skipRest()">スキップ →</button>
 </div>
@@ -943,6 +986,91 @@ function resetTimer() {
   updateTimerDisplay();
   document.getElementById('timerProgressBar').style.width='100%';
   document.getElementById('btnTimerMain').textContent='▶ スタート';
+}
+
+// ── Interval Timer ──
+var ivState = { work:30, rest:5, rounds:5, currentRound:0, phase:'work', timeLeft:0, running:false };
+var ivInterval = null;
+
+function adjInterval(key, delta) {
+  if (key === 'rounds') ivState[key] = Math.max(1, ivState[key] + delta);
+  else ivState[key] = Math.max(5, ivState[key] + delta);
+  document.getElementById('ivWorkSec').textContent  = ivState.work;
+  document.getElementById('ivRestSec').textContent  = ivState.rest;
+  document.getElementById('ivRounds').textContent   = ivState.rounds;
+  if (!ivState.running) resetIntervalTimer();
+}
+
+function toggleIntervalTimer() {
+  if (ivState.running) {
+    clearInterval(ivInterval); ivState.running = false;
+    document.getElementById('btnIvStart').textContent = '▶ スタート';
+  } else {
+    if (ivState.currentRound === 0) startIntervalTimer();
+    else resumeIntervalTimer();
+  }
+}
+
+function startIntervalTimer() {
+  ivState.currentRound = 1;
+  ivState.phase = 'work';
+  ivState.timeLeft = ivState.work;
+  document.getElementById('ivDisplay').style.display = 'block';
+  resumeIntervalTimer();
+}
+
+function resumeIntervalTimer() {
+  ivState.running = true;
+  document.getElementById('btnIvStart').textContent = '⏸ 一時停止';
+  updateIvDisplay();
+  ivInterval = setInterval(function() {
+    ivState.timeLeft--;
+    updateIvDisplay();
+    if (ivState.timeLeft <= 0) {
+      if (navigator.vibrate) navigator.vibrate(200);
+      if (ivState.phase === 'work') {
+        if (ivState.currentRound >= ivState.rounds) {
+          // 完了
+          clearInterval(ivInterval); ivState.running = false;
+          document.getElementById('btnIvStart').textContent = '▶ スタート';
+          document.getElementById('ivPhaseLabel').textContent = '完了！';
+          document.getElementById('ivTimeDisplay').textContent = '🎉';
+          document.getElementById('ivRoundDisplay').textContent = ivState.rounds + 'セット完了';
+          if (navigator.vibrate) navigator.vibrate([300,100,300,100,300]);
+          showToast('🎉 インターバル完了！');
+          return;
+        }
+        ivState.phase = 'rest';
+        ivState.timeLeft = ivState.rest;
+      } else {
+        ivState.currentRound++;
+        ivState.phase = 'work';
+        ivState.timeLeft = ivState.work;
+      }
+      updateIvDisplay();
+    }
+  }, 1000);
+}
+
+function updateIvDisplay() {
+  var isWork = ivState.phase === 'work';
+  var total  = isWork ? ivState.work : ivState.rest;
+  var pct    = Math.round((ivState.timeLeft / total) * 100);
+  document.getElementById('ivPhaseLabel').textContent = isWork ? '動作中' : '休憩';
+  document.getElementById('ivTimeDisplay').textContent = ivState.timeLeft + '秒';
+  document.getElementById('ivTimeDisplay').style.color = isWork ? 'var(--accent)' : 'var(--yellow)';
+  document.getElementById('ivRoundDisplay').textContent = ivState.currentRound + ' / ' + ivState.rounds + ' セット';
+  var bar = document.getElementById('ivProgressBar');
+  bar.style.width = pct + '%';
+  bar.style.background = isWork ? 'var(--accent)' : 'var(--yellow)';
+}
+
+function resetIntervalTimer() {
+  clearInterval(ivInterval);
+  ivState.running = false; ivState.currentRound = 0;
+  ivState.phase = 'work'; ivState.timeLeft = ivState.work;
+  document.getElementById('btnIvStart').textContent = '▶ スタート';
+  document.getElementById('ivDisplay').style.display = 'none';
 }
 
 // ── Add Exercise Modal ──
