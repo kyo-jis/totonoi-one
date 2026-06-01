@@ -14,6 +14,7 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon-fitly.png">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -2698,36 +2699,131 @@ function saveHistoryEdit() {
   showToast('✅ 記録を更新しました');
 }
 
-// ── Analysis ──
+// ── Analysis (Chart.js) ──
+var _chartInstances = {};
+
+function destroyChart(id) {
+  if (_chartInstances[id]) { _chartInstances[id].destroy(); delete _chartInstances[id]; }
+}
+
 function renderAnalysis() {
-  var el=document.getElementById('analysisContent');
+  var el = document.getElementById('analysisContent');
   if (!isPro) {
-    el.innerHTML='<div class="pro-gate"><div class="pro-gate-icon">📊</div><p class="pro-gate-title">分析機能はProプラン限定</p><p class="pro-gate-text">1RM計算・重量推移グラフ・連続日数・部位別ボリュームなどの詳細分析が使えます。</p><button class="btn-upgrade" onclick="startCheckout()">Proにアップグレード</button></div>';
+    el.innerHTML = '<div class="pro-gate"><div class="pro-gate-icon">📊</div><p class="pro-gate-title">分析機能はProプラン限定</p><p class="pro-gate-text">部位別ボリューム・推移グラフ・PRなどの詳細分析が使えます。</p><button class="btn-upgrade" onclick="startCheckout()">Proにアップグレード</button></div>';
     return;
   }
-  // 連続日数
-  var streak=calcStreak();
-  // 週間
-  var weekDays=calcWeekDays();
-  // 部位別ボリューム
-  var partVolume=calcPartVolume();
 
-  el.innerHTML='<div class="analysis-card">'
-    +'<p class="analysis-title">🔥 連続トレーニング日数</p>'
-    +'<div class="streak-display"><p class="streak-num">'+streak+'</p><p class="streak-label">日連続</p></div>'
-    +'<div class="week-grid">'+['日','月','火','水','木','金','土'].map(function(d,i){
-      var cls='week-day'+(weekDays[i]?' done':'')+(i===new Date().getDay()?' today':'');
-      return '<div class="'+cls+'">'+d+'</div>';
-    }).join('')+'</div></div>'
+  var streak = calcStreak();
+  var weekDays = calcWeekDays();
+  var partVolume = calcPartVolume();
+  var weekVol = getWeekVolume();
+  var weekWo = getWeekWorkouts();
 
-    +'<div class="analysis-card"><p class="analysis-title">📈 今週の統計</p>'
-    +'<div class="stats-grid">'
-    +'<div class="stat-card"><p class="stat-label">ワークアウト数</p><p class="stat-value">'+getWeekWorkouts()+'回</p></div>'
-    +'<div class="stat-card"><p class="stat-label">総ボリューム</p><p class="stat-value">'+getWeekVolume()+'kg</p></div>'
+  // 過去8週のボリューム推移データ
+  var weekLabels = [], weekVolData = [];
+  for (var w = 7; w >= 0; w--) {
+    var ws = new Date(); ws.setDate(ws.getDate() - ws.getDay() - w * 7); ws.setHours(0,0,0,0);
+    var we = new Date(ws); we.setDate(ws.getDate() + 7);
+    var vol = workoutHistory.filter(function(h){ var d=new Date(h.date); return d>=ws&&d<we; })
+      .reduce(function(s,h){ return s+(h.totalVolume||0); }, 0);
+    weekLabels.push((ws.getMonth()+1)+'/'+ws.getDate()+'週');
+    weekVolData.push(Math.round(vol/1000*10)/10); // トン単位
+  }
+
+  // 部位別チャートデータ
+  var partKeys = Object.keys(partVolume);
+  var partColorMap = {
+    '💪 胸':'#ff7c6e','🦅 背中':'#6c8eff','🏋️ 肩':'#b388ff',
+    '💪 腕':'#f5c842','🦵 脚':'#5ecfa0','🧘 体幹':'#8888a0'
+  };
+  var doughnutColors = partKeys.map(function(k){ return partColorMap[k] || '#aaa'; });
+
+  el.innerHTML =
+    '<div class="analysis-card">'
+    +'<p class="analysis-title">🔥 連続日数 &amp; 今週</p>'
+    +'<div style="display:flex;align-items:center;gap:1rem;margin-bottom:.75rem;">'
+    +'<div style="position:relative;width:72px;height:72px;flex-shrink:0;">'
+    +'<svg viewBox="0 0 36 36" style="width:72px;height:72px;transform:rotate(-90deg);">'
+    +'<circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--surface2)" stroke-width="3"/>'
+    +'<circle cx="18" cy="18" r="15.9" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"'
+    +' stroke-dasharray="'+Math.min(streak*10,100)+' 100" style="transition:stroke-dasharray .8s ease;"/>'
+    +'</svg>'
+    +'<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">'
+    +'<span id="streakNum" style="font-size:1.3rem;font-weight:700;color:var(--accent);line-height:1;">0</span>'
+    +'<span style="font-size:.55rem;color:var(--muted);">日連続</span>'
     +'</div></div>'
+    +'<div style="flex:1;">'
+    +'<div class="week-grid">'+['日','月','火','水','木','金','土'].map(function(d,i){
+        var cls='week-day'+(weekDays[i]?' done':'')+(i===new Date().getDay()?' today':'');
+        return '<div class="'+cls+'">'+d+'</div>';
+      }).join('')+'</div>'
+    +'<div style="display:flex;gap:.75rem;margin-top:.75rem;">'
+    +'<div><p style="font-size:1.2rem;font-weight:700;" id="anaWeekWo">0</p><p style="font-size:.65rem;color:var(--muted);">今週の回数</p></div>'
+    +'<div><p style="font-size:1.2rem;font-weight:700;" id="anaWeekVol">0</p><p style="font-size:.65rem;color:var(--muted);">今週 kg</p></div>'
+    +'</div></div></div></div>'
 
-    +'<div class="analysis-card"><p class="analysis-title">💪 部位別ボリューム（今週）</p>'
-    +renderPartChart(partVolume)+'</div>';
+    +(partKeys.length ? '<div class="analysis-card"><p class="analysis-title">💪 部位別ボリューム（今週）</p>'
+    +'<div style="max-width:220px;margin:0 auto;"><canvas id="chartPart"></canvas></div></div>' : '')
+
+    +'<div class="analysis-card"><p class="analysis-title">📈 週間ボリューム推移（t）</p>'
+    +'<canvas id="chartWeek"></canvas></div>'
+
+    +(Object.keys(personalRecords).length ? '<div class="analysis-card"><p class="analysis-title">🏆 自己ベスト (推定1RM)</p>'
+    +Object.values(personalRecords).sort(function(a,b){return b.est1RM-a.est1RM;}).slice(0,5).map(function(p){
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem 0;border-bottom:1px solid var(--border);">'
+        +'<span style="font-size:.88rem;">'+p.name+'</span>'
+        +'<span style="font-size:.88rem;font-weight:700;color:var(--yellow);">'+p.est1RM+' kg</span>'
+        +'</div>';
+    }).join('')+'</div>' : '');
+
+  // カウントアップ
+  countUp(document.getElementById('streakNum'), streak, 800);
+  countUp(document.getElementById('anaWeekWo'), weekWo, 600);
+  countUp(document.getElementById('anaWeekVol'), parseInt(weekVol.replace(/,/g,'')||0), 700, ' kg');
+
+  // Chart.js: 部位別ドーナツ
+  if (partKeys.length && document.getElementById('chartPart')) {
+    destroyChart('part');
+    _chartInstances['part'] = new Chart(document.getElementById('chartPart'), {
+      type: 'doughnut',
+      data: {
+        labels: partKeys,
+        datasets: [{ data: partKeys.map(function(k){ return partVolume[k]; }), backgroundColor: doughnutColors, borderWidth: 0, hoverOffset: 8 }]
+      },
+      options: {
+        plugins: { legend: { labels: { color: '#9494b8', font: { family: "'Outfit', sans-serif", size: 11 }, boxWidth: 12 } } },
+        cutout: '68%', animation: { animateRotate: true, duration: 900 }
+      }
+    });
+  }
+
+  // Chart.js: 週間ボリューム折れ線
+  if (document.getElementById('chartWeek')) {
+    destroyChart('week');
+    _chartInstances['week'] = new Chart(document.getElementById('chartWeek'), {
+      type: 'bar',
+      data: {
+        labels: weekLabels,
+        datasets: [{
+          label: 'ボリューム (t)',
+          data: weekVolData,
+          backgroundColor: 'rgba(94,207,160,.25)',
+          borderColor: '#5ecfa0',
+          borderWidth: 2,
+          borderRadius: 6,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: '#9494b8', font: { size: 10 } }, grid: { color: 'rgba(46,46,80,.5)' } },
+          y: { ticks: { color: '#9494b8', font: { size: 10 } }, grid: { color: 'rgba(46,46,80,.5)' }, beginAtZero: true }
+        },
+        animation: { duration: 900, easing: 'easeOutQuart' }
+      }
+    });
+  }
 }
 
 function calcStreak() {
@@ -2808,6 +2904,109 @@ function updateProUI() {
 }
 
 init();
+
+// ── 数字カウントアップ ──
+function countUp(el, target, duration, suffix) {
+  if (!el || isNaN(target) || target <= 0) { if (el) el.textContent = (target||0) + (suffix||''); return; }
+  suffix = suffix || '';
+  var start = performance.now();
+  function step(now) {
+    var p = Math.min((now - start) / duration, 1);
+    var ease = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(ease * target) + suffix;
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ── スワイプでタブ切替 ──
+(function() {
+  var tabNames = ['record','menu','timer','history','body','analysis'];
+  var currentIdx = 0;
+  var sx = 0, sy = 0;
+
+  document.addEventListener('touchstart', function(e) {
+    sx = e.touches[0].clientX;
+    sy = e.touches[0].clientY;
+  }, { passive: true });
+
+  document.addEventListener('touchend', function(e) {
+    // モーダルが開いている場合は無効
+    if (document.querySelector('.modal-overlay.show')) return;
+    // ワークアウト中の場合は無効（誤操作防止）
+    if (currentWorkout && currentWorkout.running) return;
+
+    var dx = e.changedTouches[0].clientX - sx;
+    var dy = e.changedTouches[0].clientY - sy;
+
+    // 水平スワイプのみ（縦方向の2倍以上）
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+
+    var newIdx = currentIdx + (dx < 0 ? 1 : -1);
+    newIdx = Math.max(0, Math.min(tabNames.length - 1, newIdx));
+    if (newIdx === currentIdx) return;
+
+    currentIdx = newIdx;
+    var btn = document.querySelectorAll('.tab')[currentIdx];
+    if (btn) switchTab(tabNames[currentIdx], btn);
+    // 軽い振動フィードバック
+    if (navigator.vibrate) navigator.vibrate(15);
+  }, { passive: true });
+
+  // タブクリック時にcurrentIdxを同期
+  var origSwitch = switchTab;
+  switchTab = function(name, btn) {
+    var idx = tabNames.indexOf(name);
+    if (idx >= 0) currentIdx = idx;
+    origSwitch(name, btn);
+  };
+})();
+
+// ── スクロールフェードイン（Intersection Observer）──
+(function() {
+  if (!window.IntersectionObserver) return;
+  var style = document.createElement('style');
+  style.textContent = '.fade-in-item { opacity:0; transform:translateY(16px); transition:opacity .4s ease, transform .4s ease; } .fade-in-item.visible { opacity:1; transform:translateY(0); }';
+  document.head.appendChild(style);
+
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
+    });
+  }, { threshold: 0.08 });
+
+  // カードが追加されるたびに監視（MutationObserver）
+  var mo = new MutationObserver(function(mutations) {
+    mutations.forEach(function(m) {
+      m.addedNodes.forEach(function(node) {
+        if (node.nodeType !== 1) return;
+        var cards = node.classList && (node.classList.contains('exercise-card') || node.classList.contains('history-card') || node.classList.contains('analysis-card'))
+          ? [node]
+          : Array.from(node.querySelectorAll('.exercise-card, .history-card, .analysis-card, .menu-card'));
+        cards.forEach(function(c) {
+          c.classList.add('fade-in-item');
+          observer.observe(c);
+        });
+      });
+    });
+  });
+  mo.observe(document.body, { childList: true, subtree: true });
+})();
+
+// ── 長押し振動フィードバック ──
+(function() {
+  if (!navigator.vibrate) return;
+  var pressTimer = null;
+  document.addEventListener('touchstart', function(e) {
+    var el = e.target.closest('.exercise-card, .history-card, .menu-card');
+    if (!el) return;
+    pressTimer = setTimeout(function() {
+      navigator.vibrate([30, 20, 30]);
+    }, 500);
+  }, { passive: true });
+  document.addEventListener('touchend', function() { clearTimeout(pressTimer); }, { passive: true });
+  document.addEventListener('touchmove', function() { clearTimeout(pressTimer); }, { passive: true });
+})();
 
 // ── Supabase Auth & Sync ──
 var _sb = window.supabase.createClient(
