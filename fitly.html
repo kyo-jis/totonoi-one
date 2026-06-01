@@ -251,27 +251,28 @@
     .wd-stat-val { font-size:1.5rem; font-weight:600; letter-spacing:-.02em; }
     .wd-stat-label { font-size:.62rem; color:var(--muted); margin-top:.2rem; text-transform:uppercase; letter-spacing:.06em; }
     /* Monthly Calendar */
-    .wd-cal { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem; margin-bottom:1rem; }
+    .wd-cal { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem; margin-bottom:1rem; box-shadow:var(--shadow-sm); }
     .cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:.75rem; }
-    .cal-nav-btn { background:none; border:1px solid var(--border); border-radius:10px; width:34px; height:34px; color:var(--text); font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
-    .cal-month-label { font-size:.9rem; font-weight:500; }
-    .cal-weekdays { display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:.35rem; }
-    .cal-weekday { text-align:center; font-size:.62rem; color:var(--muted); padding:.2rem 0; }
+    .cal-nav-btn { background:var(--surface2); border:1px solid var(--border); border-radius:10px; width:36px; height:36px; color:var(--text); font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+    .cal-nav-btn:active { transform:scale(.88); background:var(--surface3); }
+    .cal-month-label { font-size:.95rem; font-weight:600; }
+    .cal-weekdays { display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:.4rem; }
+    .cal-weekday { text-align:center; font-size:.65rem; color:var(--muted); padding:.25rem 0; font-weight:500; }
     .cal-weekday.sun { color:var(--accent2); }
     .cal-weekday.sat { color:var(--blue); }
-    .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
-    .cal-day { aspect-ratio:1; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:.78rem; color:var(--muted); background:transparent; border:none; font-family:var(--font); cursor:default; position:relative; }
-    .cal-day.has-workout { background:rgba(94,207,160,.25); color:var(--text); cursor:pointer; font-weight:600; }
-    .cal-day.has-workout:active { background:rgba(94,207,160,.45); }
+    .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+    .cal-day { height:44px; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:.82rem; color:var(--muted); background:transparent; border:none; font-family:var(--font); cursor:default; position:relative; font-weight:400; }
+    .cal-day.has-workout { background:rgba(94,207,160,.22); color:var(--text); cursor:pointer; font-weight:700; border:1px solid rgba(94,207,160,.4); }
+    .cal-day.has-workout:active { background:rgba(94,207,160,.4); transform:scale(.93); }
     .cal-day.today { color:var(--accent); font-weight:700; }
-    .cal-day.today::after { content:''; position:absolute; bottom:3px; left:50%; transform:translateX(-50%); width:4px; height:4px; border-radius:50%; background:var(--accent); }
-    .cal-day.has-workout.today { background:rgba(94,207,160,.35); }
-    .cal-day.other-month { color:var(--surface3); }
-    .cal-day-dots { display:flex; gap:2px; justify-content:center; }
-    .cal-day-dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+    .cal-day.today:not(.has-workout)::before { content:''; position:absolute; top:4px; left:50%; transform:translateX(-50%); width:4px; height:4px; border-radius:50%; background:var(--accent); }
+    .cal-day.has-workout.today { background:rgba(94,207,160,.35); border-color:var(--accent); }
+    .cal-day.other-month { color:var(--surface3); font-size:.72rem; }
+    .cal-day-dots { display:flex; gap:3px; justify-content:center; }
+    .cal-day-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
     .cal-summary { font-size:.72rem; color:var(--muted); text-align:center; margin-top:.65rem; }
-    .wd-cal-legend { display:flex; flex-wrap:wrap; gap:.35rem .65rem; margin-top:.5rem; }
-    .wd-cal-legend-item { display:flex; align-items:center; gap:.3rem; font-size:.63rem; color:var(--muted); }
+    .wd-cal-legend { display:flex; flex-wrap:wrap; gap:.35rem .65rem; margin-top:.65rem; padding-top:.55rem; border-top:1px solid var(--border); }
+    .wd-cal-legend-item { display:flex; align-items:center; gap:.3rem; font-size:.65rem; color:var(--muted); }
     .wd-vol { font-size:.7rem; color:var(--muted); text-align:center; margin-top:.75rem; }
     /* Last workout card */
     .wd-last { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:1rem; display:flex; align-items:center; gap:.85rem; }
@@ -383,9 +384,9 @@
       <div class="wd-cal-legend" id="calLegend"></div>
     </div>
 
-    <!-- 今週の部位バランス -->
+    <!-- 直近14日の部位バランス -->
     <div class="wd-balance" id="wdBalanceCard" style="display:none;">
-      <p class="wd-balance-title">💪 今週のトレーニング部位</p>
+      <p class="wd-balance-title">💪 直近14日のトレーニング部位</p>
       <div id="wdBalanceRows"></div>
     </div>
 
@@ -1331,13 +1332,17 @@ function renderWorkoutDashboard() {
     + String(weekStart.getMonth()+1).padStart(2,'0') + '-'
     + String(weekStart.getDate()).padStart(2,'0');
 
-  // ── 今週の部位バランス ──
+  // ── 直近14日の部位バランス ──
+  var days14Ago = new Date(now); days14Ago.setDate(now.getDate() - 13); days14Ago.setHours(0,0,0,0);
+  var days14Str = days14Ago.getFullYear() + '-'
+    + String(days14Ago.getMonth()+1).padStart(2,'0') + '-'
+    + String(days14Ago.getDate()).padStart(2,'0');
   var balanceCard = document.getElementById('wdBalanceCard');
   var partCount = {};
   var partOrder = ['chest','back','shoulder','arm','leg','core'];
   var partLabels2 = { chest:'胸', back:'背中', shoulder:'肩', arm:'腕', leg:'脚', core:'体幹' };
   var partColors = { chest:'var(--accent2)', back:'var(--blue)', shoulder:'var(--purple)', arm:'var(--yellow)', leg:'var(--accent)', core:'var(--muted)' };
-  history.filter(function(w){ return w.date && w.date >= weekStartStr; }).forEach(function(w) {
+  history.filter(function(w){ return w.date && w.date >= days14Str; }).forEach(function(w) {
     (w.exercises || []).forEach(function(ex) {
       if (ex.part && partOrder.indexOf(ex.part) >= 0)
         partCount[ex.part] = (partCount[ex.part] || 0) + 1;
