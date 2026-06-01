@@ -363,7 +363,7 @@
         <div class="cal-weekday sat">土</div>
       </div>
       <div class="cal-grid" id="calGrid"></div>
-      <p class="cal-summary" id="calSummary"></p>
+      <p class="cal-summary" id="calSummary" style="display:none;"></p>
       <div class="wd-cal-legend" id="calLegend"></div>
     </div>
 
@@ -565,11 +565,11 @@
     <button class="rest-preset" onclick="setRestTime(180)">3分</button>
   </div>
   <div class="rest-adjust">
-    <button class="rest-adj-btn" onclick="adjustRest(-5)">−</button>
-    <span class="rest-adj-label">5秒調整</span>
-    <button class="rest-adj-btn" onclick="adjustRest(5)">＋</button>
+    <button class="rest-adj-btn" onclick="adjustRest(-5)">-5</button>
+    <span class="rest-adj-label">秒</span>
+    <button class="rest-adj-btn" onclick="adjustRest(5)">+5</button>
   </div>
-  <button class="rest-skip" onclick="skipRest()">スキップ →</button>
+  <button class="rest-skip" onclick="skipRest()">スキップ</button>
 </div>
 
 <!-- 履歴編集モーダル -->
@@ -1122,23 +1122,23 @@ function init() {
   buildCatFilter();
   buildSoundSelector();
   // 保存済み休憩時間をタイマーUIに反映
-  var savedLabel = defaultRestTime >= 60
-    ? Math.floor(defaultRestTime/60)+'分'+(defaultRestTime%60?defaultRestTime%60+'秒':'')
-    : defaultRestTime+'秒';
-  document.getElementById('timerSetLabel').textContent = '休憩: ' + savedLabel;
-  timerSeconds = defaultRestTime; timerTotal = defaultRestTime;
+  timerSeconds = defaultRestTime;
+  timerTotal   = defaultRestTime;
+  restTotalTime = defaultRestTime;
   updateTimerDisplay();
-  // 対応するプリセットボタンをアクティブに
+  var savedLabel = defaultRestTime >= 60
+    ? Math.floor(defaultRestTime/60) + '分' + (defaultRestTime % 60 ? defaultRestTime % 60 + '秒' : '')
+    : defaultRestTime + '秒';
+  document.getElementById('timerSetLabel').textContent = '休憩: ' + savedLabel;
+  // プリセットボタンのアクティブ化（テキストで直接マッチ）
+  var presetMap = {30:'30s', 60:'1m', 90:'90s', 120:'2m', 180:'3m'};
+  var activeText = presetMap[defaultRestTime] || '';
   document.querySelectorAll('.timer-preset').forEach(function(b){
-    b.classList.remove('active');
-    if (parseInt(b.textContent) === defaultRestTime ||
-        (b.textContent==='1m'&&defaultRestTime===60) ||
-        (b.textContent==='90s'&&defaultRestTime===90) ||
-        (b.textContent==='2m'&&defaultRestTime===120) ||
-        (b.textContent==='3m'&&defaultRestTime===180)) {
-      b.classList.add('active');
-    }
+    b.classList.toggle('active', b.textContent.trim() === activeText);
   });
+  // 休憩オーバーレイの初期表示も更新
+  restTimeLeft = defaultRestTime;
+  updateRestDisplay();
   renderWorkoutDashboard();
   renderExerciseModal();
   renderMenuList();
