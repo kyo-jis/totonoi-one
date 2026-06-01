@@ -204,6 +204,21 @@
       <p class="summary-stat-label">もうすぐ</p>
     </div>
   </div>
+  <div style="height:1px;background:rgba(255,255,255,.08);margin:.9rem 0;"></div>
+  <div class="summary-stats">
+    <div class="summary-stat">
+      <p class="summary-stat-value" style="font-size:1.3rem;color:var(--accent)" id="monthlyCost">¥—</p>
+      <p class="summary-stat-label">月額推計</p>
+    </div>
+    <div class="summary-stat">
+      <p class="summary-stat-value" style="font-size:1.3rem;color:var(--green)" id="annualCost">¥—</p>
+      <p class="summary-stat-label">年間予測</p>
+    </div>
+    <div class="summary-stat">
+      <p class="summary-stat-value" style="font-size:1.3rem" id="dailyCost">¥—</p>
+      <p class="summary-stat-label">1日あたり</p>
+    </div>
+  </div>
   <div id="urgentBanner"></div>
 </div>
 
@@ -514,10 +529,31 @@ function switchTab(name, btn) {
   btn.classList.add('active');
 }
 
+// ── Cost calculation ──
+function avgPricePerUnit(item) {
+  var hist = purchaseHistory.filter(function(h){ return h.itemId===item.id && h.price>0 && h.qty>0; });
+  if (!hist.length) return null;
+  var totalPrice = hist.reduce(function(s,h){ return s+h.price; },0);
+  var totalQty   = hist.reduce(function(s,h){ return s+h.qty; },0);
+  return totalPrice / totalQty;
+}
+
+function costPerDay(item) {
+  var ppu = avgPricePerUnit(item);
+  if (ppu===null || !item.daily) return null;
+  return ppu * item.daily;
+}
+
+function restockDate(item) {
+  var days = daysRemaining(item);
+  if (days===null) return null;
+  var d = new Date(); d.setDate(d.getDate()+days);
+  return d;
+}
+
 // ── Summary ──
 function updateSummary() {
-  var urgent=0, warning=0;
-  var urgentNames=[];
+  var urgent=0, warning=0, urgentNames=[];
   items.forEach(function(item) {
     var days = daysRemaining(item);
     if (days !== null && days <= 3) { urgent++; urgentNames.push(item.name); }
@@ -526,12 +562,22 @@ function updateSummary() {
   document.getElementById('totalItems').textContent = items.length;
   document.getElementById('urgentItems').textContent = urgent;
   document.getElementById('warningItems').textContent = warning;
+
+  // コスト集計
+  var totalDaily = items.reduce(function(s,item){
+    var c = costPerDay(item); return c ? s+c : s;
+  }, 0);
+  var monthly = Math.round(totalDaily * 30);
+  var annual  = Math.round(totalDaily * 365);
+  var daily   = Math.round(totalDaily);
+  var hasCost = totalDaily > 0;
+  document.getElementById('monthlyCost').textContent = hasCost ? '¥'+monthly.toLocaleString() : '¥—';
+  document.getElementById('annualCost').textContent  = hasCost ? '¥'+annual.toLocaleString()  : '¥—';
+  document.getElementById('dailyCost').textContent   = hasCost ? '¥'+daily.toLocaleString()   : '¥—';
+
   var banner = document.getElementById('urgentBanner');
-  if (urgentNames.length) {
-    banner.innerHTML = '<div class="urgent-badge">⚠️ 購入推奨: '+urgentNames.join('・')+'</div>';
-  } else {
-    banner.innerHTML = '';
-  }
+  banner.innerHTML = urgentNames.length
+    ? '<div class="urgent-badge" style="margin-top:.75rem;">⚠️ 購入推奨: '+urgentNames.join('・')+'</div>' : '';
 }
 
 // ── Days remaining ──
@@ -550,6 +596,24 @@ function daysClass(days) {
 function pct(item) {
   if (!item.initial || !item.current) return 100;
   return Math.min(100, Math.round((item.current / item.initial) * 100));
+}
+
+function costFooter(item) {
+  var cpd = costPerDay(item);
+  var rd  = restockDate(item);
+  if (!cpd && !rd) return '';
+  var parts = [];
+  if (rd) {
+    var m = rd.getMonth()+1, d = rd.getDate();
+    parts.push('🛒 補充目安: '+m+'/'+d);
+  }
+  if (cpd) {
+    parts.push('💴 '+Math.round(cpd).toLocaleString()+'円/日');
+    parts.push('月'+Math.round(cpd*30).toLocaleString()+'円');
+  }
+  return '<div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--border);">'
+    +parts.map(function(p){ return '<span style="font-size:.7rem;color:var(--muted);">'+p+'</span>'; }).join('')
+    +'</div>';
 }
 
 // ── Category Filter ──
@@ -615,6 +679,7 @@ function renderList() {
       +'<button class="btn-take" onclick="takeItem(\''+item.id+'\')">服用 −'+item.daily+item.unit+'</button>'
       +'<button class="btn-restock" onclick="openRestock(\''+item.id+'\')">補充</button>'
       +'</div></div>'
+      +costFooter(item)
       +(expiryText?'<p style="font-size:.7rem;color:var(--muted);margin-top:.5rem;">'+expiryText+'</p>':'')
       +timingHTML
       +(item.memo?'<p style="font-size:.72rem;color:var(--muted);margin-top:.4rem;">📝 '+item.memo+'</p>':'')
