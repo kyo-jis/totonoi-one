@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Medly — サプリ・薬管理</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+  <link rel="manifest" href="/manifest-medly.json">
+  <link rel="icon" type="image/png" href="/favicon.ico">
+  <meta name="theme-color" content="#1a1a24">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Medly">
+  <link rel="apple-touch-icon" href="/apple-touch-icon-medly.png">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#1a1a24; --surface:#22222e; --surface2:#2a2a38; --surface3:#323242;
+      --border:#35354a; --text:#f0eee8; --muted:#8888a0;
+      --accent:#b388ff; --accent2:#ff7c6e; --green:#5ecfa0;
+      --yellow:#f5c842; --blue:#6c8eff; --font:'Outfit',sans-serif;
+    }
+    html { font-size:16px; }
+    body { background:var(--bg); color:var(--text); font-family:var(--font); font-weight:300; min-height:100vh; padding-bottom:130px; }
+
+    .app-header { padding:3rem 1.25rem 1.25rem; }
+    .back-link { font-size:.75rem; color:var(--muted); text-decoration:none; letter-spacing:.1em; text-transform:uppercase; display:inline-flex; align-items:center; gap:.4rem; margin-bottom:1.25rem; }
+    .app-title { font-size:1.6rem; font-weight:500; letter-spacing:-.02em; }
+    .app-title span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
+
+    /* Summary Card */
+    .summary-card { margin:0 1.25rem 1.25rem; background:linear-gradient(135deg,#1e1a2e 0%,#241a2e 100%); border:1px solid #3a2d5a; border-radius:20px; padding:1.5rem; position:relative; overflow:hidden; }
+    .summary-card::before { content:''; position:absolute; top:-40px; right:-40px; width:160px; height:160px; background:radial-gradient(circle,rgba(179,136,255,.2) 0%,transparent 70%); border-radius:50%; }
+    .summary-label { font-size:.72rem; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-bottom:.5rem; }
+    .summary-stats { display:flex; gap:1.5rem; margin-top:.5rem; }
+    .summary-stat { }
+    .summary-stat-value { font-size:1.8rem; font-weight:600; letter-spacing:-.02em; }
+    .summary-stat-label { font-size:.7rem; color:var(--muted); margin-top:.1rem; }
+    .urgent-badge { display:inline-flex; align-items:center; gap:.4rem; background:rgba(255,124,110,.15); border:1px solid rgba(255,124,110,.25); border-radius:20px; padding:.4rem .8rem; font-size:.75rem; color:var(--accent2); margin-top:.75rem; }
+
+    /* Tabs */
+    .tabs { display:flex; gap:0; margin:0 1.25rem 1.25rem; background:var(--surface); border-radius:12px; padding:3px; border:1px solid var(--border); }
+    .tab { flex:1; padding:.55rem .2rem; font-size:.72rem; font-weight:400; color:var(--muted); background:none; border:none; border-radius:9px; cursor:pointer; font-family:var(--font); transition:all .2s; }
+    .tab.active { background:var(--surface2); color:var(--text); font-weight:500; }
+
+    .view { display:none; padding:0 1.25rem; }
+    .view.active { display:block; }
+    .section-label { font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:.75rem; }
+
+    /* Item Card */
+    .item-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:.75rem; animation:slideIn .3s ease; }
+    @keyframes slideIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+    .item-card.urgent { border-color:rgba(255,124,110,.4); }
+    .item-card.warning { border-color:rgba(245,200,66,.3); }
+
+    .item-header { display:flex; align-items:center; gap:.85rem; margin-bottom:.75rem; }
+    .item-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.4rem; flex-shrink:0; }
+    .item-info { flex:1; min-width:0; }
+    .item-name { font-size:.95rem; font-weight:500; }
+    .item-type { font-size:.72rem; color:var(--muted); margin-top:.1rem; }
+    .item-actions { display:flex; gap:.4rem; }
+    .btn-icon { width:30px; height:30px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); font-size:.75rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+
+    /* Progress */
+    .item-progress { margin-bottom:.6rem; }
+    .progress-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:.4rem; }
+    .progress-label { font-size:.75rem; color:var(--muted); }
+    .progress-value { font-size:.75rem; font-weight:500; }
+    .progress-bar { height:8px; background:var(--surface2); border-radius:4px; overflow:hidden; }
+    .progress-fill { height:100%; border-radius:4px; transition:width .6s ease; }
+    .progress-fill.good { background:var(--green); }
+    .progress-fill.warning { background:var(--yellow); }
+    .progress-fill.urgent { background:var(--accent2); }
+
+    /* Days remaining */
+    .days-row { display:flex; align-items:center; justify-content:space-between; }
+    .days-badge { font-size:.72rem; font-weight:500; padding:.25rem .6rem; border-radius:20px; }
+    .days-badge.good { background:rgba(94,207,160,.15); color:var(--green); }
+    .days-badge.warning { background:rgba(245,200,66,.15); color:var(--yellow); }
+    .days-badge.urgent { background:rgba(255,124,110,.18); color:var(--accent2); }
+    .days-badge.expired { background:rgba(255,124,110,.25); color:var(--accent2); font-weight:600; }
+
+    .item-footer { display:flex; gap:.75rem; margin-top:.6rem; flex-wrap:wrap; }
+    .item-detail { font-size:.72rem; color:var(--muted); }
+    .item-detail span { color:var(--text); }
+
+    .btn-take { background:var(--accent); color:#1a1a24; border:none; border-radius:8px; padding:.4rem .85rem; font-size:.78rem; font-weight:600; font-family:var(--font); cursor:pointer; }
+    .btn-restock { background:var(--green); color:#1a1a24; border:none; border-radius:8px; padding:.4rem .85rem; font-size:.78rem; font-weight:600; font-family:var(--font); cursor:pointer; }
+
+    /* Timing badges */
+    .timing-wrap { display:flex; gap:.4rem; flex-wrap:wrap; margin-top:.5rem; }
+    .timing-badge { font-size:.65rem; padding:.2rem .5rem; border-radius:6px; background:var(--surface2); color:var(--muted); border:1px solid var(--border); }
+
+    /* Category filter */
+    .cat-filter { display:flex; gap:.4rem; overflow-x:auto; margin-bottom:1rem; padding-bottom:.25rem; }
+    .cat-btn { background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:.35rem .75rem; font-size:.72rem; color:var(--muted); cursor:pointer; white-space:nowrap; font-family:var(--font); flex-shrink:0; }
+    .cat-btn.active { background:var(--accent); border-color:var(--accent); color:#1a1a24; font-weight:500; }
+
+    /* Encyclopedia */
+    .encyc-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:.75rem; cursor:pointer; }
+    .encyc-name { font-size:.95rem; font-weight:500; margin-bottom:.3rem; }
+    .encyc-desc { font-size:.78rem; color:var(--muted); line-height:1.5; }
+    .encyc-tags { display:flex; gap:.4rem; flex-wrap:wrap; margin-top:.6rem; }
+    .encyc-tag { font-size:.65rem; padding:.2rem .5rem; border-radius:6px; background:rgba(179,136,255,.12); color:var(--accent); border:1px solid rgba(179,136,255,.2); }
+
+    /* Modal */
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); backdrop-filter:blur(6px); z-index:100; display:none; align-items:flex-end; }
+    .modal-overlay.show { display:flex; }
+    .modal { background:var(--surface); border:1px solid var(--border); border-radius:24px 24px 0 0; padding:1.5rem 1.25rem 2rem; width:100%; max-height:92vh; overflow-y:auto; animation:slideUp .3s ease; }
+    @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+    .modal-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 1.25rem; }
+    .modal-title { font-size:1.1rem; font-weight:500; margin-bottom:1.25rem; }
+
+    /* Preset grid */
+    .preset-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:.5rem; margin-bottom:1rem; }
+    .preset-btn { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:.7rem .4rem; font-size:.72rem; color:var(--text); cursor:pointer; font-family:var(--font); text-align:center; display:flex; flex-direction:column; align-items:center; gap:.3rem; }
+    .preset-btn .p-icon { font-size:1.4rem; }
+    .preset-btn.selected { border-color:var(--accent); color:var(--accent); }
+
+    .divider { display:flex; align-items:center; gap:.75rem; margin:1rem 0; color:var(--muted); font-size:.75rem; }
+    .divider::before, .divider::after { content:''; flex:1; height:1px; background:var(--border); }
+
+    .form-group { margin-bottom:1rem; }
+    .form-label { font-size:.72rem; color:var(--muted); letter-spacing:.05em; text-transform:uppercase; display:block; margin-bottom:.4rem; }
+    input, select { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:.75rem 1rem; font-size:.95rem; color:var(--text); font-family:var(--font); outline:none; transition:border-color .15s; }
+    input:focus, select:focus { border-color:var(--accent); }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; }
+    .form-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.5rem; }
+
+    /* Timing checkboxes */
+    .timing-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:.4rem; }
+    .timing-check { display:flex; align-items:center; gap:.4rem; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:.5rem .6rem; cursor:pointer; }
+    .timing-check input { width:auto; }
+    .timing-check label { font-size:.78rem; cursor:pointer; }
+    .timing-check.checked { border-color:var(--accent); }
+
+    .btn-primary { width:100%; padding:.9rem; background:var(--accent); color:#1a1a24; border:none; border-radius:12px; font-size:.95rem; font-weight:600; font-family:var(--font); cursor:pointer; margin-top:.5rem; }
+    .btn-cancel { width:100%; padding:.75rem; background:none; color:var(--muted); border:none; font-size:.88rem; font-family:var(--font); cursor:pointer; }
+
+    .fab { position:fixed; bottom:calc(72px + env(safe-area-inset-bottom)); right:1.25rem; width:56px; height:56px; border-radius:18px; background:var(--accent); color:#1a1a24; border:none; font-size:1.5rem; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 24px rgba(179,136,255,.4); z-index:50; transition:transform .15s; }
+    .fab:active { transform:scale(.92); }
+
+    .ad-banner { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--border); padding:.6rem 1rem; display:flex; align-items:center; justify-content:center; gap:.5rem; z-index:40; padding-bottom:calc(.6rem + env(safe-area-inset-bottom)); }
+    .ad-label { font-size:.6rem; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; }
+    .ad-content { font-size:.78rem; color:var(--muted); flex:1; text-align:center; }
+
+    .empty-state { text-align:center; padding:3rem 1rem; color:var(--muted); }
+    .empty-icon { font-size:2.5rem; margin-bottom:.75rem; }
+    .toast { position:fixed; top:1.5rem; left:50%; transform:translateX(-50%); background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:.75rem 1.25rem; font-size:.85rem; font-weight:500; z-index:300; animation:toastIn .3s ease; white-space:nowrap; }
+    @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(-10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+
+    .search-input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:.75rem 1rem; font-size:.95rem; color:var(--text); font-family:var(--font); outline:none; margin-bottom:1rem; }
+    .search-input:focus { border-color:var(--accent); }
+  </style>
+</head>
+<body>
+
+<div class="app-header">
+  <a class="back-link" href="index.html" style="display:inline-flex;align-items:center;gap:.5rem;"><img src="/logo.png" style="width:20px;height:20px;object-fit:contain;border-radius:5px;" alt=""> Totonoi One</a>
+  <h1 class="app-title">Med<span>ly</span></h1>
+</div>
+
+<div class="summary-card">
+  <p class="summary-label">在庫サマリー</p>
+  <div class="summary-stats">
+    <div class="summary-stat">
+      <p class="summary-stat-value" id="totalItems">0</p>
+      <p class="summary-stat-label">登録中</p>
+    </div>
+    <div class="summary-stat">
+      <p class="summary-stat-value" style="color:var(--accent2)" id="urgentItems">0</p>
+      <p class="summary-stat-label">残り少ない</p>
+    </div>
+    <div class="summary-stat">
+      <p class="summary-stat-value" style="color:var(--yellow)" id="warningItems">0</p>
+      <p class="summary-stat-label">もうすぐ</p>
+    </div>
+  </div>
+  <div id="urgentBanner"></div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('list',this)">一覧</button>
+  <button class="tab" onclick="switchTab('schedule',this)">スケジュール</button>
+  <button class="tab" onclick="switchTab('encyc',this)">サプリ辞典</button>
+</div>
+
+<!-- 一覧 -->
+<div class="view active" id="view-list">
+  <div class="cat-filter" id="catFilter"></div>
+  <p class="section-label">登録アイテム</p>
+  <div id="itemList"></div>
+</div>
+
+<!-- スケジュール -->
+<div class="view" id="view-schedule">
+  <p class="section-label">今日の摂取スケジュール</p>
+  <div id="scheduleList"></div>
+</div>
+
+<!-- サプリ辞典 -->
+<div class="view" id="view-encyc">
+  <input type="text" class="search-input" id="encycSearch" placeholder="🔍 サプリ名で検索..." oninput="filterEncyc()">
+  <div id="encycList"></div>
+</div>
+
+<!-- 追加モーダル -->
+<div class="modal-overlay" id="addModal" onclick="closeModalOutside(event,'addModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <p class="modal-title" id="modalTitle">アイテムを追加</p>
+
+    <p style="font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem;">よく使うアイテム</p>
+    <div class="preset-grid" id="presetGrid"></div>
+
+    <div class="divider">または手動入力</div>
+
+    <div class="form-group">
+      <label class="form-label">名前</label>
+      <input type="text" id="fName" placeholder="例：ビタミンD">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">種別</label>
+        <select id="fType">
+          <option value="supplement">サプリメント</option>
+          <option value="medicine">市販薬</option>
+          <option value="prescription">処方薬</option>
+          <option value="other">その他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">アイコン</label>
+        <input type="text" id="fIcon" placeholder="💊" maxlength="2">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">現在の残量</label>
+        <input type="number" id="fCurrent" placeholder="60">
+      </div>
+      <div class="form-group">
+        <label class="form-label">単位</label>
+        <select id="fUnit">
+          <option value="錠">錠</option>
+          <option value="粒">粒</option>
+          <option value="包">包</option>
+          <option value="ml">ml</option>
+          <option value="g">g</option>
+          <option value="本">本</option>
+          <option value="個">個</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">1日の摂取量</label>
+        <input type="number" id="fDaily" placeholder="1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">購入アラート（残量）</label>
+        <input type="number" id="fAlert" placeholder="7">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">使用期限（任意）</label>
+      <input type="date" id="fExpiry">
+    </div>
+    <div class="form-group">
+      <label class="form-label">摂取タイミング</label>
+      <div class="timing-grid">
+        <div class="timing-check" id="tc-morning" onclick="toggleTiming('morning')">
+          <input type="checkbox" id="t-morning"><label for="t-morning">🌅 朝</label>
+        </div>
+        <div class="timing-check" id="tc-noon" onclick="toggleTiming('noon')">
+          <input type="checkbox" id="t-noon"><label for="t-noon">☀️ 昼</label>
+        </div>
+        <div class="timing-check" id="tc-evening" onclick="toggleTiming('evening')">
+          <input type="checkbox" id="t-evening"><label for="t-evening">🌆 夕</label>
+        </div>
+        <div class="timing-check" id="tc-night" onclick="toggleTiming('night')">
+          <input type="checkbox" id="t-night"><label for="t-night">🌙 夜</label>
+        </div>
+        <div class="timing-check" id="tc-workout" onclick="toggleTiming('workout')">
+          <input type="checkbox" id="t-workout"><label for="t-workout">💪 運動後</label>
+        </div>
+        <div class="timing-check" id="tc-meal" onclick="toggleTiming('meal')">
+          <input type="checkbox" id="t-meal"><label for="t-meal">🍽️ 食後</label>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">メモ</label>
+      <input type="text" id="fMemo" placeholder="例：食後に服用">
+    </div>
+    <button class="btn-primary" onclick="saveItem()">追加する</button>
+    <button class="btn-cancel" onclick="closeModal('addModal')">キャンセル</button>
+  </div>
+</div>
+
+<!-- 補充モーダル -->
+<div class="modal-overlay" id="restockModal" onclick="closeModalOutside(event,'restockModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <p class="modal-title">在庫を補充</p>
+    <div class="form-group">
+      <label class="form-label">補充数量</label>
+      <input type="number" id="fRestock" placeholder="60">
+    </div>
+    <button class="btn-primary" onclick="confirmRestock()">補充する</button>
+    <button class="btn-cancel" onclick="closeModal('restockModal')">キャンセル</button>
+  </div>
+</div>
+
+<button class="fab" onclick="openModal()">＋</button>
+<div class="ad-banner" id="adBanner">
+  <span class="ad-label">広告</span>
+  <p class="ad-content">Google AdSense 広告エリア</p>
+</div>
+
+<script>
+var isPro = localStorage.getItem('isPro') === 'true';
+var editId = null;
+var restockId = null;
+
+var TYPE_LABELS = {supplement:'サプリメント', medicine:'市販薬', prescription:'処方薬', other:'その他'};
+var TYPE_ICONS = {supplement:'💊', medicine:'💉', prescription:'🏥', other:'📦'};
+var TIMING_LABELS = {morning:'朝', noon:'昼', evening:'夕', night:'夜', workout:'運動後', meal:'食後'};
+var TIMINGS = ['morning','noon','evening','workout','meal','night'];
+var selectedTimings = [];
+
+var PRESETS = [
+  {name:'ビタミンD',icon:'☀️',type:'supplement',daily:1,unit:'錠',alert:7,timing:['morning']},
+  {name:'ビタミンC',icon:'🍊',type:'supplement',daily:1,unit:'錠',alert:7,timing:['morning']},
+  {name:'オメガ3',icon:'🐟',type:'supplement',daily:2,unit:'粒',alert:7,timing:['meal']},
+  {name:'マグネシウム',icon:'🌙',type:'supplement',daily:1,unit:'錠',alert:7,timing:['night']},
+  {name:'クレアチン',icon:'💪',type:'supplement',daily:5,unit:'g',alert:5,timing:['workout']},
+  {name:'プロテイン',icon:'🥛',type:'supplement',daily:1,unit:'包',alert:5,timing:['workout']},
+  {name:'亜鉛',icon:'⚡',type:'supplement',daily:1,unit:'錠',alert:7,timing:['meal']},
+  {name:'鉄分',icon:'🩸',type:'supplement',daily:1,unit:'錠',alert:7,timing:['morning']},
+  {name:'葉酸',icon:'🌿',type:'supplement',daily:1,unit:'錠',alert:7,timing:['morning']},
+  {name:'BCAA',icon:'🏋️',type:'supplement',daily:1,unit:'包',alert:5,timing:['workout']},
+  {name:'コラーゲン',icon:'✨',type:'supplement',daily:1,unit:'包',alert:7,timing:['morning']},
+  {name:'ビタミンB群',icon:'🌟',type:'supplement',daily:1,unit:'錠',alert:7,timing:['morning']},
+];
+
+var ENCYC_DB = [
+  {name:'ビタミンD',use:'骨の健康・免疫機能・気分改善',timing:'朝・食後',note:'脂溶性のため食事と一緒に。日光浴との併用で効果的。',tags:['免疫','骨','気分']},
+  {name:'ビタミンC',use:'抗酸化・免疫機能・コラーゲン生成',timing:'朝・昼',note:'水溶性のため複数回に分けて摂取するのが理想的。',tags:['抗酸化','免疫','美肌']},
+  {name:'オメガ3（EPA/DHA）',use:'心血管・脳機能・抗炎症',timing:'食後',note:'脂溶性のため食事と一緒に。酸化しやすいため冷暗所保管。',tags:['心臓','脳','抗炎症']},
+  {name:'マグネシウム',use:'筋肉弛緩・睡眠改善・エネルギー産生',timing:'夜',note:'就寝前に摂取すると睡眠の質向上に。過剰摂取で下痢に注意。',tags:['睡眠','筋肉','疲労回復']},
+  {name:'クレアチン',use:'筋力・瞬発力・筋肉量増加',timing:'運動後',note:'1日3〜5gを継続的に。水分摂取を増やすこと。',tags:['筋力','パフォーマンス','筋肥大']},
+  {name:'亜鉛',use:'免疫・テストステロン・傷の回復',timing:'食後',note:'空腹時は吐き気が出ることも。銅とのバランスに注意。',tags:['免疫','ホルモン','回復']},
+  {name:'鉄分',use:'貧血予防・酸素運搬・疲労感軽減',timing:'朝・空腹時',note:'ビタミンCと一緒に摂ると吸収率UP。お茶・コーヒーは避ける。',tags:['貧血','エネルギー','疲労']},
+  {name:'BCAA',use:'筋肉分解防止・疲労軽減・回復促進',timing:'運動前後',note:'運動中・前後に摂取。必須アミノ酸のため体内で合成できない。',tags:['筋肉','回復','パフォーマンス']},
+  {name:'葉酸',use:'細胞分裂・DNA合成・神経管発育',timing:'朝',note:'妊娠を考える女性に特に重要。水溶性で熱に弱い。',tags:['妊活','細胞','神経']},
+  {name:'プロバイオティクス',use:'腸内環境・免疫・メンタル',timing:'食前・起床後',note:'空腹時に摂ると生きたまま腸に届きやすい。',tags:['腸内環境','免疫','メンタル']},
+  {name:'コラーゲン',use:'肌の弾力・関節・骨',timing:'朝・就寝前',note:'ビタミンCと組み合わせると生成が促進される。',tags:['美肌','関節','骨']},
+  {name:'ビタミンB群',use:'エネルギー代謝・神経機能・疲労回復',timing:'朝・食後',note:'水溶性のため毎日補充が必要。アルコール摂取で消耗しやすい。',tags:['エネルギー','神経','疲労']},
+];
+
+var items = JSON.parse(localStorage.getItem('medlyItems') || '[]');
+
+var todayStr = new Date().toDateString();
+var dailyTaken = JSON.parse(localStorage.getItem('medlyDailyTaken') || '{"date":"","taken":{}}');
+if (dailyTaken.date !== todayStr) {
+  dailyTaken = { date: todayStr, taken: {} };
+  localStorage.setItem('medlyDailyTaken', JSON.stringify(dailyTaken));
+}
+
+function init() {
+  buildCatFilter();
+  buildPresets();
+  renderList();
+  renderSchedule();
+  renderEncyc();
+  updateSummary();
+  updateProUI();
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  document.getElementById('view-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── Summary ──
+function updateSummary() {
+  var urgent=0, warning=0;
+  var urgentNames=[];
+  items.forEach(function(item) {
+    var days = daysRemaining(item);
+    if (days !== null && days <= 3) { urgent++; urgentNames.push(item.name); }
+    else if (days !== null && days <= 7) warning++;
+  });
+  document.getElementById('totalItems').textContent = items.length;
+  document.getElementById('urgentItems').textContent = urgent;
+  document.getElementById('warningItems').textContent = warning;
+  var banner = document.getElementById('urgentBanner');
+  if (urgentNames.length) {
+    banner.innerHTML = '<div class="urgent-badge">⚠️ 購入推奨: '+urgentNames.join('・')+'</div>';
+  } else {
+    banner.innerHTML = '';
+  }
+}
+
+// ── Days remaining ──
+function daysRemaining(item) {
+  if (!item.daily || !item.current) return null;
+  return Math.floor(item.current / item.daily);
+}
+
+function daysClass(days) {
+  if (days === null) return 'good';
+  if (days <= 3) return 'urgent';
+  if (days <= 7) return 'warning';
+  return 'good';
+}
+
+function pct(item) {
+  if (!item.initial || !item.current) return 100;
+  return Math.min(100, Math.round((item.current / item.initial) * 100));
+}
+
+// ── Category Filter ──
+function buildCatFilter() {
+  var cats = [{id:'all',label:'すべて'},{id:'supplement',label:'サプリ'},{id:'medicine',label:'市販薬'},{id:'prescription',label:'処方薬'},{id:'other',label:'その他'}];
+  document.getElementById('catFilter').innerHTML = cats.map(function(c,i) {
+    return '<button class="cat-btn'+(i===0?' active':'')+'" onclick="filterCat(\''+c.id+'\',this)">'+c.label+'</button>';
+  }).join('');
+}
+
+var currentCat = 'all';
+function filterCat(cat, btn) {
+  currentCat = cat;
+  document.querySelectorAll('.cat-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  renderList();
+}
+
+// ── Render List ──
+function renderList() {
+  var el = document.getElementById('itemList');
+  var filtered = currentCat === 'all' ? items : items.filter(function(i){ return i.type===currentCat; });
+  // 残量が少ない順
+  filtered = filtered.slice().sort(function(a,b){
+    var da = daysRemaining(a)||999, db = daysRemaining(b)||999;
+    return da - db;
+  });
+  if (!filtered.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">💊</div><p>まだ登録がありません。<br>＋ボタンで追加してください。</p></div>';
+    return;
+  }
+  el.innerHTML = filtered.map(function(item) {
+    var days = daysRemaining(item);
+    var p = pct(item);
+    var cls = daysClass(days);
+    var cardCls = 'item-card' + (cls==='urgent'?' urgent':cls==='warning'?' warning':'');
+    var fillCls = 'progress-fill '+cls;
+    var badgeText = days===null?'':'残り約'+days+'日';
+    var expiryText = item.expiry ? '期限: '+formatDate(item.expiry) : '';
+    var timingHTML = (item.timing||[]).length
+      ? '<div class="timing-wrap">'+item.timing.map(function(t){ return '<span class="timing-badge">'+(TIMING_LABELS[t]||t)+'</span>'; }).join('')+'</div>'
+      : '';
+    return '<div class="'+cardCls+'">'
+      +'<div class="item-header">'
+      +'<div class="item-icon" style="background:rgba(179,136,255,.12)">'+(item.icon||TYPE_ICONS[item.type]||'💊')+'</div>'
+      +'<div class="item-info"><p class="item-name">'+item.name+'</p>'
+      +'<p class="item-type">'+TYPE_LABELS[item.type]+'</p></div>'
+      +'<div class="item-actions">'
+      +'<button class="btn-icon" onclick="editItem(\''+item.id+'\')">✏️</button>'
+      +'<button class="btn-icon" onclick="deleteItem(\''+item.id+'\')">🗑</button>'
+      +'</div></div>'
+      +'<div class="item-progress">'
+      +'<div class="progress-header">'
+      +'<span class="progress-label">残量: '+item.current+item.unit+'</span>'
+      +'<span class="progress-value">'+p+'%</span>'
+      +'</div>'
+      +'<div class="progress-bar"><div class="'+fillCls+'" style="width:'+p+'%"></div></div>'
+      +'</div>'
+      +'<div class="days-row">'
+      +(days!==null?'<span class="days-badge '+cls+'">'+badgeText+'</span>':'<span></span>')
+      +'<div style="display:flex;gap:.5rem;">'
+      +'<button class="btn-take" onclick="takeItem(\''+item.id+'\')">服用 −'+item.daily+item.unit+'</button>'
+      +'<button class="btn-restock" onclick="openRestock(\''+item.id+'\')">補充</button>'
+      +'</div></div>'
+      +(expiryText?'<p style="font-size:.7rem;color:var(--muted);margin-top:.5rem;">'+expiryText+'</p>':'')
+      +timingHTML
+      +(item.memo?'<p style="font-size:.72rem;color:var(--muted);margin-top:.4rem;">📝 '+item.memo+'</p>':'')
+      +'</div>';
+  }).join('');
+}
+
+// ── Schedule ──
+function renderSchedule() {
+  var el = document.getElementById('scheduleList');
+  var timings = [
+    {id:'morning', label:'🌅 朝'},
+    {id:'noon', label:'☀️ 昼'},
+    {id:'evening', label:'🌆 夕'},
+    {id:'workout', label:'💪 運動後'},
+    {id:'meal', label:'🍽️ 食後'},
+    {id:'night', label:'🌙 夜'},
+  ];
+  var html = '';
+  timings.forEach(function(t) {
+    var matched = items.filter(function(item){ return (item.timing||[]).indexOf(t.id)!==-1; });
+    if (!matched.length) return;
+    html += '<div style="margin-bottom:1rem;">'
+      +'<p style="font-size:.85rem;font-weight:500;margin-bottom:.5rem;">'+t.label+'</p>'
+      +matched.map(function(item){
+        var key = item.id + '_' + t.id;
+        var taken = !!dailyTaken.taken[key];
+        return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.75rem 1rem;margin-bottom:.4rem;display:flex;align-items:center;justify-content:space-between;'+(taken?'opacity:.6;':'') +'">'
+          +'<div style="display:flex;align-items:center;gap:.75rem;">'
+          +'<span style="font-size:1.2rem;">'+(item.icon||'💊')+'</span>'
+          +'<div><p style="font-size:.88rem;font-weight:400;">'+item.name+'</p>'
+          +'<p style="font-size:.7rem;color:var(--muted);">'+item.daily+item.unit+'</p></div>'
+          +'</div>'
+          +(taken
+            ? '<span style="font-size:.8rem;color:var(--green);font-weight:500;">✓ 服用済み</span>'
+            : '<button class="btn-take" onclick="takeFromSchedule(\''+item.id+'\',\''+t.id+'\')">服用</button>')
+          +'</div>';
+      }).join('')
+      +'</div>';
+  });
+  el.innerHTML = html || '<div class="empty-state"><div class="empty-icon">📅</div><p>摂取タイミングを設定すると<br>ここに表示されます</p></div>';
+}
+
+// ── Encyclopedia ──
+function renderEncyc(list) {
+  list = list || ENCYC_DB;
+  var el = document.getElementById('encycList');
+  el.innerHTML = list.map(function(e){
+    return '<div class="encyc-card">'
+      +'<p class="encyc-name">'+e.name+'</p>'
+      +'<p style="font-size:.75rem;color:var(--accent);margin-bottom:.3rem;">用途: '+e.use+'</p>'
+      +'<p style="font-size:.72rem;color:var(--muted);margin-bottom:.3rem;">摂取タイミング: '+e.timing+'</p>'
+      +'<p class="encyc-desc">'+e.note+'</p>'
+      +'<div class="encyc-tags">'+e.tags.map(function(t){ return '<span class="encyc-tag">#'+t+'</span>'; }).join('')+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function filterEncyc() {
+  var q = document.getElementById('encycSearch').value.toLowerCase();
+  renderEncyc(q ? ENCYC_DB.filter(function(e){ return e.name.toLowerCase().includes(q)||e.tags.some(function(t){ return t.includes(q); }); }) : ENCYC_DB);
+}
+
+// ── Actions ──
+function takeItem(id) {
+  var item = items.find(function(x){ return x.id===id; });
+  if (!item) return;
+  if (item.current < item.daily) { showToast('残量が不足しています'); return; }
+  item.current = Math.max(0, item.current - item.daily);
+  save();
+  renderList();
+  updateSummary();
+  showToast(item.icon+' '+item.name+' 服用しました');
+  if (daysRemaining(item) <= item.alert) showToast('⚠️ 残り少なくなっています！購入をご検討ください');
+}
+
+function openRestock(id) {
+  restockId = id;
+  var item = items.find(function(x){ return x.id===id; });
+  document.getElementById('fRestock').value = item ? item.initial : '';
+  document.getElementById('restockModal').classList.add('show');
+}
+
+function confirmRestock() {
+  var num = parseInt(document.getElementById('fRestock').value);
+  if (!num) { showToast('数量を入力してください'); return; }
+  var item = items.find(function(x){ return x.id===restockId; });
+  if (!item) return;
+  item.current += num;
+  save();
+  closeModal('restockModal');
+  renderList();
+  updateSummary();
+  showToast('✅ '+item.name+'を補充しました');
+}
+
+// ── Presets ──
+function buildPresets() {
+  document.getElementById('presetGrid').innerHTML = PRESETS.map(function(p){
+    return '<button class="preset-btn" onclick="applyPreset('+JSON.stringify(p).replace(/"/g,'&quot;')+')">'
+      +'<span class="p-icon">'+p.icon+'</span>'
+      +'<span style="font-size:.65rem;">'+p.name+'</span>'
+      +'</button>';
+  }).join('');
+}
+
+function applyPreset(p) {
+  document.querySelectorAll('.preset-btn').forEach(function(b){ b.classList.remove('selected'); });
+  event.target.closest('.preset-btn').classList.add('selected');
+  document.getElementById('fName').value = p.name;
+  document.getElementById('fIcon').value = p.icon;
+  document.getElementById('fType').value = p.type;
+  document.getElementById('fDaily').value = p.daily;
+  document.getElementById('fUnit').value = p.unit;
+  document.getElementById('fAlert').value = p.alert;
+  selectedTimings = p.timing || [];
+  TIMINGS.forEach(function(t){
+    var el = document.getElementById('tc-'+t);
+    var cb = document.getElementById('t-'+t);
+    if (selectedTimings.indexOf(t) !== -1) { el.classList.add('checked'); cb.checked = true; }
+    else { el.classList.remove('checked'); cb.checked = false; }
+  });
+}
+
+function toggleTiming(t) {
+  var idx = selectedTimings.indexOf(t);
+  if (idx === -1) selectedTimings.push(t);
+  else selectedTimings.splice(idx, 1);
+  var el = document.getElementById('tc-'+t);
+  var cb = document.getElementById('t-'+t);
+  el.classList.toggle('checked', selectedTimings.indexOf(t) !== -1);
+  cb.checked = selectedTimings.indexOf(t) !== -1;
+}
+
+// ── Modal ──
+function openModal() {
+  editId = null;
+  document.getElementById('modalTitle').textContent = 'アイテムを追加';
+  ['fName','fIcon','fCurrent','fDaily','fAlert','fMemo'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('fType').value = 'supplement';
+  document.getElementById('fUnit').value = '錠';
+  document.getElementById('fExpiry').value = '';
+  selectedTimings = [];
+  TIMINGS.forEach(function(t){ document.getElementById('tc-'+t).classList.remove('checked'); document.getElementById('t-'+t).checked=false; });
+  document.querySelectorAll('.preset-btn').forEach(function(b){ b.classList.remove('selected'); });
+  document.getElementById('addModal').classList.add('show');
+}
+
+function editItem(id) {
+  var item = items.find(function(x){ return x.id===id; });
+  if (!item) return;
+  editId = id;
+  document.getElementById('modalTitle').textContent = '編集';
+  document.getElementById('fName').value = item.name;
+  document.getElementById('fIcon').value = item.icon||'';
+  document.getElementById('fType').value = item.type;
+  document.getElementById('fUnit').value = item.unit;
+  document.getElementById('fCurrent').value = item.current;
+  document.getElementById('fDaily').value = item.daily;
+  document.getElementById('fAlert').value = item.alert||7;
+  document.getElementById('fMemo').value = item.memo||'';
+  document.getElementById('fExpiry').value = item.expiry||'';
+  selectedTimings = item.timing||[];
+  TIMINGS.forEach(function(t){
+    var has = selectedTimings.indexOf(t)!==-1;
+    document.getElementById('tc-'+t).classList.toggle('checked', has);
+    document.getElementById('t-'+t).checked = has;
+  });
+  document.getElementById('addModal').classList.add('show');
+}
+
+function saveItem() {
+  var name = document.getElementById('fName').value.trim();
+  var current = parseFloat(document.getElementById('fCurrent').value);
+  var daily = parseFloat(document.getElementById('fDaily').value);
+  if (!name||!current||!daily) { showToast('名前・残量・1日摂取量を入力してください'); return; }
+  var entry = {
+    id: editId||Date.now().toString(),
+    name: name,
+    icon: document.getElementById('fIcon').value.trim()||TYPE_ICONS[document.getElementById('fType').value],
+    type: document.getElementById('fType').value,
+    unit: document.getElementById('fUnit').value,
+    current: current,
+    initial: editId ? (items.find(function(x){return x.id===editId;})||{}).initial||current : current,
+    daily: daily,
+    alert: parseInt(document.getElementById('fAlert').value)||7,
+    memo: document.getElementById('fMemo').value.trim(),
+    expiry: document.getElementById('fExpiry').value,
+    timing: selectedTimings.slice(),
+  };
+  if (editId) {
+    var idx = items.findIndex(function(x){ return x.id===editId; });
+    items[idx] = entry;
+  } else {
+    items.push(entry);
+  }
+  save();
+  closeModal('addModal');
+  renderList();
+  renderSchedule();
+  updateSummary();
+  showToast('✅ 保存しました');
+}
+
+function deleteItem(id) {
+  if (!confirm('削除しますか？')) return;
+  items = items.filter(function(x){ return x.id!==id; });
+  save();
+  renderList();
+  renderSchedule();
+  updateSummary();
+}
+
+function save() { localStorage.setItem('medlyItems', JSON.stringify(items)); }
+
+function saveDailyTaken() { localStorage.setItem('medlyDailyTaken', JSON.stringify(dailyTaken)); }
+
+function takeFromSchedule(id, timing) {
+  var key = id + '_' + timing;
+  if (dailyTaken.taken[key]) { showToast('今日はすでに服用済みです'); return; }
+  var item = items.find(function(x){ return x.id===id; });
+  if (!item) return;
+  if (item.current < item.daily) { showToast('残量が不足しています'); return; }
+  item.current = Math.max(0, item.current - item.daily);
+  save();
+  dailyTaken.taken[key] = true;
+  saveDailyTaken();
+  renderSchedule();
+  renderList();
+  updateSummary();
+  showToast(item.icon+' '+item.name+' 服用しました');
+  if (daysRemaining(item) <= item.alert) showToast('⚠️ 残り少なくなっています！購入をご検討ください');
+}
+
+function formatDate(str) {
+  if (!str) return '';
+  var d = new Date(str);
+  return (d.getMonth()+1)+'月'+d.getDate()+'日';
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function closeModalOutside(e, id) { if(e.target===document.getElementById(id)) closeModal(id); }
+
+function showToast(msg) {
+  var t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(function(){ t.remove(); },2500);
+}
+
+function updateProUI() {
+  var ad=document.getElementById('adBanner');
+  if (ad) ad.style.display=isPro?'none':'flex';
+  var fab=document.querySelector('.fab');
+  if (fab) fab.style.bottom=isPro?'1.25rem':'calc(72px + env(safe-area-inset-bottom))';
+  document.body.style.paddingBottom=isPro?'80px':'130px';
+}
+
+init();
+</script>
+</body>
+</html>

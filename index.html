@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Totonoi One</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="manifest" href="/manifest-portal.json">
+  <link rel="icon" type="image/png" href="/favicon.ico">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <meta name="theme-color" content="#1a1a24">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Totonoi One">
+  <link rel="apple-touch-icon" href="/apple-touch-icon-portal.png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f7f5f0;
+      --ink: #1a1a18;
+      --muted: #9a9890;
+      --line: #e0ddd7;
+      --accent-sub: #3d6b8e;
+      --accent-fit: #4a7c5a;
+      --accent-rec: #8e5a3d;
+      --card-bg: #ffffff;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      padding: 0;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 3rem 1.5rem 2rem;
+      text-align: center;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .site-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+    }
+
+    h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2.4rem, 8vw, 3.6rem);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--muted);
+    }
+
+    .tagline {
+      margin-top: 0.75rem;
+      font-size: 0.88rem;
+      color: var(--muted);
+      letter-spacing: 0.03em;
+    }
+
+    /* ── Grid ── */
+    main {
+      padding: 2.5rem 1.25rem 5rem;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      padding: 1.75rem 1.5rem;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      align-items: flex-start;
+      gap: 1.25rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .card::after {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--accent);
+      transform: scaleY(0);
+      transform-origin: bottom;
+      transition: transform 0.22s ease;
+    }
+
+    .card:active {
+      transform: scale(0.985);
+    }
+
+    @media (hover: hover) {
+      .card:hover {
+        box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+        transform: translateY(-2px);
+      }
+      .card:hover::after {
+        transform: scaleY(1);
+      }
+    }
+
+    .card.sub  { --accent: var(--accent-sub); }
+    .card.fit  { --accent: var(--accent-fit); }
+    .card.rec  { --accent: var(--accent-rec); }
+
+    .icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 1.3rem;
+    }
+
+    .card-body { flex: 1; }
+
+    .card-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.25rem;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.3rem;
+    }
+
+    .card-desc {
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .card-arrow {
+      font-size: 1rem;
+      color: var(--muted);
+      align-self: center;
+      flex-shrink: 0;
+      transition: transform 0.18s ease, color 0.18s ease;
+    }
+
+    @media (hover: hover) {
+      .card:hover .card-arrow {
+        transform: translateX(4px);
+        color: var(--accent);
+      }
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 2rem 1.5rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+    }
+
+    /* ── Entrance animation ── */
+    .card {
+      opacity: 0;
+      transform: translateY(16px);
+      animation: fadeUp 0.45s ease forwards;
+    }
+    .card:nth-child(1) { animation-delay: 0.05s; }
+    .card:nth-child(2) { animation-delay: 0.15s; }
+    .card:nth-child(3) { animation-delay: 0.25s; }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    header {
+      opacity: 0;
+      animation: fadeUp 0.4s ease 0s forwards;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="/logo.png" alt="Totonoi One" style="width:72px;height:72px;object-fit:contain;margin-bottom:.75rem;border-radius:18px;">
+    <p class="site-label">Totonoi One</p>
+    <h1>毎日を、<em>ととのえ</em>る。</h1>
+    <p class="tagline">暮らしを整える、オールインワンダッシュボード</p>
+  </header>
+
+  <main>
+    <a class="card sub" href="subly.html">
+      <div class="icon">💳</div>
+      <div class="card-body">
+        <p class="card-title">Subly</p>
+        <p class="card-desc">サブスクの更新日・費用を管理。<br>気にしなくていい状態をつくる。</p>
+      </div>
+      <span class="card-arrow">→</span>
+    </a>
+    <a class="card fit" href="medly.html">
+      <div class="icon">💊</div>
+      <div class="card-body">
+        <p class="card-title">Medly</p>
+        <p class="card-desc">サプリ・薬の在庫と残量を管理。<br>購入タイミングを自動で把握。</p>
+      </div>
+      <span class="card-arrow">→</span>
+    </a>
+    <a class="card rec" href="fitly.html">
+      <div class="icon">💪</div>
+      <div class="card-body">
+        <p class="card-title">Fitly</p>
+        <p class="card-desc">筋トレ・有酸素・ストレッチを記録。<br>ワークアウトを積み上げる。</p>
+      </div>
+      <span class="card-arrow">→</span>
+    </a>
+    <a class="card sub" href="cookly.html">
+      <div class="icon">🍳</div>
+      <div class="card-body">
+        <p class="card-title">Cookly</p>
+        <p class="card-desc">レシピを保存・整理。<br>材料・手順をすっきり管理。</p>
+      </div>
+      <span class="card-arrow">→</span>
+    </a>
+    <a class="card fit" href="learnly.html">
+      <div class="icon">📚</div>
+      <div class="card-body">
+        <p class="card-title">Learnly</p>
+        <p class="card-desc">学習の記録と進捗を管理。<br>学びを積み上げる。</p>
+      </div>
+      <span class="card-arrow">→</span>
+    </a>
+    <a class="card rec" href="mangaly.html">
+      <div class="icon">📖</div>
+      <div class="card-body">
+        <p class="card-title">Mangaly</p>
+        <p class="card-desc">漫画・読書の記録を管理。<br>読んだ本を振り返る。</p>
+      </div>
+      <span class="card-arrow">→</span>
+    </a>
+    <a class="card sub" href="stockly.html">
+      <div class="icon">📦</div>
+      <div class="card-body">
+        <p class="card-title">Stockly</p>
+        <p class="card-desc">備蓄品の在庫を管理。<br>切らす前に気づける。</p>
+      </div>
+      <span class="card-arrow">→</span>
+    </a>
+    <a class="card fit" href="renewly.html">
+      <div class="icon">🔄</div>
+      <div class="card-body">
+        <p class="card-title">Renewly</p>
+        <p class="card-desc">更新期限を一元管理。<br>うっかり失効を防ぐ。</p>
+      </div>
+      <span class="card-arrow">→</span>
+    </a>
+    <a class="card rec" href="readly.html">
+      <div class="icon">📝</div>
+      <div class="card-body">
+        <p class="card-title">Readly</p>
+        <p class="card-desc">本の記録・感想を管理。<br>読書体験を記録する。</p>
+      </div>
+      <span class="card-arrow">→</span>
+    </a>
+    <a class="card sub" href="ownly.html">
+      <div class="icon">🏠</div>
+      <div class="card-body">
+        <p class="card-title">Ownly</p>
+        <p class="card-desc">持ち物を管理・整理。<br>何を持っているか把握する。</p>
+      </div>
+      <span class="card-arrow">→</span>
+    </a>
+  </main>
+
+  <footer>
+    © 2026 Totonoi One
+  </footer>
+
+</body>
+</html>

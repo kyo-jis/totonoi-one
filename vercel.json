@@ -1,0 +1,65 @@
+{
+  "rewrites": [
+    {
+      "source": "/subly",
+      "destination": "/subly.html"
+    },
+    {
+      "source": "/medly",
+      "destination": "/medly.html"
+    },
+    {
+      "source": "/cookly",
+      "destination": "/cookly.html"
+    },
+    {
+      "source": "/fitly",
+      "destination": "/fitly.html"
+    },
+    {
+      "source": "/learnly",
+      "destination": "/learnly.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/sw-subly.js",
+      "headers": [
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    },
+    {
+      "source": "/sw-medly.js",
+      "headers": [
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    },
+    {
+      "source": "/sw-fitly.js",
+      "headers": [
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    }
+  ]
+}
