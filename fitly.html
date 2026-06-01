@@ -606,7 +606,14 @@
     <div class="cat-filter" id="catFilter"></div>
     <div class="cat-filter" id="partFilter" style="margin-top:-.4rem;"></div>
     <div id="exerciseListModal"></div>
-    <div class="divider">または新しい種目を作成</div>
+
+    <!-- カスタム種目管理エリア -->
+    <div id="customExListWrap" style="display:none;margin-top:.5rem;">
+      <div class="divider">マイ種目</div>
+      <div id="customExList"></div>
+    </div>
+
+    <div class="divider" id="customExDivider">新しい種目を作成</div>
     <div class="form-group">
       <label class="form-label">種目名</label>
       <input type="text" id="newExName" placeholder="例：ベンチプレス" style="width:100%;">
@@ -616,6 +623,7 @@
         <label class="form-label">カテゴリ</label>
         <select id="newExCat" style="width:100%;">
           <option value="strength">筋トレ（ウェイト）</option>
+          <option value="machine">マシン</option>
           <option value="bodyweight">自重</option>
           <option value="cardio">有酸素</option>
           <option value="stretch">ストレッチ</option>
@@ -636,8 +644,9 @@
         </select>
       </div>
     </div>
-    <button class="btn-primary" onclick="addCustomExercise()">追加する</button>
-    <button class="btn-cancel" onclick="closeModal('addExerciseModal')">キャンセル</button>
+    <button class="btn-primary" id="btnSaveCustomEx" onclick="saveCustomExercise()">追加する</button>
+    <button class="btn-cancel" id="btnCancelCustomEdit" onclick="cancelCustomEdit()" style="display:none;">キャンセル</button>
+    <button class="btn-cancel" onclick="closeModal('addExerciseModal')">閉じる</button>
   </div>
 </div>
 
@@ -2048,26 +2057,101 @@ function renderExerciseModal(list) {
   el.innerHTML = html || '<p style="font-size:.82rem;color:var(--muted);padding:1rem 0">見つかりませんでした</p>';
 }
 
-function addCustomExercise() {
-  var name=document.getElementById('newExName').value.trim();
-  var cat=document.getElementById('newExCat').value;
-  var part=document.getElementById('newExPart').value;
+var customEditIdx = -1; // -1=新規, 0以上=編集中インデックス
+
+function renderCustomExList() {
+  var customs = JSON.parse(localStorage.getItem('customExercises') || '[]');
+  var wrap = document.getElementById('customExListWrap');
+  var el = document.getElementById('customExList');
+  if (!customs.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  el.innerHTML = customs.map(function(ex, i) {
+    var partLabel = PART_LABELS[ex.part] || ex.part;
+    var catLabel  = CAT_LABELS[ex.cat]  || ex.cat;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem 0;border-bottom:1px solid var(--border);">'
+      + '<div onclick="addExerciseToWorkout('+JSON.stringify(ex).replace(/"/g,'&quot;')+')" style="flex:1;cursor:pointer;">'
+      + '<p style="font-size:.88rem;font-weight:500;">'+ex.name+'</p>'
+      + '<p style="font-size:.68rem;color:var(--muted);">'+catLabel+' · '+partLabel+'</p>'
+      + '</div>'
+      + '<div style="display:flex;gap:.3rem;flex-shrink:0;">'
+      + '<button onclick="editCustomExercise('+i+')" style="background:none;border:1px solid var(--border);border-radius:7px;padding:.22rem .5rem;font-size:.68rem;color:var(--muted);cursor:pointer;font-family:var(--font);">編集</button>'
+      + '<button onclick="deleteCustomExercise('+i+')" style="background:none;border:1px solid var(--border);border-radius:7px;padding:.22rem .5rem;font-size:.68rem;color:var(--accent2);cursor:pointer;font-family:var(--font);">削除</button>'
+      + '</div></div>';
+  }).join('');
+}
+
+function editCustomExercise(idx) {
+  var customs = JSON.parse(localStorage.getItem('customExercises') || '[]');
+  var ex = customs[idx];
+  if (!ex) return;
+  customEditIdx = idx;
+  document.getElementById('newExName').value = ex.name;
+  document.getElementById('newExCat').value  = ex.cat;
+  document.getElementById('newExPart').value = ex.part;
+  document.getElementById('btnSaveCustomEx').textContent = '更新する';
+  document.getElementById('btnCancelCustomEdit').style.display = 'block';
+  document.getElementById('newExName').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  document.getElementById('newExName').focus();
+}
+
+function cancelCustomEdit() {
+  customEditIdx = -1;
+  document.getElementById('newExName').value = '';
+  document.getElementById('btnSaveCustomEx').textContent = '追加する';
+  document.getElementById('btnCancelCustomEdit').style.display = 'none';
+}
+
+function deleteCustomExercise(idx) {
+  if (!confirm('このカスタム種目を削除しますか？')) return;
+  var customs = JSON.parse(localStorage.getItem('customExercises') || '[]');
+  customs.splice(idx, 1);
+  localStorage.setItem('customExercises', JSON.stringify(customs));
+  renderCustomExList();
+  filterExercises();
+  showToast('🗑 カスタム種目を削除しました');
+}
+
+function saveCustomExercise() {
+  var name = document.getElementById('newExName').value.trim();
+  var cat  = document.getElementById('newExCat').value;
+  var part = document.getElementById('newExPart').value;
   if (!name) { showToast('種目名を入力してください'); return; }
-  var custom={id:'custom_'+Date.now(),name:name,cat:cat,part:part,keyword:name};
-  var customs=JSON.parse(localStorage.getItem('customExercises')||'[]');
-  customs.push(custom);
-  localStorage.setItem('customExercises',JSON.stringify(customs));
-  addExerciseToWorkout(custom);
+  var customs = JSON.parse(localStorage.getItem('customExercises') || '[]');
+  if (customEditIdx >= 0) {
+    // 既存を更新
+    customs[customEditIdx].name = name;
+    customs[customEditIdx].cat  = cat;
+    customs[customEditIdx].part = part;
+    customs[customEditIdx].keyword = name;
+    localStorage.setItem('customExercises', JSON.stringify(customs));
+    cancelCustomEdit();
+    renderCustomExList();
+    filterExercises();
+    showToast('✅ カスタム種目を更新しました');
+  } else {
+    // 新規追加してワークアウトに追加
+    var custom = {id:'custom_'+Date.now(), name:name, cat:cat, part:part, keyword:name};
+    customs.push(custom);
+    localStorage.setItem('customExercises', JSON.stringify(customs));
+    document.getElementById('newExName').value = '';
+    renderCustomExList();
+    filterExercises();
+    addExerciseToWorkout(custom);
+  }
 }
 
 function openAddExercise() {
   document.getElementById('exerciseSearch').value='';
   selectedCat='all';
   selectedPart='all';
+  customEditIdx=-1;
+  document.getElementById('newExName').value='';
+  document.getElementById('btnSaveCustomEx').textContent='追加する';
+  document.getElementById('btnCancelCustomEdit').style.display='none';
   buildCatFilter();
   buildLastDoneMap();
-  var customEx=JSON.parse(localStorage.getItem('customExercises')||'[]');
-  renderExerciseModal(EXERCISE_DB.concat(customEx));
+  renderCustomExList();
+  filterExercises();
   document.getElementById('addExerciseModal').classList.add('show');
 }
 
