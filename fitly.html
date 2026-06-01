@@ -226,6 +226,25 @@
     @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(-10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
     .divider { display:flex; align-items:center; gap:.75rem; margin:.875rem 0; color:var(--muted); font-size:.75rem; }
     .divider::before, .divider::after { content:''; flex:1; height:1px; background:var(--border); }
+    /* PR badge */
+    .pr-badge { display:inline-flex; align-items:center; gap:.25rem; font-size:.65rem; font-weight:600; color:var(--yellow); background:rgba(245,200,66,.12); border:1px solid rgba(245,200,66,.25); border-radius:20px; padding:.15rem .5rem; }
+    /* Body weight */
+    .bw-summary { display:flex; gap:1rem; margin-bottom:1rem; }
+    .bw-stat { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:.85rem 1rem; flex:1; }
+    .bw-stat-val { font-size:1.5rem; font-weight:600; letter-spacing:-.02em; }
+    .bw-stat-label { font-size:.65rem; color:var(--muted); margin-top:.2rem; text-transform:uppercase; letter-spacing:.08em; }
+    .bw-entry { display:flex; align-items:center; justify-content:space-between; padding:.65rem 0; border-bottom:1px solid var(--border); }
+    .bw-entry:last-child { border-bottom:none; }
+    .bw-entry-date { font-size:.78rem; color:var(--muted); }
+    .bw-entry-val { font-size:.95rem; font-weight:500; }
+    .bw-entry-bf { font-size:.72rem; color:var(--muted); margin-left:.4rem; }
+    .bw-trend-up   { color:var(--accent2); }
+    .bw-trend-down { color:var(--accent); }
+    .bw-chart { display:flex; align-items:flex-end; gap:4px; height:80px; margin:1rem 0 .5rem; }
+    .bw-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end; }
+    .bw-bar { width:100%; border-radius:4px 4px 0 0; background:var(--blue); opacity:.7; min-height:3px; }
+    .bw-bar.latest { opacity:1; }
+    .bw-bar-label { font-size:.52rem; color:var(--muted); }
   </style>
 </head>
 <body>
@@ -243,6 +262,7 @@
   <button class="tab" onclick="switchTab('menu',this)">メニュー</button>
   <button class="tab" onclick="switchTab('timer',this)">タイマー</button>
   <button class="tab" onclick="switchTab('history',this)">履歴</button>
+  <button class="tab" onclick="switchTab('body',this)">体重</button>
   <button class="tab" onclick="switchTab('analysis',this)">分析</button>
 </div>
 
@@ -314,6 +334,29 @@
 <div class="view" id="view-history">
   <p class="section-label">ワークアウト履歴</p>
   <div id="historyList"></div>
+</div>
+
+<!-- 体重タブ -->
+<div class="view" id="view-body">
+  <div class="bw-summary">
+    <div class="bw-stat">
+      <p class="bw-stat-val" id="bwCurrent">—</p>
+      <p class="bw-stat-label">現在の体重</p>
+    </div>
+    <div class="bw-stat">
+      <p class="bw-stat-val" id="bwChange">—</p>
+      <p class="bw-stat-label">30日間の変化</p>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:1rem;">
+    <div class="bw-chart" id="bwChart"></div>
+    <div style="display:flex;gap:4px;" id="bwChartLabels"></div>
+  </div>
+  <button onclick="openBodyWeightModal()" style="width:100%;padding:.8rem;background:var(--surface);border:1px dashed var(--border);border-radius:14px;color:var(--accent);font-size:.88rem;font-weight:500;font-family:var(--font);cursor:pointer;margin-bottom:1rem;">＋ 体重を記録</button>
+  <p class="section-label">記録履歴</p>
+  <div class="card" style="padding:.5rem 1rem;">
+    <div id="bwList"></div>
+  </div>
 </div>
 
 <!-- 分析タブ -->
@@ -485,6 +528,126 @@ var selectedCat = 'all';
 var exerciseSettings = JSON.parse(localStorage.getItem('exerciseSettings') || '{}');
 var savedMenus = JSON.parse(localStorage.getItem('fitlyMenus') || '[]');
 var workoutHistory = JSON.parse(localStorage.getItem('fitlyHistory') || '[]');
+var bodyWeightLog = JSON.parse(localStorage.getItem('fitlyBodyWeight') || '[]');
+var personalRecords = JSON.parse(localStorage.getItem('fitlyPRs') || '{}');
+
+// ── Body Weight ──
+function openBodyWeightModal() {
+  document.getElementById('fBwWeight').value = '';
+  document.getElementById('fBwBodyFat').value = '';
+  document.getElementById('fBwNote').value = '';
+  document.getElementById('fBwDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('bodyWeightModal').classList.add('show');
+}
+
+function saveBodyWeight() {
+  var w = parseFloat(document.getElementById('fBwWeight').value);
+  if (!w) { showToast('体重を入力してください'); return; }
+  var bf   = parseFloat(document.getElementById('fBwBodyFat').value) || null;
+  var date = document.getElementById('fBwDate').value || new Date().toISOString().split('T')[0];
+  var note = document.getElementById('fBwNote').value.trim();
+  bodyWeightLog.unshift({ id:Date.now().toString(), date:date, weight:w, bodyFat:bf, note:note });
+  bodyWeightLog.sort(function(a,b){ return b.date.localeCompare(a.date); });
+  localStorage.setItem('fitlyBodyWeight', JSON.stringify(bodyWeightLog));
+  dbSave('bodyweight', bodyWeightLog);
+  closeModal('bodyWeightModal');
+  renderBodyWeightTab();
+  showToast('✅ 体重を記録しました');
+}
+
+function renderBodyWeightTab() {
+  if (!document.getElementById('bwList')) return;
+  var log = bodyWeightLog.slice(0, 30);
+
+  // サマリー
+  var cur = log.length ? log[0].weight : null;
+  var ago30 = log.find(function(e){
+    var d = new Date(e.date), now = new Date();
+    return (now - d) / 86400000 >= 28;
+  });
+  document.getElementById('bwCurrent').textContent = cur ? cur + ' kg' : '—';
+  if (cur && ago30) {
+    var diff = Math.round((cur - ago30.weight) * 10) / 10;
+    var sign = diff > 0 ? '+' : '';
+    var cls  = diff > 0 ? 'bw-trend-up' : diff < 0 ? 'bw-trend-down' : '';
+    document.getElementById('bwChange').innerHTML = '<span class="'+cls+'">'+(sign+diff)+' kg</span>';
+  } else {
+    document.getElementById('bwChange').textContent = '—';
+  }
+
+  // チャート（直近14件）
+  var chart14 = log.slice(0, 14).reverse();
+  if (chart14.length > 1) {
+    var minW = Math.min.apply(null, chart14.map(function(e){ return e.weight; }));
+    var maxW = Math.max.apply(null, chart14.map(function(e){ return e.weight; }));
+    var range = maxW - minW || 1;
+    document.getElementById('bwChart').innerHTML = chart14.map(function(e, i){
+      var pct = Math.round(((e.weight - minW) / range) * 80) + 10;
+      return '<div class="bw-bar-wrap"><div class="bw-bar'+(i===chart14.length-1?' latest':'')+'" style="height:'+pct+'%"></div></div>';
+    }).join('');
+    document.getElementById('bwChartLabels').innerHTML = chart14.map(function(e){
+      var d = new Date(e.date);
+      return '<div style="flex:1;text-align:center;font-size:.52rem;color:var(--muted);">'+(d.getMonth()+1)+'/'+(d.getDate())+'</div>';
+    }).join('');
+  } else {
+    document.getElementById('bwChart').innerHTML = '<p style="font-size:.78rem;color:var(--muted);padding:.5rem 0;">記録が2件以上になるとグラフが表示されます</p>';
+    document.getElementById('bwChartLabels').innerHTML = '';
+  }
+
+  // リスト
+  document.getElementById('bwList').innerHTML = log.length
+    ? log.map(function(e, i){
+        var d = new Date(e.date);
+        var dateStr = (d.getMonth()+1)+'月'+d.getDate()+'日';
+        var trend = '';
+        if (i < log.length-1) {
+          var diff = Math.round((e.weight - log[i+1].weight) * 10) / 10;
+          if (diff > 0) trend = '<span class="bw-trend-up"> ▲'+diff+'</span>';
+          else if (diff < 0) trend = '<span class="bw-trend-down"> ▼'+Math.abs(diff)+'</span>';
+        }
+        return '<div class="bw-entry">'
+          +'<span class="bw-entry-date">'+dateStr+(e.note?' · '+e.note:'')+'</span>'
+          +'<span class="bw-entry-val">'+e.weight+' kg'+trend
+          +(e.bodyFat?'<span class="bw-entry-bf">体脂'+e.bodyFat+'%</span>':'')+'</span>'
+          +'</div>';
+      }).join('')
+    : '<p style="font-size:.82rem;color:var(--muted);padding:1rem 0;text-align:center;">まだ記録がありません</p>';
+}
+
+// ── Personal Records (PR) ──
+function calc1RM(weight, reps) {
+  if (!weight || !reps) return 0;
+  return Math.round(weight * (1 + reps / 30));
+}
+
+function checkAndUpdatePRs(exercises) {
+  var newPRs = [];
+  exercises.forEach(function(ex) {
+    if (!ex.sets || !ex.sets.length) return;
+    var best = ex.sets.reduce(function(max, s) {
+      if (!s.done || !s.weight || !s.reps) return max;
+      var est = calc1RM(parseFloat(s.weight), parseInt(s.reps));
+      return est > max ? est : max;
+    }, 0);
+    if (!best) return;
+    var prev = personalRecords[ex.id] ? personalRecords[ex.id].est1RM : 0;
+    if (best > prev) {
+      var bestSet = ex.sets.filter(function(s){ return s.done && s.weight && s.reps; })
+        .sort(function(a,b){ return calc1RM(b.weight,b.reps)-calc1RM(a.weight,a.reps); })[0];
+      personalRecords[ex.id] = {
+        name: ex.name, est1RM: best,
+        weight: parseFloat(bestSet.weight), reps: parseInt(bestSet.reps),
+        date: new Date().toISOString().split('T')[0]
+      };
+      newPRs.push(ex.name);
+    }
+  });
+  if (newPRs.length) {
+    localStorage.setItem('fitlyPRs', JSON.stringify(personalRecords));
+    dbSave('prs', personalRecords);
+    showToast('🏆 PR更新！ ' + newPRs.join('・'));
+  }
+}
 
 // ── Init ──
 function init() {
@@ -492,6 +655,7 @@ function init() {
   renderExerciseModal();
   renderMenuList();
   renderHistory();
+  renderBodyWeightTab();
   renderAnalysis();
   updateProUI();
 }
@@ -503,6 +667,7 @@ function switchTab(name, btn) {
   document.getElementById('view-'+name).classList.add('active');
   btn.classList.add('active');
   if (name==='history') renderHistory();
+  if (name==='body') renderBodyWeightTab();
   if (name==='analysis') renderAnalysis();
 }
 
@@ -547,6 +712,7 @@ function saveWorkout() {
   workoutHistory.unshift(record);
   localStorage.setItem('fitlyHistory', JSON.stringify(workoutHistory));
   dbSave('history', workoutHistory);
+  checkAndUpdatePRs(currentWorkout.exercises);
 
   // 種目ごとの設定を保存
   currentWorkout.exercises.forEach(function(ex) {
@@ -577,9 +743,13 @@ function renderExerciseCards() {
   if (!currentWorkout.exercises.length) { el.innerHTML = ''; return; }
   el.innerHTML = currentWorkout.exercises.map(function(ex, ei) {
     var settings = exerciseSettings[ex.id] || {};
-    var prevHTML = settings.lastWeight
-      ? '<div class="prev-record">前回: <span>'+settings.lastWeight+'kg × '+settings.lastReps+'回 × '+settings.lastSets+'セット</span></div>'
+    var pr = personalRecords[ex.id];
+    var prHTML = pr
+      ? '<span class="pr-badge">🏆 PR '+pr.weight+'kg×'+pr.reps+'回 推定1RM:'+pr.est1RM+'kg</span> '
       : '';
+    var prevHTML = settings.lastWeight
+      ? '<div class="prev-record">'+prHTML+'前回: <span>'+settings.lastWeight+'kg × '+settings.lastReps+'回 × '+settings.lastSets+'セット</span></div>'
+      : (prHTML ? '<div class="prev-record">'+prHTML+'</div>' : '');
     var ytURL = 'https://www.youtube.com/results?search_query='+encodeURIComponent((ex.keyword||ex.name)+' やり方 フォーム');
     var setsHTML = ex.sets.map(function(s, si) {
       var doneClass = s.done ? ' done' : '';
@@ -1057,9 +1227,11 @@ async function syncFromCloud() {
   var res = await _sb.from('user_data').select('key,data').eq('user_id', currentUser.id).eq('app', _APP);
   if (res.data) {
     res.data.forEach(function(row) {
-      if (row.key === 'history') { workoutHistory = row.data; localStorage.setItem('fitlyHistory', JSON.stringify(workoutHistory)); }
-      if (row.key === 'menus') { savedMenus = row.data; localStorage.setItem('fitlyMenus', JSON.stringify(savedMenus)); }
+      if (row.key === 'history')    { workoutHistory = row.data; localStorage.setItem('fitlyHistory', JSON.stringify(workoutHistory)); }
+      if (row.key === 'menus')      { savedMenus = row.data; localStorage.setItem('fitlyMenus', JSON.stringify(savedMenus)); }
       if (row.key === 'exSettings') { exerciseSettings = row.data; localStorage.setItem('exerciseSettings', JSON.stringify(exerciseSettings)); }
+      if (row.key === 'bodyweight') { bodyWeightLog = row.data; localStorage.setItem('fitlyBodyWeight', JSON.stringify(bodyWeightLog)); }
+      if (row.key === 'prs')        { personalRecords = row.data; localStorage.setItem('fitlyPRs', JSON.stringify(personalRecords)); }
     });
   }
   var p = await _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle();
@@ -1129,6 +1301,34 @@ _sb.auth.getSession().then(function(res) {
   if (currentUser) syncFromCloud();
 });
 </script>
+
+<!-- 体重記録モーダル -->
+<div class="modal-overlay" id="bodyWeightModal" onclick="closeModalOutside(event,'bodyWeightModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <p class="modal-title">体重を記録</p>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">体重 (kg)</label>
+        <input type="number" id="fBwWeight" placeholder="70.0" step="0.1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">体脂肪率 % (任意)</label>
+        <input type="number" id="fBwBodyFat" placeholder="18.0" step="0.1">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">日付</label>
+      <input type="date" id="fBwDate">
+    </div>
+    <div class="form-group">
+      <label class="form-label">メモ (任意)</label>
+      <input type="text" id="fBwNote" placeholder="例：起床後・食前">
+    </div>
+    <button class="btn-primary" onclick="saveBodyWeight()">記録する</button>
+    <button class="btn-cancel" onclick="closeModal('bodyWeightModal')">キャンセル</button>
+  </div>
+</div>
 
 <!-- Auth Modal -->
 <div class="modal-overlay" id="authModal" onclick="closeModalOutside(event,'authModal')">
