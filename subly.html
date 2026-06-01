@@ -261,7 +261,7 @@
 
 <div class="free-banner">
   <p class="free-banner-text"><strong id="countText">0/5</strong> 件登録中（無料プラン）</p>
-  <button class="upgrade-btn" onclick="alert('近日公開予定です！')">アップグレード</button>
+  <button class="upgrade-btn" onclick="startCheckout()">アップグレード</button>
 </div>
 
 <div class="tabs">
@@ -306,7 +306,7 @@
       </div>
       <div id="chartNotice" style="display:none;margin-top:.75rem;background:rgba(245,200,66,.1);border:1px solid rgba(245,200,66,.25);border-radius:12px;padding:.65rem 1rem;align-items:center;justify-content:space-between;gap:.75rem;">
         <p style="font-size:.75rem;color:var(--yellow);">📊 無料プランは過去3ヶ月まで表示</p>
-        <button onclick="alert('近日公開予定です！')" style="font-size:.68rem;font-weight:500;color:#1a1a24;background:var(--yellow);border:none;border-radius:6px;padding:.35rem .65rem;cursor:pointer;font-family:var(--font);">全期間を見る</button>
+        <button onclick="startCheckout()" style="font-size:.68rem;font-weight:500;color:#1a1a24;background:var(--yellow);border:none;border-radius:6px;padding:.35rem .65rem;cursor:pointer;font-family:var(--font);">全期間を見る</button>
       </div>
     </div>
     <div class="analytics-section">
@@ -358,7 +358,7 @@
           <span style="font-size:.7rem;padding:.25rem .6rem;border-radius:20px;background:rgba(108,142,255,.15);color:var(--accent);">現在</span>
         </div>
         <div id="upgradeSection">
-          <button onclick="alert('近日公開予定です！')" class="btn-primary" style="margin-top:0;">有料プランにアップグレード</button>
+          <button onclick="startCheckout()" class="btn-primary" style="margin-top:0;">有料プランにアップグレード</button>
           <p style="font-size:.72rem;color:var(--muted);text-align:center;margin-top:.5rem;">登録無制限・全期間グラフ・広告なし・エクスポート</p>
         </div>
         <div id="proActiveSection" style="display:none;">
@@ -1202,6 +1202,28 @@ function showAuthToast(msg) {
   t.textContent = msg;
   document.body.appendChild(t);
   setTimeout(function(){ t.remove(); }, 2500);
+}
+
+async function startCheckout() {
+  if (!currentUser) { openAuthModal(); showAuthToast('まずログインしてください'); return; }
+  showAuthToast('決済ページへ移動中...');
+  try {
+    var res = await fetch('/api/create-checkout-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUser.id, userEmail: currentUser.email })
+    });
+    var data = await res.json();
+    if (data.url) window.location.href = data.url;
+    else showAuthToast('⚠️ エラーが発生しました');
+  } catch(e) { showAuthToast('⚠️ 通信エラーが発生しました'); }
+}
+
+// 決済成功後の処理
+if (location.search.includes('pro=success') && currentUser) {
+  localStorage.setItem('isPro', 'true'); isPro = true; updateProUI();
+  showAuthToast('✅ Proプランへようこそ！');
+  history.replaceState(null, '', location.pathname);
 }
 
 var _authMode = 'login';
