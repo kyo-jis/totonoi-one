@@ -2479,14 +2479,17 @@ function openHistoryEdit(idx) {
   try {
     heIdx = idx;
     var w = workoutHistory[idx];
-    if (!w) { showToast('記録が見つかりません'); return; }
-    document.getElementById('heDate').value = w.date || '';
-    document.getElementById('heName').value = w.name || '';
+    if (!w) { alert('記録が見つかりません (idx=' + idx + ')'); return; }
+    var dateEl = document.getElementById('heDate');
+    var nameEl = document.getElementById('heName');
+    if (!dateEl || !nameEl) { alert('モーダル要素が見つかりません'); return; }
+    dateEl.value = w.date || '';
+    nameEl.value = w.name || '';
     document.getElementById('heExerciseList').innerHTML = '';
     renderHeExercises();
     document.getElementById('historyEditModal').classList.add('show');
   } catch(e) {
-    showToast('編集できませんでした: ' + e.message);
+    alert('エラー: ' + e.message + '\nstack: ' + (e.stack||'').slice(0,200));
   }
 }
 
