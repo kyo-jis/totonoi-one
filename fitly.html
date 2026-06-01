@@ -233,16 +233,17 @@
     .wd-stat-label { font-size:.62rem; color:var(--muted); margin-top:.2rem; text-transform:uppercase; letter-spacing:.06em; }
     .wd-cal { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem; margin-bottom:1rem; }
     .wd-cal-title { font-size:.72rem; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:.75rem; }
-    .wd-cal-grid { display:flex; gap:4px; }
-    .wd-cal-day { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; }
-    .wd-cal-label { font-size:.6rem; color:var(--muted); }
-    .wd-cal-dot { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:.62rem; position:relative; }
-    .wd-cal-dot.done-low  { background:rgba(94,207,160,.28); color:var(--accent); font-weight:600; }
-    .wd-cal-dot.done-mid  { background:rgba(94,207,160,.58); color:#1a1a24; font-weight:600; }
-    .wd-cal-dot.done-high { background:var(--accent); color:#1a1a24; font-weight:600; }
-    .wd-cal-dot.today { border:2px solid var(--accent); color:var(--accent); }
-    .wd-cal-dot.rest { background:var(--surface2); color:var(--muted); }
-    .wd-vol { font-size:.7rem; color:var(--muted); text-align:center; margin-top:.5rem; }
+    .wd-cal-scroll { display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; padding-bottom:2px; }
+    .wd-cal-scroll::-webkit-scrollbar { display:none; }
+    .wd-cal-day { flex-shrink:0; width:42px; display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; }
+    .wd-cal-label { font-size:.58rem; color:var(--muted); }
+    .wd-cal-date { font-size:.65rem; color:var(--muted); }
+    .wd-cal-cell { width:38px; height:38px; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; background:var(--surface2); position:relative; }
+    .wd-cal-cell.today { border:2px solid var(--accent); }
+    .wd-cal-cell.has-workout { background:var(--surface3); }
+    .wd-cal-parts { display:flex; flex-wrap:wrap; gap:2px; justify-content:center; align-items:center; }
+    .wd-cal-part-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+    .wd-vol { font-size:.7rem; color:var(--muted); text-align:center; margin-top:.75rem; }
     /* Last workout card */
     .wd-last { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:1rem; display:flex; align-items:center; gap:.85rem; }
     .wd-last-icon { width:42px; height:42px; border-radius:12px; background:rgba(94,207,160,.12); display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0; }
@@ -345,7 +346,7 @@
 
     <div class="wd-cal">
       <p class="wd-cal-title">📅 直近2週間</p>
-      <div class="wd-cal-grid" id="wdCalGrid"></div>
+      <div class="wd-cal-scroll" id="wdCalGrid"></div>
       <p class="wd-vol" id="wdVolume"></p>
     </div>
 
@@ -370,11 +371,12 @@
   <div id="workoutActiveHeader" style="display:none;margin-bottom:1.25rem;">
     <div style="display:flex;align-items:center;justify-content:space-between;">
       <div>
-        <p class="section-label">ワークアウト中</p>
+        <p class="section-label" id="workoutStatusLabel">種目を選択中</p>
         <p class="workout-timer" id="workoutTimer">00:00</p>
       </div>
       <div style="display:flex;gap:.5rem;">
-        <button class="btn-end" id="btnEndWorkout" onclick="endWorkout()">完了</button>
+        <button class="btn-start" id="btnStartWorkout" onclick="beginTimer()">▶ 開始</button>
+        <button class="btn-end" id="btnEndWorkout" onclick="endWorkout()" style="display:none;">完了</button>
       </div>
     </div>
   </div>
@@ -540,6 +542,16 @@
     <button class="rest-adj-btn" onclick="adjustRest(5)">＋</button>
   </div>
   <button class="rest-skip" onclick="skipRest()">スキップ →</button>
+</div>
+
+<!-- 日別ワークアウト詳細モーダル -->
+<div class="modal-overlay" id="dayDetailModal" onclick="closeModalOutside(event,'dayDetailModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <p class="modal-title" id="dayDetailTitle"></p>
+    <div id="dayDetailContent"></div>
+    <button class="btn-cancel" onclick="closeModal('dayDetailModal')">閉じる</button>
+  </div>
 </div>
 
 <!-- 種目追加モーダル -->
@@ -951,48 +963,45 @@ function renderWorkoutDashboard() {
     lastCard.style.display = 'none';
   }
 
-  // ── ヒートマップカレンダー（直近14日・ボリューム強度） ──
+  // ── 部位アイコン付きカレンダー（直近14日・タップで詳細） ──
   var days = ['日','月','火','水','木','金','土'];
-  // 各日のボリュームを集計
-  var volByDate = {};
+  var partColors3 = { chest:'#ff7c6e', back:'#6c8eff', shoulder:'#b388ff', arm:'#f5c842', leg:'#5ecfa0', core:'#8888a0', full:'#aaaacc', other:'#555566' };
+
+  // 日付→ワークアウト配列のマップを作成
+  var workoutByDate = {};
   history.forEach(function(w) {
-    var vol = 0;
-    (w.exercises || []).forEach(function(ex) {
-      (ex.sets || []).forEach(function(s) {
-        if (s.done && s.weight && s.reps) vol += parseFloat(s.weight) * parseInt(s.reps);
-      });
-    });
-    if (vol > 0) volByDate[w.date] = (volByDate[w.date] || 0) + vol;
-    else if (dateSet[w.date]) volByDate[w.date] = volByDate[w.date] || -1; // bodyweight/cardioのみの日
+    if (!workoutByDate[w.date]) workoutByDate[w.date] = [];
+    workoutByDate[w.date].push(w);
   });
-  // 直近14日の最大ボリュームで正規化
-  var vols14 = [];
-  for (var i = 13; i >= 0; i--) {
-    var d14 = new Date(); d14.setDate(d14.getDate()-i); d14.setHours(0,0,0,0);
-    vols14.push(volByDate[d14.toISOString().split('T')[0]] || 0);
-  }
-  var maxVol = Math.max.apply(null, vols14.filter(function(v){ return v > 0; })) || 1;
 
   var calHTML = '';
   for (var i = 13; i >= 0; i--) {
     var d = new Date(); d.setDate(d.getDate() - i); d.setHours(0,0,0,0);
     var ds = d.toISOString().split('T')[0];
     var isToday = i === 0;
-    var vol = volByDate[ds] || 0;
-    var hasWorkout = dateSet[ds];
-    var cls, inner;
-    if (hasWorkout) {
-      var ratio = vol > 0 ? vol / maxVol : 0;
-      cls = ratio > 0.6 ? 'done-high' : ratio > 0.25 ? 'done-mid' : 'done-low';
-      inner = '✓';
-    } else if (isToday) {
-      cls = 'today'; inner = '●';
-    } else {
-      cls = 'rest'; inner = '';
-    }
-    calHTML += '<div class="wd-cal-day">'
-      + '<span class="wd-cal-label">'+(isToday?'今':days[d.getDay()])+'</span>'
-      + '<div class="wd-cal-dot '+cls+'">'+inner+'</div>'
+    var workouts = workoutByDate[ds] || [];
+    var hasWorkout = workouts.length > 0;
+
+    // この日の部位を収集（重複除去）
+    var partsSet = {};
+    workouts.forEach(function(w) {
+      (w.exercises || []).forEach(function(ex) { if (ex.part) partsSet[ex.part] = true; });
+    });
+    var parts = Object.keys(partsSet).slice(0, 4);
+
+    var dotsHTML = parts.map(function(p) {
+      return '<div class="wd-cal-part-dot" style="background:' + (partColors3[p] || '#888') + ';"></div>';
+    }).join('');
+
+    var cellCls = 'wd-cal-cell' + (isToday ? ' today' : '') + (hasWorkout ? ' has-workout' : '');
+    var clickAttr = hasWorkout ? ' onclick="openDayDetail(\'' + ds + '\')"' : '';
+
+    calHTML += '<div class="wd-cal-day"' + clickAttr + '>'
+      + '<span class="wd-cal-label">' + (isToday ? '今日' : days[d.getDay()]) + '</span>'
+      + '<div class="' + cellCls + '">'
+      + (hasWorkout ? '<div class="wd-cal-parts">' + dotsHTML + '</div>' : '')
+      + '</div>'
+      + '<span class="wd-cal-date">' + (d.getMonth()+1) + '/' + d.getDate() + '</span>'
       + '</div>';
   }
   document.getElementById('wdCalGrid').innerHTML = calHTML;
@@ -1084,6 +1093,45 @@ function renderWorkoutDashboard() {
   }
 }
 
+// ── Day Detail Modal ──
+function openDayDetail(ds) {
+  var partLabels3 = { chest:'胸', back:'背中', shoulder:'肩', arm:'腕', leg:'脚', core:'体幹', full:'全身', other:'その他' };
+  var workouts = workoutHistory.filter(function(w){ return w.date === ds; });
+  if (!workouts.length) return;
+
+  var d = new Date(ds);
+  var dayNames = ['日','月','火','水','木','金','土'];
+  document.getElementById('dayDetailTitle').textContent =
+    (d.getMonth()+1) + '月' + d.getDate() + '日（' + dayNames[d.getDay()] + '）';
+
+  var html = workouts.map(function(w) {
+    var dur = w.duration ? Math.round(w.duration/60) + '分' : '';
+    var exList = (w.exercises || []).map(function(ex) {
+      var doneSets = (ex.sets || []).filter(function(s){ return s.done; });
+      var setStr = doneSets.map(function(s){
+        if (s.weight && s.reps) return s.weight + 'kg×' + s.reps;
+        if (s.reps) return s.reps + 'rep';
+        return '—';
+      }).join(', ');
+      var partLabel = partLabels3[ex.part] || '';
+      return '<div style="padding:.5rem 0;border-bottom:1px solid var(--border);">'
+        + '<div style="display:flex;justify-content:space-between;align-items:baseline;">'
+        + '<span style="font-size:.88rem;font-weight:500;">' + ex.name + '</span>'
+        + (partLabel ? '<span style="font-size:.65rem;color:var(--muted);">' + partLabel + '</span>' : '')
+        + '</div>'
+        + (setStr ? '<p style="font-size:.75rem;color:var(--muted);margin-top:.25rem;">' + setStr + '</p>' : '')
+        + '</div>';
+    }).join('');
+    return '<div style="margin-bottom:.75rem;">'
+      + (w.name ? '<p style="font-size:.78rem;color:var(--muted);margin-bottom:.5rem;">' + w.name + (dur?' · '+dur:'') + '</p>' : '')
+      + exList
+      + '</div>';
+  }).join('');
+
+  document.getElementById('dayDetailContent').innerHTML = html;
+  document.getElementById('dayDetailModal').classList.add('show');
+}
+
 function startFromMenu(idx) {
   var menu = savedMenus[idx];
   if (!menu) return;
@@ -1112,12 +1160,22 @@ function startWorkoutCustom() {
 }
 
 function activateWorkoutUI() {
-  currentWorkout.startTime = Date.now();
   currentWorkout.running = true;
   document.getElementById('workoutDashboard').style.display = 'none';
   document.getElementById('workoutActiveHeader').style.display = 'block';
   document.getElementById('btnAddExercise').style.display = 'block';
   document.getElementById('btnSave').style.display = 'block';
+  document.getElementById('btnStartWorkout').style.display = 'block';
+  document.getElementById('btnEndWorkout').style.display = 'none';
+  document.getElementById('workoutStatusLabel').textContent = '種目を選択中';
+}
+
+function beginTimer() {
+  if (currentWorkout.startTime) return;
+  currentWorkout.startTime = Date.now();
+  document.getElementById('btnStartWorkout').style.display = 'none';
+  document.getElementById('btnEndWorkout').style.display = 'block';
+  document.getElementById('workoutStatusLabel').textContent = 'ワークアウト中';
   workoutTimerInterval = setInterval(updateWorkoutTimer, 1000);
 }
 
@@ -1181,10 +1239,12 @@ function saveWorkout() {
   dbSave('exSettings', exerciseSettings);
 
   clearInterval(workoutTimerInterval);
+  workoutTimerInterval = null;
   currentWorkout = {exercises:[], startTime:null, running:false};
   document.getElementById('workoutTimer').textContent = '00:00';
-  document.getElementById('btnStartWorkout').style.display = 'block';
-  document.getElementById('btnEndWorkout').style.display = 'none';
+  document.getElementById('workoutActiveHeader').style.display = 'none';
+  document.getElementById('workoutDashboard').style.display = 'block';
+  document.getElementById('btnAddExercise').style.display = 'none';
   document.getElementById('btnSave').style.display = 'none';
   renderExerciseCards();
   showToast('✅ ワークアウトを保存しました！');
