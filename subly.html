@@ -496,7 +496,11 @@
       </select>
     </div>
     <div class="form-group">
-      <label>次回請求日</label>
+      <label>登録日（契約開始日）</label>
+      <input type="date" id="fStartDate" onchange="onStartDateChange()">
+    </div>
+    <div class="form-group">
+      <label>次回請求日 <span id="nextBillHint" style="font-size:.65rem;color:var(--accent);margin-left:.3rem;"></span></label>
       <input type="date" id="fDate">
     </div>
     <div class="form-group">
@@ -675,6 +679,43 @@ function onCycleChange() {
   var val = document.getElementById('fCycle').value;
   var wrap = document.getElementById('customCycleWrap');
   wrap.className = 'custom-cycle-wrap' + (val === 'custom' ? ' show' : '');
+  onStartDateChange();
+}
+
+function calcNextBillingDate(startStr, cycle, customNum, customUnit) {
+  if (!startStr || cycle === 'once') return '';
+  var next = new Date(startStr);
+  var now = new Date(); now.setHours(0,0,0,0);
+  var max = 1000;
+  while (next < now && max-- > 0) {
+    if (cycle === 'weekly')       next.setDate(next.getDate() + 7);
+    else if (cycle === 'monthly') next.setMonth(next.getMonth() + 1);
+    else if (cycle === '3months') next.setMonth(next.getMonth() + 3);
+    else if (cycle === '6months') next.setMonth(next.getMonth() + 6);
+    else if (cycle === 'yearly')  next.setFullYear(next.getFullYear() + 1);
+    else if (cycle === '2years')  next.setFullYear(next.getFullYear() + 2);
+    else if (cycle === '3years')  next.setFullYear(next.getFullYear() + 3);
+    else if (cycle === 'custom') {
+      var n = parseInt(customNum) || 1;
+      if (customUnit === 'years') next.setFullYear(next.getFullYear() + n);
+      else next.setMonth(next.getMonth() + n);
+    } else break;
+  }
+  return next.toISOString().split('T')[0];
+}
+
+function onStartDateChange() {
+  var startDate = document.getElementById('fStartDate').value;
+  if (!startDate) return;
+  var cycle = document.getElementById('fCycle').value;
+  var customNum = document.getElementById('fCustomNum').value;
+  var customUnit = document.getElementById('fCustomUnit').value;
+  var next = calcNextBillingDate(startDate, cycle, customNum, customUnit);
+  if (next) {
+    document.getElementById('fDate').value = next;
+    var d = new Date(next);
+    document.getElementById('nextBillHint').textContent = '→ 自動計算';
+  }
 }
 
 // ── Days ──
@@ -977,6 +1018,7 @@ function selectPreset(btn,name,icon,amount,cycle,domain) {
   document.getElementById('fAmount').value=amount;
   document.getElementById('fCycle').value=cycle;
   document.getElementById('customCycleWrap').className='custom-cycle-wrap';
+  document.getElementById('fName').scrollIntoView({behavior:'smooth', block:'center'});
 }
 
 // ── Modal ──
@@ -987,7 +1029,9 @@ function openModal() {
   document.getElementById('fCurrency').value='JPY';
   document.getElementById('fCycle').value='monthly';
   document.getElementById('fPayment').value='';
+  document.getElementById('fStartDate').value='';
   document.getElementById('fDate').value=new Date().toISOString().split('T')[0];
+  document.getElementById('nextBillHint').textContent='';
   document.getElementById('customCycleWrap').className='custom-cycle-wrap';
   document.querySelectorAll('.preset-btn').forEach(function(b){ b.classList.remove('selected'); });
   document.getElementById('modalOverlay').classList.add('show');
@@ -1005,7 +1049,9 @@ function editSub(id) {
   document.getElementById('fCurrency').value=s.currency||'JPY';
   document.getElementById('fCycle').value=s.cycle;
   document.getElementById('fPayment').value=s.payment||'';
+  document.getElementById('fStartDate').value=s.startDate||'';
   document.getElementById('fDate').value=s.nextBillingDate||'';
+  document.getElementById('nextBillHint').textContent=s.startDate?'→ 自動計算':'';
   if (s.cycle==='custom') {
     document.getElementById('customCycleWrap').className='custom-cycle-wrap show';
     document.getElementById('fCustomNum').value=s.customNum||1;
@@ -1030,7 +1076,8 @@ function saveSubscription() {
   if (!editId&&subs.length>=FREE_LIMIT){ alert('無料プランは'+FREE_LIMIT+'件まで登録できます。'); return; }
   var selectedBtn=document.querySelector('.preset-btn.selected');
   var domain=selectedBtn?(selectedBtn.dataset.domain||''):(editId?(subs.find(function(x){return x.id===editId;})||{}).domain||'':'');
-  var entry={id:editId||Date.now().toString(),name:name,icon:icon,amount:amount,currency:currency,cycle:cycle,nextBillingDate:date,domain:domain,payment:payment,customNum:customNum,customUnit:customUnit};
+  var startDate=document.getElementById('fStartDate').value;
+  var entry={id:editId||Date.now().toString(),name:name,icon:icon,amount:amount,currency:currency,cycle:cycle,nextBillingDate:date,domain:domain,payment:payment,customNum:customNum,customUnit:customUnit,startDate:startDate};
   if (editId) { var idx=subs.findIndex(function(x){return x.id===editId;}); subs[idx]=entry; }
   else subs.push(entry);
   localStorage.setItem('subs',JSON.stringify(subs));
