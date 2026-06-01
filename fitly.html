@@ -235,21 +235,28 @@
     .wd-stat { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:.85rem .6rem; text-align:center; }
     .wd-stat-val { font-size:1.5rem; font-weight:600; letter-spacing:-.02em; }
     .wd-stat-label { font-size:.62rem; color:var(--muted); margin-top:.2rem; text-transform:uppercase; letter-spacing:.06em; }
+    /* Monthly Calendar */
     .wd-cal { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem; margin-bottom:1rem; }
-    .wd-cal-title { font-size:.72rem; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:.75rem; }
-    .wd-cal-scroll { display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; padding-bottom:2px; }
-    .wd-cal-scroll::-webkit-scrollbar { display:none; }
-    .wd-cal-day { flex-shrink:0; width:44px; display:flex; flex-direction:column; align-items:center; gap:4px; }
-    .wd-cal-label { font-size:.6rem; color:var(--muted); font-weight:500; }
-    .wd-cal-date { font-size:.62rem; color:var(--muted); }
-    .wd-cal-cell { width:40px; height:48px; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; background:var(--surface2); }
-    .wd-cal-cell.today { border:2px solid var(--accent); }
-    .wd-cal-cell.has-workout { background:rgba(94,207,160,.3); border:1px solid rgba(94,207,160,.5); }
-    .wd-cal-check { font-size:.95rem; color:var(--accent); font-weight:700; line-height:1; }
-    .wd-cal-parts { display:flex; gap:3px; justify-content:center; align-items:center; flex-wrap:wrap; max-width:36px; }
-    .wd-cal-part-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-    .wd-cal-legend { display:flex; flex-wrap:wrap; gap:.35rem .65rem; margin-top:.75rem; }
-    .wd-cal-legend-item { display:flex; align-items:center; gap:.3rem; font-size:.65rem; color:var(--muted); }
+    .cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:.75rem; }
+    .cal-nav-btn { background:none; border:1px solid var(--border); border-radius:10px; width:34px; height:34px; color:var(--text); font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .cal-month-label { font-size:.9rem; font-weight:500; }
+    .cal-weekdays { display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:.35rem; }
+    .cal-weekday { text-align:center; font-size:.62rem; color:var(--muted); padding:.2rem 0; }
+    .cal-weekday.sun { color:var(--accent2); }
+    .cal-weekday.sat { color:var(--blue); }
+    .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; }
+    .cal-day { aspect-ratio:1; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:.78rem; color:var(--muted); background:transparent; border:none; font-family:var(--font); cursor:default; position:relative; }
+    .cal-day.has-workout { background:rgba(94,207,160,.25); color:var(--text); cursor:pointer; font-weight:600; }
+    .cal-day.has-workout:active { background:rgba(94,207,160,.45); }
+    .cal-day.today { color:var(--accent); font-weight:700; }
+    .cal-day.today::after { content:''; position:absolute; bottom:3px; left:50%; transform:translateX(-50%); width:4px; height:4px; border-radius:50%; background:var(--accent); }
+    .cal-day.has-workout.today { background:rgba(94,207,160,.35); }
+    .cal-day.other-month { color:var(--surface3); }
+    .cal-day-dots { display:flex; gap:2px; justify-content:center; }
+    .cal-day-dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+    .cal-summary { font-size:.72rem; color:var(--muted); text-align:center; margin-top:.65rem; }
+    .wd-cal-legend { display:flex; flex-wrap:wrap; gap:.35rem .65rem; margin-top:.5rem; }
+    .wd-cal-legend-item { display:flex; align-items:center; gap:.3rem; font-size:.63rem; color:var(--muted); }
     .wd-vol { font-size:.7rem; color:var(--muted); text-align:center; margin-top:.75rem; }
     /* Last workout card */
     .wd-last { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:1rem; display:flex; align-items:center; gap:.85rem; }
@@ -339,26 +346,25 @@
     <div class="wd-menu-row" id="wdMenuRow"></div>
     <button class="btn-start-custom" onclick="startWorkoutCustom()" style="margin-bottom:1.25rem;">＋ 種目を選んで始める</button>
 
-    <div class="wd-stats">
-      <div class="wd-stat">
-        <p class="wd-stat-val" id="wdStreak">0</p>
-        <p class="wd-stat-label">🔥 連続日数</p>
-      </div>
-      <div class="wd-stat" style="grid-column:span 2;">
-        <div id="wdWeekDots" style="display:flex;gap:6px;justify-content:center;margin-bottom:.35rem;"></div>
-        <p class="wd-stat-label">今週 <span id="wdWeek" style="color:var(--text);font-weight:600;"></span></p>
-      </div>
-    </div>
-
-    <!-- 累計日数 -->
-    <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:.75rem;">
-      <p style="font-size:.7rem;color:var(--muted);">累計 <span id="wdTotal" style="color:var(--accent);font-weight:600;"></span></p>
-    </div>
-
+    <!-- 月間カレンダー -->
     <div class="wd-cal">
-      <p class="wd-cal-title">📅 直近2週間</p>
-      <div class="wd-cal-scroll" id="wdCalGrid"></div>
-      <p class="wd-vol" id="wdVolume"></p>
+      <div class="cal-nav">
+        <button class="cal-nav-btn" onclick="calMove(-1)">‹</button>
+        <p class="cal-month-label" id="calMonthLabel"></p>
+        <button class="cal-nav-btn" onclick="calMove(1)">›</button>
+      </div>
+      <div class="cal-weekdays">
+        <div class="cal-weekday sun">日</div>
+        <div class="cal-weekday">月</div>
+        <div class="cal-weekday">火</div>
+        <div class="cal-weekday">水</div>
+        <div class="cal-weekday">木</div>
+        <div class="cal-weekday">金</div>
+        <div class="cal-weekday sat">土</div>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <p class="cal-summary" id="calSummary"></p>
+      <div class="wd-cal-legend" id="calLegend"></div>
     </div>
 
     <!-- 今週の部位バランス -->
@@ -1152,30 +1158,133 @@ function switchTab(name, btn) {
   if (name==='analysis') renderAnalysis();
 }
 
+// ── Monthly Calendar State ──
+var calViewYear  = new Date().getFullYear();
+var calViewMonth = new Date().getMonth(); // 0-indexed
+
+var PART_COLORS_CAL = { chest:'#ff7c6e', back:'#6c8eff', shoulder:'#b388ff', arm:'#f5c842', leg:'#5ecfa0', core:'#8888a0', full:'#aaaacc', other:'#555566' };
+var PART_NAMES_CAL  = { chest:'胸', back:'背中', shoulder:'肩', arm:'腕', leg:'脚', core:'体幹', full:'全身', other:'その他' };
+
+function calMove(delta) {
+  calViewMonth += delta;
+  if (calViewMonth > 11) { calViewMonth = 0; calViewYear++; }
+  if (calViewMonth < 0)  { calViewMonth = 11; calViewYear--; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  var now = new Date();
+  var todayStr = now.getFullYear() + '-'
+    + String(now.getMonth()+1).padStart(2,'0') + '-'
+    + String(now.getDate()).padStart(2,'0');
+
+  // 日付→ワークアウトマップ
+  var workoutByDate = {};
+  workoutHistory.forEach(function(w) {
+    if (!w.date) return;
+    if (!workoutByDate[w.date]) workoutByDate[w.date] = [];
+    workoutByDate[w.date].push(w);
+  });
+
+  // ヘッダー
+  document.getElementById('calMonthLabel').textContent = calViewYear + '年' + (calViewMonth+1) + '月';
+
+  // 月の最初の日・最後の日
+  var firstDay = new Date(calViewYear, calViewMonth, 1);
+  var lastDay  = new Date(calViewYear, calViewMonth+1, 0);
+  var startDow = firstDay.getDay(); // 0=日
+  var totalDays = lastDay.getDate();
+
+  var html = '';
+  // 前月の空白
+  for (var i = 0; i < startDow; i++) {
+    var prevDate = new Date(calViewYear, calViewMonth, -(startDow-1-i));
+    html += '<button class="cal-day other-month" disabled>' + prevDate.getDate() + '</button>';
+  }
+  // 当月の日
+  for (var d = 1; d <= totalDays; d++) {
+    var ds = calViewYear + '-'
+      + String(calViewMonth+1).padStart(2,'0') + '-'
+      + String(d).padStart(2,'0');
+    var workouts = workoutByDate[ds] || [];
+    var hasWorkout = workouts.length > 0;
+    var isToday = ds === todayStr;
+
+    // 部位ドット（最大3種）
+    var partsSet = {};
+    workouts.forEach(function(w) {
+      (w.exercises || []).forEach(function(ex){ if (ex.part) partsSet[ex.part] = true; });
+    });
+    var partKeys = Object.keys(partsSet).slice(0, 3);
+    var dotsHTML = partKeys.length
+      ? '<div class="cal-day-dots">' + partKeys.map(function(p){
+          return '<div class="cal-day-dot" style="background:' + (PART_COLORS_CAL[p]||'#888') + ';"></div>';
+        }).join('') + '</div>'
+      : '';
+
+    var cls = 'cal-day'
+      + (hasWorkout ? ' has-workout' : '')
+      + (isToday    ? ' today'       : '');
+    var onclick = hasWorkout ? ' onclick="openDayDetail(\'' + ds + '\')"' : '';
+
+    html += '<button class="' + cls + '"' + onclick + '>'
+      + d
+      + dotsHTML
+      + '</button>';
+  }
+  // 翌月の空白（6行分に揃える）
+  var total = startDow + totalDays;
+  var trailing = (7 - (total % 7)) % 7;
+  for (var j = 1; j <= trailing; j++) {
+    html += '<button class="cal-day other-month" disabled>' + j + '</button>';
+  }
+
+  document.getElementById('calGrid').innerHTML = html;
+
+  // 当月のワークアウト数とサマリー
+  var monthPrefix = calViewYear + '-' + String(calViewMonth+1).padStart(2,'0');
+  var monthDays = Object.keys(workoutByDate).filter(function(ds){ return ds.startsWith(monthPrefix); });
+  var monthVol = 0;
+  monthDays.forEach(function(ds) {
+    workoutByDate[ds].forEach(function(w) {
+      (w.exercises||[]).forEach(function(ex){
+        (ex.sets||[]).forEach(function(s){
+          if (s.done && s.weight && s.reps) monthVol += parseFloat(s.weight)*parseInt(s.reps);
+        });
+      });
+    });
+  });
+  var summaryParts = [];
+  if (monthDays.length) summaryParts.push(monthDays.length + '日トレ');
+  if (monthVol >= 1000) summaryParts.push((monthVol/1000).toFixed(1) + 't');
+  else if (monthVol > 0) summaryParts.push(monthVol.toLocaleString() + 'kg');
+  document.getElementById('calSummary').textContent = summaryParts.join(' · ');
+
+  // 凡例（全履歴で使った部位）
+  var usedParts = {};
+  workoutHistory.forEach(function(w){
+    (w.exercises||[]).forEach(function(ex){ if (ex.part && PART_COLORS_CAL[ex.part]) usedParts[ex.part] = true; });
+  });
+  var legendItems = ['chest','back','shoulder','arm','leg','core'].filter(function(p){ return usedParts[p]; });
+  document.getElementById('calLegend').innerHTML = legendItems.length
+    ? legendItems.map(function(p){
+        return '<div class="wd-cal-legend-item">'
+          + '<div style="width:8px;height:8px;border-radius:50%;background:'+PART_COLORS_CAL[p]+';flex-shrink:0;"></div>'
+          + PART_NAMES_CAL[p] + '</div>';
+      }).join('')
+    : '';
+}
+
 // ── Workout Dashboard ──
 function renderWorkoutDashboard() {
   var history = workoutHistory;
   var now = new Date();
 
-  // ユニーク日付セット
-  var dateSet = {};
-  history.forEach(function(w){ if (w.date) dateSet[w.date] = true; });
+  // 月間カレンダーを描画
+  renderCalendar();
 
-  // ストリーク（今日トレしてない場合は昨日から遡る）
-  var streak = 0;
-  var todayStr = now.toISOString().split('T')[0];
-  var check = new Date(); check.setHours(0,0,0,0);
-  // 今日トレしていなければ昨日から数え始める
-  if (!dateSet[todayStr]) check.setDate(check.getDate() - 1);
-  while (dateSet[check.toISOString().split('T')[0]]) {
-    streak++;
-    check.setDate(check.getDate() - 1);
-  }
-  document.getElementById('wdStreak').textContent = streak;
-
-  // 今週の日数（月〜日の7日間）
+  // 今週（月曜始まり）の文字列
   var weekStart = new Date(now);
-  // 月曜始まり
   var dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1;
   weekStart.setDate(now.getDate() - dayOfWeek);
   weekStart.setHours(0,0,0,0);
@@ -1183,118 +1292,16 @@ function renderWorkoutDashboard() {
     + String(weekStart.getMonth()+1).padStart(2,'0') + '-'
     + String(weekStart.getDate()).padStart(2,'0');
 
-  // 今週7日のdateStr配列を生成
-  var weekDays = [];
-  for (var wi = 0; wi < 7; wi++) {
-    var wd = new Date(weekStart);
-    wd.setDate(weekStart.getDate() + wi);
-    var wds = wd.getFullYear() + '-'
-      + String(wd.getMonth()+1).padStart(2,'0') + '-'
-      + String(wd.getDate()).padStart(2,'0');
-    weekDays.push({ ds: wds, label: ['月','火','水','木','金','土','日'][wi] });
-  }
-
-  var weekDaySet = {};
-  history.forEach(function(w){ if (w.date && w.date >= weekStartStr) weekDaySet[w.date] = true; });
-  var weekCount = Object.keys(weekDaySet).length;
-
-  // 今週の曜日ドット描画
-  var dotsEl = document.getElementById('wdWeekDots');
-  if (dotsEl) {
-    dotsEl.innerHTML = weekDays.map(function(d) {
-      var done = dateSet[d.ds];
-      var isToday = d.ds === todayStr;
-      return '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;">'
-        + '<span style="font-size:.52rem;color:' + (isToday ? 'var(--accent)' : 'var(--muted)') + ';font-weight:' + (isToday ? '700' : '400') + ';">' + d.label + '</span>'
-        + '<div style="width:11px;height:11px;border-radius:50%;background:' + (done ? 'var(--accent)' : 'var(--surface3)') + ';' + (isToday && !done ? 'border:2px solid var(--accent);' : '') + '"></div>'
-        + '</div>';
-    }).join('');
-  }
-  document.getElementById('wdWeek').textContent = weekCount + '日';
-  document.getElementById('wdTotal').textContent = Object.keys(dateSet).length + '日';
-
-  // ── 部位アイコン付きカレンダー（直近14日・タップで詳細） ──
-  var days = ['日','月','火','水','木','金','土'];
-  var partColors3 = { chest:'#ff7c6e', back:'#6c8eff', shoulder:'#b388ff', arm:'#f5c842', leg:'#5ecfa0', core:'#8888a0', full:'#aaaacc', other:'#555566' };
-
-  // 日付→ワークアウト配列のマップを作成
-  var workoutByDate = {};
-  history.forEach(function(w) {
-    if (!workoutByDate[w.date]) workoutByDate[w.date] = [];
-    workoutByDate[w.date].push(w);
-  });
-
-  var calHTML = '';
-  for (var i = 13; i >= 0; i--) {
-    var d = new Date(); d.setDate(d.getDate() - i); d.setHours(0,0,0,0);
-    var ds = d.toISOString().split('T')[0];
-    var isToday = i === 0;
-    var workouts = workoutByDate[ds] || [];
-    var hasWorkout = workouts.length > 0;
-
-    // この日の部位を収集（重複除去）
-    var partsSet = {};
-    workouts.forEach(function(w) {
-      (w.exercises || []).forEach(function(ex) { if (ex.part) partsSet[ex.part] = true; });
-    });
-    var parts = Object.keys(partsSet).slice(0, 4);
-
-    var dotsHTML = parts.map(function(p) {
-      return '<div class="wd-cal-part-dot" style="background:' + (partColors3[p] || '#888') + ';"></div>';
-    }).join('');
-
-    var cellCls = 'wd-cal-cell' + (isToday ? ' today' : '') + (hasWorkout ? ' has-workout' : '');
-    var clickAttr = (hasWorkout || isToday) ? ' onclick="' + (hasWorkout ? "openDayDetail('" + ds + "')" : '') + '" style="cursor:pointer;"' : '';
-
-    var cellContent = '';
-    if (hasWorkout) {
-      cellContent = '<span class="wd-cal-check">✓</span>';
-      if (dotsHTML) cellContent += '<div class="wd-cal-parts">' + dotsHTML + '</div>';
-    } else if (isToday) {
-      cellContent = '<span style="font-size:.55rem;color:var(--accent);letter-spacing:.05em;">TODAY</span>';
-    }
-
-    calHTML += '<div class="wd-cal-day"' + clickAttr + '>'
-      + '<span class="wd-cal-label">' + days[d.getDay()] + '</span>'
-      + '<div class="' + cellCls + '">' + cellContent + '</div>'
-      + '<span class="wd-cal-date" style="' + (isToday ? 'color:var(--accent);font-weight:600;' : '') + '">' + d.getDate() + '</span>'
-      + '</div>';
-  }
-
-  document.getElementById('wdCalGrid').innerHTML = calHTML;
-
-  // 凡例（実際に使われた部位のみ表示）
-  var usedParts = {};
-  history.forEach(function(w) {
-    (w.exercises || []).forEach(function(ex) { if (ex.part && partColors3[ex.part]) usedParts[ex.part] = true; });
-  });
-  var legendParts = ['chest','back','shoulder','arm','leg','core'];
-  var legendItems = legendParts.filter(function(p){ return usedParts[p]; });
-  var partNames = {chest:'胸',back:'背中',shoulder:'肩',arm:'腕',leg:'脚',core:'体幹'};
-  var legendHTML = legendItems.length > 0
-    ? '<div class="wd-cal-legend">'
-      + legendItems.map(function(p){
-          return '<div class="wd-cal-legend-item">'
-            + '<div style="width:9px;height:9px;border-radius:50%;background:'+partColors3[p]+';flex-shrink:0;"></div>'
-            + partNames[p] + '</div>';
-        }).join('')
-      + '</div>'
-    : '';
-  document.getElementById('wdVolume').innerHTML = legendHTML;
-
-  // 今月ボリュームは前回のワークアウトカードに統合済みのため削除
-
   // ── 今週の部位バランス ──
   var balanceCard = document.getElementById('wdBalanceCard');
   var partCount = {};
   var partOrder = ['chest','back','shoulder','arm','leg','core'];
   var partLabels2 = { chest:'胸', back:'背中', shoulder:'肩', arm:'腕', leg:'脚', core:'体幹' };
   var partColors = { chest:'var(--accent2)', back:'var(--blue)', shoulder:'var(--purple)', arm:'var(--yellow)', leg:'var(--accent)', core:'var(--muted)' };
-  history.filter(function(w){ return new Date(w.date) >= weekStart; }).forEach(function(w) {
+  history.filter(function(w){ return w.date && w.date >= weekStartStr; }).forEach(function(w) {
     (w.exercises || []).forEach(function(ex) {
-      if (ex.part && partCount[ex.part] !== undefined || partOrder.indexOf(ex.part) >= 0) {
+      if (ex.part && partOrder.indexOf(ex.part) >= 0)
         partCount[ex.part] = (partCount[ex.part] || 0) + 1;
-      }
     });
   });
   var hasBalance = Object.keys(partCount).length > 0;
