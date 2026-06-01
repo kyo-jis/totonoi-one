@@ -116,10 +116,12 @@
     .modal-title { font-size:1.1rem; font-weight:500; margin-bottom:1.25rem; }
 
     /* Preset grid */
-    .preset-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:.5rem; margin-bottom:1rem; }
-    .preset-btn { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:.7rem .4rem; font-size:.72rem; color:var(--text); cursor:pointer; font-family:var(--font); text-align:center; display:flex; flex-direction:column; align-items:center; gap:.3rem; }
-    .preset-btn .p-icon { font-size:1.4rem; }
-    .preset-btn.selected { border-color:var(--accent); color:var(--accent); }
+    .preset-scroll { display:flex; gap:.5rem; overflow-x:auto; padding-bottom:.3rem; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+    .preset-scroll::-webkit-scrollbar { display:none; }
+    .preset-btn { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:.75rem .5rem; font-size:.72rem; color:var(--text); cursor:pointer; font-family:var(--font); text-align:center; display:flex; flex-direction:column; align-items:center; gap:.35rem; min-width:68px; flex-shrink:0; transition:border-color .15s; }
+    .preset-btn .p-icon { font-size:1.5rem; }
+    .preset-btn .p-name { font-size:.68rem; line-height:1.3; white-space:nowrap; }
+    .preset-btn.selected { border-color:var(--accent); background:rgba(179,136,255,.1); color:var(--accent); }
 
     .divider { display:flex; align-items:center; gap:.75rem; margin:1rem 0; color:var(--muted); font-size:.75rem; }
     .divider::before, .divider::after { content:''; flex:1; height:1px; background:var(--border); }
@@ -422,14 +424,20 @@ var selectedTimings = [];
 
 var PRESETS = [
   // 基本
+  {name:'マルチビタミン',icon:'💊',type:'supplement',daily:1,  unit:'錠',alert:7, timing:['morning'],    cat:'基本'},
   {name:'ビタミンD',   icon:'☀️', type:'supplement',daily:1,  unit:'錠',alert:7, timing:['morning'],    cat:'基本'},
   {name:'ビタミンC',   icon:'🍊', type:'supplement',daily:1,  unit:'錠',alert:7, timing:['morning'],    cat:'基本'},
+  {name:'ビタミンB群', icon:'🌟', type:'supplement',daily:1,  unit:'錠',alert:7, timing:['morning'],    cat:'基本'},
+  {name:'ビタミンE',   icon:'🫒', type:'supplement',daily:1,  unit:'錠',alert:7, timing:['meal'],       cat:'基本'},
   {name:'オメガ3',     icon:'🐟', type:'supplement',daily:2,  unit:'粒',alert:7, timing:['meal'],       cat:'基本'},
   {name:'マグネシウム',icon:'🌙', type:'supplement',daily:1,  unit:'錠',alert:7, timing:['bedtime'],    cat:'基本'},
+  {name:'カルシウム',  icon:'🦴', type:'supplement',daily:1,  unit:'錠',alert:7, timing:['meal'],       cat:'基本'},
   {name:'亜鉛',        icon:'⚡', type:'supplement',daily:1,  unit:'錠',alert:7, timing:['meal'],       cat:'基本'},
   {name:'鉄分',        icon:'🩸', type:'supplement',daily:1,  unit:'錠',alert:7, timing:['morning'],    cat:'基本'},
   {name:'葉酸',        icon:'🌿', type:'supplement',daily:1,  unit:'錠',alert:7, timing:['morning'],    cat:'基本'},
-  {name:'ビタミンB群', icon:'🌟', type:'supplement',daily:1,  unit:'錠',alert:7, timing:['morning'],    cat:'基本'},
+  {name:'CoQ10',       icon:'❤️', type:'supplement',daily:1,  unit:'錠',alert:7, timing:['meal'],       cat:'基本'},
+  {name:'プロバイオ',  icon:'🦠', type:'supplement',daily:1,  unit:'錠',alert:7, timing:['morning'],    cat:'基本'},
+  {name:'ルテイン',    icon:'👁️', type:'supplement',daily:1,  unit:'錠',alert:7, timing:['meal'],       cat:'基本'},
   {name:'コラーゲン',  icon:'✨', type:'supplement',daily:1,  unit:'包',alert:7, timing:['morning'],    cat:'基本'},
   // 筋トレ
   {name:'クレアチン',  icon:'💪', type:'supplement',daily:5,  unit:'g', alert:5, timing:['preworkout','workout'], cat:'筋トレ'},
@@ -444,6 +452,12 @@ var PRESETS = [
   {name:'ZMA',         icon:'😴', type:'supplement',daily:1,  unit:'錠',alert:7, timing:['bedtime'],    cat:'筋トレ'},
   {name:'カフェイン',  icon:'☕', type:'supplement',daily:200,unit:'mg',alert:5, timing:['preworkout'], cat:'筋トレ'},
   {name:'電解質',      icon:'💧', type:'supplement',daily:1,  unit:'包',alert:5, timing:['workout'],    cat:'筋トレ'},
+  {name:'クレアチンHCl',icon:'💎',type:'supplement',daily:2,  unit:'g', alert:5, timing:['preworkout'], cat:'筋トレ'},
+  {name:'アルギニン',  icon:'🫀', type:'supplement',daily:3,  unit:'g', alert:5, timing:['preworkout'], cat:'筋トレ'},
+  {name:'L-カルニチン',icon:'🔥', type:'supplement',daily:1,  unit:'g', alert:5, timing:['preworkout'], cat:'筋トレ'},
+  {name:'アシュワガンダ',icon:'🌱',type:'supplement',daily:300,unit:'mg',alert:7, timing:['bedtime'],   cat:'筋トレ'},
+  {name:'アルファリポ酸',icon:'⚗️',type:'supplement',daily:300,unit:'mg',alert:7, timing:['meal'],      cat:'筋トレ'},
+  {name:'NMN',         icon:'🧬', type:'supplement',daily:250,unit:'mg',alert:7, timing:['morning'],    cat:'筋トレ'},
 ];
 
 var ENCYC_DB = [
@@ -799,14 +813,14 @@ function saveMemo() {
 function buildPresets() {
   var cats = ['基本','筋トレ'];
   document.getElementById('presetGrid').innerHTML = cats.map(function(cat){
-    var items = PRESETS.filter(function(p){ return p.cat===cat; });
+    var catItems = PRESETS.filter(function(p){ return p.cat===cat; });
     return '<div class="cat-section">'
       +'<p class="preset-cat-label">'+cat+'</p>'
-      +'<div class="preset-grid" style="grid-template-columns:repeat(3,1fr);">'
-      +items.map(function(p){
+      +'<div class="preset-scroll">'
+      +catItems.map(function(p){
         return '<button class="preset-btn" onclick="applyPreset('+JSON.stringify(p).replace(/"/g,'&quot;')+')">'
           +'<span class="p-icon">'+p.icon+'</span>'
-          +'<span style="font-size:.62rem;">'+p.name+'</span>'
+          +'<span class="p-name">'+p.name+'</span>'
           +'</button>';
       }).join('')
       +'</div></div>';
