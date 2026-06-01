@@ -132,7 +132,7 @@
     .form-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.5rem; }
 
     /* Timing checkboxes */
-    .timing-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:.4rem; }
+    .timing-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:.4rem; }
     .timing-check { display:flex; align-items:center; gap:.4rem; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:.5rem .6rem; cursor:pointer; }
     .timing-check input { width:auto; }
     .timing-check label { font-size:.78rem; cursor:pointer; }
@@ -155,6 +155,25 @@
 
     .search-input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:.75rem 1rem; font-size:.95rem; color:var(--text); font-family:var(--font); outline:none; margin-bottom:1rem; }
     .search-input:focus { border-color:var(--accent); }
+    .rating-btn { flex:1; padding:.55rem .3rem; background:var(--surface2); border:1px solid var(--border); border-radius:10px; font-size:.75rem; color:var(--muted); cursor:pointer; font-family:var(--font); transition:all .15s; }
+    .rating-btn.selected { background:var(--accent); border-color:var(--accent); color:#1a1a24; font-weight:600; }
+    .history-item { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:.9rem 1rem; margin-bottom:.6rem; display:flex; align-items:center; justify-content:space-between; gap:.75rem; }
+    .history-icon { font-size:1.2rem; flex-shrink:0; }
+    .history-info { flex:1; min-width:0; }
+    .history-name { font-size:.88rem; font-weight:500; }
+    .history-date { font-size:.7rem; color:var(--muted); margin-top:.15rem; }
+    .history-right { text-align:right; flex-shrink:0; }
+    .history-price { font-size:.95rem; font-weight:600; color:var(--accent); }
+    .history-qty { font-size:.7rem; color:var(--muted); margin-top:.1rem; }
+    .memo-log { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:.75rem 1rem; margin-bottom:.5rem; }
+    .memo-log-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:.4rem; }
+    .memo-log-name { font-size:.82rem; font-weight:500; }
+    .memo-log-date { font-size:.68rem; color:var(--muted); }
+    .memo-ratings { display:flex; gap:.5rem; margin-bottom:.3rem; }
+    .memo-rating-chip { font-size:.68rem; padding:.15rem .45rem; border-radius:20px; background:var(--surface2); }
+    .btn-memo { background:rgba(179,136,255,.15); color:var(--accent); border:1px solid rgba(179,136,255,.2); border-radius:8px; padding:.35rem .7rem; font-size:.72rem; font-weight:500; font-family:var(--font); cursor:pointer; white-space:nowrap; }
+    .preset-cat-label { font-size:.65rem; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin:0 0 .4rem; }
+    .cat-section { margin-bottom:1rem; }
   </style>
 </head>
 <body>
@@ -188,8 +207,9 @@
 
 <div class="tabs">
   <button class="tab active" onclick="switchTab('list',this)">一覧</button>
-  <button class="tab" onclick="switchTab('schedule',this)">スケジュール</button>
-  <button class="tab" onclick="switchTab('encyc',this)">サプリ辞典</button>
+  <button class="tab" onclick="switchTab('schedule',this)">服用</button>
+  <button class="tab" onclick="switchTab('history',this)">購入履歴</button>
+  <button class="tab" onclick="switchTab('encyc',this)">辞典</button>
 </div>
 
 <!-- 一覧 -->
@@ -203,6 +223,12 @@
 <div class="view" id="view-schedule">
   <p class="section-label">今日の摂取スケジュール</p>
   <div id="scheduleList"></div>
+</div>
+
+<!-- 購入履歴 -->
+<div class="view" id="view-history">
+  <p class="section-label">購入履歴</p>
+  <div id="historyList"></div>
 </div>
 
 <!-- サプリ辞典 -->
@@ -288,6 +314,12 @@
         <div class="timing-check" id="tc-night" onclick="toggleTiming('night')">
           <input type="checkbox" id="t-night"><label for="t-night">🌙 夜</label>
         </div>
+        <div class="timing-check" id="tc-bedtime" onclick="toggleTiming('bedtime')">
+          <input type="checkbox" id="t-bedtime"><label for="t-bedtime">😴 就寝前</label>
+        </div>
+        <div class="timing-check" id="tc-preworkout" onclick="toggleTiming('preworkout')">
+          <input type="checkbox" id="t-preworkout"><label for="t-preworkout">⚡ 運動前</label>
+        </div>
         <div class="timing-check" id="tc-workout" onclick="toggleTiming('workout')">
           <input type="checkbox" id="t-workout"><label for="t-workout">💪 運動後</label>
         </div>
@@ -310,12 +342,60 @@
   <div class="modal">
     <div class="modal-handle"></div>
     <p class="modal-title">在庫を補充</p>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">補充数量</label>
+        <input type="number" id="fRestock" placeholder="60">
+      </div>
+      <div class="form-group">
+        <label class="form-label">購入価格（円）</label>
+        <input type="number" id="fRestockPrice" placeholder="2980">
+      </div>
+    </div>
     <div class="form-group">
-      <label class="form-label">補充数量</label>
-      <input type="number" id="fRestock" placeholder="60">
+      <label class="form-label">購入日</label>
+      <input type="date" id="fRestockDate">
+    </div>
+    <div class="form-group">
+      <label class="form-label">メモ（任意）</label>
+      <input type="text" id="fRestockNote" placeholder="例：Amazon定期便">
     </div>
     <button class="btn-primary" onclick="confirmRestock()">補充する</button>
     <button class="btn-cancel" onclick="closeModal('restockModal')">キャンセル</button>
+  </div>
+</div>
+
+<!-- 効果メモモーダル -->
+<div class="modal-overlay" id="memoModal" onclick="closeModalOutside(event,'memoModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <p class="modal-title" id="memoModalTitle">効果メモ</p>
+    <div class="form-group">
+      <label class="form-label">記録日</label>
+      <input type="date" id="fMemoDate">
+    </div>
+    <div class="form-group">
+      <label class="form-label">体調</label>
+      <div style="display:flex;gap:.5rem;margin-top:.25rem;">
+        <button class="rating-btn" id="rb-condition-1" onclick="setRating('condition',1)">😞 悪い</button>
+        <button class="rating-btn" id="rb-condition-2" onclick="setRating('condition',2)">😐 普通</button>
+        <button class="rating-btn" id="rb-condition-3" onclick="setRating('condition',3)">😊 良い</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">睡眠の質</label>
+      <div style="display:flex;gap:.5rem;margin-top:.25rem;">
+        <button class="rating-btn" id="rb-sleep-1" onclick="setRating('sleep',1)">😞 悪い</button>
+        <button class="rating-btn" id="rb-sleep-2" onclick="setRating('sleep',2)">😐 普通</button>
+        <button class="rating-btn" id="rb-sleep-3" onclick="setRating('sleep',3)">😊 良い</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">感想・メモ</label>
+      <input type="text" id="fMemoNote" placeholder="例：集中力が上がった気がする">
+    </div>
+    <button class="btn-primary" onclick="saveMemo()">保存する</button>
+    <button class="btn-cancel" onclick="closeModal('memoModal')">キャンセル</button>
   </div>
 </div>
 
@@ -329,41 +409,68 @@
 var isPro = localStorage.getItem('isPro') === 'true';
 var editId = null;
 var restockId = null;
+var memoItemId = null;
+var memoRatings = {condition:0, sleep:0};
+var purchaseHistory = JSON.parse(localStorage.getItem('medlyPurchase') || '[]');
+var effectLogs = JSON.parse(localStorage.getItem('medlyEffectLogs') || '[]');
 
 var TYPE_LABELS = {supplement:'サプリメント', medicine:'市販薬', prescription:'処方薬', other:'その他'};
 var TYPE_ICONS = {supplement:'💊', medicine:'💉', prescription:'🏥', other:'📦'};
-var TIMING_LABELS = {morning:'朝', noon:'昼', evening:'夕', night:'夜', workout:'運動後', meal:'食後'};
-var TIMINGS = ['morning','noon','evening','workout','meal','night'];
+var TIMING_LABELS = {morning:'朝', noon:'昼', evening:'夕', night:'夜', bedtime:'就寝前', preworkout:'運動前', workout:'運動後', meal:'食後'};
+var TIMINGS = ['morning','noon','evening','night','bedtime','preworkout','workout','meal'];
 var selectedTimings = [];
 
 var PRESETS = [
-  {name:'ビタミンD',icon:'☀️',type:'supplement',daily:1,unit:'錠',alert:7,timing:['morning']},
-  {name:'ビタミンC',icon:'🍊',type:'supplement',daily:1,unit:'錠',alert:7,timing:['morning']},
-  {name:'オメガ3',icon:'🐟',type:'supplement',daily:2,unit:'粒',alert:7,timing:['meal']},
-  {name:'マグネシウム',icon:'🌙',type:'supplement',daily:1,unit:'錠',alert:7,timing:['night']},
-  {name:'クレアチン',icon:'💪',type:'supplement',daily:5,unit:'g',alert:5,timing:['workout']},
-  {name:'プロテイン',icon:'🥛',type:'supplement',daily:1,unit:'包',alert:5,timing:['workout']},
-  {name:'亜鉛',icon:'⚡',type:'supplement',daily:1,unit:'錠',alert:7,timing:['meal']},
-  {name:'鉄分',icon:'🩸',type:'supplement',daily:1,unit:'錠',alert:7,timing:['morning']},
-  {name:'葉酸',icon:'🌿',type:'supplement',daily:1,unit:'錠',alert:7,timing:['morning']},
-  {name:'BCAA',icon:'🏋️',type:'supplement',daily:1,unit:'包',alert:5,timing:['workout']},
-  {name:'コラーゲン',icon:'✨',type:'supplement',daily:1,unit:'包',alert:7,timing:['morning']},
-  {name:'ビタミンB群',icon:'🌟',type:'supplement',daily:1,unit:'錠',alert:7,timing:['morning']},
+  // 基本
+  {name:'ビタミンD',   icon:'☀️', type:'supplement',daily:1,  unit:'錠',alert:7, timing:['morning'],    cat:'基本'},
+  {name:'ビタミンC',   icon:'🍊', type:'supplement',daily:1,  unit:'錠',alert:7, timing:['morning'],    cat:'基本'},
+  {name:'オメガ3',     icon:'🐟', type:'supplement',daily:2,  unit:'粒',alert:7, timing:['meal'],       cat:'基本'},
+  {name:'マグネシウム',icon:'🌙', type:'supplement',daily:1,  unit:'錠',alert:7, timing:['bedtime'],    cat:'基本'},
+  {name:'亜鉛',        icon:'⚡', type:'supplement',daily:1,  unit:'錠',alert:7, timing:['meal'],       cat:'基本'},
+  {name:'鉄分',        icon:'🩸', type:'supplement',daily:1,  unit:'錠',alert:7, timing:['morning'],    cat:'基本'},
+  {name:'葉酸',        icon:'🌿', type:'supplement',daily:1,  unit:'錠',alert:7, timing:['morning'],    cat:'基本'},
+  {name:'ビタミンB群', icon:'🌟', type:'supplement',daily:1,  unit:'錠',alert:7, timing:['morning'],    cat:'基本'},
+  {name:'コラーゲン',  icon:'✨', type:'supplement',daily:1,  unit:'包',alert:7, timing:['morning'],    cat:'基本'},
+  // 筋トレ
+  {name:'クレアチン',  icon:'💪', type:'supplement',daily:5,  unit:'g', alert:5, timing:['preworkout','workout'], cat:'筋トレ'},
+  {name:'プロテイン',  icon:'🥛', type:'supplement',daily:1,  unit:'包',alert:5, timing:['workout'],    cat:'筋トレ'},
+  {name:'カゼイン',    icon:'🌛', type:'supplement',daily:1,  unit:'包',alert:5, timing:['bedtime'],    cat:'筋トレ'},
+  {name:'BCAA',        icon:'🏋️', type:'supplement',daily:1,  unit:'包',alert:5, timing:['preworkout','workout'], cat:'筋トレ'},
+  {name:'EAA',         icon:'🔬', type:'supplement',daily:1,  unit:'包',alert:5, timing:['preworkout','workout'], cat:'筋トレ'},
+  {name:'シトルリン',  icon:'🫀', type:'supplement',daily:6,  unit:'g', alert:5, timing:['preworkout'], cat:'筋トレ'},
+  {name:'βアラニン',  icon:'🔥', type:'supplement',daily:3.2,unit:'g', alert:5, timing:['preworkout'], cat:'筋トレ'},
+  {name:'グルタミン',  icon:'🛡️', type:'supplement',daily:5,  unit:'g', alert:5, timing:['workout','bedtime'],   cat:'筋トレ'},
+  {name:'HMB',         icon:'⚙️', type:'supplement',daily:3,  unit:'g', alert:5, timing:['meal'],       cat:'筋トレ'},
+  {name:'ZMA',         icon:'😴', type:'supplement',daily:1,  unit:'錠',alert:7, timing:['bedtime'],    cat:'筋トレ'},
+  {name:'カフェイン',  icon:'☕', type:'supplement',daily:200,unit:'mg',alert:5, timing:['preworkout'], cat:'筋トレ'},
+  {name:'電解質',      icon:'💧', type:'supplement',daily:1,  unit:'包',alert:5, timing:['workout'],    cat:'筋トレ'},
 ];
 
 var ENCYC_DB = [
-  {name:'ビタミンD',use:'骨の健康・免疫機能・気分改善',timing:'朝・食後',note:'脂溶性のため食事と一緒に。日光浴との併用で効果的。',tags:['免疫','骨','気分']},
-  {name:'ビタミンC',use:'抗酸化・免疫機能・コラーゲン生成',timing:'朝・昼',note:'水溶性のため複数回に分けて摂取するのが理想的。',tags:['抗酸化','免疫','美肌']},
-  {name:'オメガ3（EPA/DHA）',use:'心血管・脳機能・抗炎症',timing:'食後',note:'脂溶性のため食事と一緒に。酸化しやすいため冷暗所保管。',tags:['心臓','脳','抗炎症']},
-  {name:'マグネシウム',use:'筋肉弛緩・睡眠改善・エネルギー産生',timing:'夜',note:'就寝前に摂取すると睡眠の質向上に。過剰摂取で下痢に注意。',tags:['睡眠','筋肉','疲労回復']},
-  {name:'クレアチン',use:'筋力・瞬発力・筋肉量増加',timing:'運動後',note:'1日3〜5gを継続的に。水分摂取を増やすこと。',tags:['筋力','パフォーマンス','筋肥大']},
-  {name:'亜鉛',use:'免疫・テストステロン・傷の回復',timing:'食後',note:'空腹時は吐き気が出ることも。銅とのバランスに注意。',tags:['免疫','ホルモン','回復']},
-  {name:'鉄分',use:'貧血予防・酸素運搬・疲労感軽減',timing:'朝・空腹時',note:'ビタミンCと一緒に摂ると吸収率UP。お茶・コーヒーは避ける。',tags:['貧血','エネルギー','疲労']},
-  {name:'BCAA',use:'筋肉分解防止・疲労軽減・回復促進',timing:'運動前後',note:'運動中・前後に摂取。必須アミノ酸のため体内で合成できない。',tags:['筋肉','回復','パフォーマンス']},
-  {name:'葉酸',use:'細胞分裂・DNA合成・神経管発育',timing:'朝',note:'妊娠を考える女性に特に重要。水溶性で熱に弱い。',tags:['妊活','細胞','神経']},
-  {name:'プロバイオティクス',use:'腸内環境・免疫・メンタル',timing:'食前・起床後',note:'空腹時に摂ると生きたまま腸に届きやすい。',tags:['腸内環境','免疫','メンタル']},
-  {name:'コラーゲン',use:'肌の弾力・関節・骨',timing:'朝・就寝前',note:'ビタミンCと組み合わせると生成が促進される。',tags:['美肌','関節','骨']},
-  {name:'ビタミンB群',use:'エネルギー代謝・神経機能・疲労回復',timing:'朝・食後',note:'水溶性のため毎日補充が必要。アルコール摂取で消耗しやすい。',tags:['エネルギー','神経','疲労']},
+  // 基本
+  {name:'ビタミンD',use:'骨の健康・免疫機能・気分改善',timing:'朝・食後',note:'脂溶性のため食事と一緒に。日光浴との併用で効果的。',tags:['免疫','骨','気分'],cat:'基本'},
+  {name:'ビタミンC',use:'抗酸化・免疫機能・コラーゲン生成',timing:'朝・昼',note:'水溶性のため複数回に分けて摂取するのが理想的。',tags:['抗酸化','免疫','美肌'],cat:'基本'},
+  {name:'オメガ3（EPA/DHA）',use:'心血管・脳機能・抗炎症',timing:'食後',note:'脂溶性のため食事と一緒に。酸化しやすいため冷暗所保管。',tags:['心臓','脳','抗炎症'],cat:'基本'},
+  {name:'マグネシウム',use:'筋肉弛緩・睡眠改善・エネルギー産生',timing:'就寝前',note:'就寝前に摂取すると睡眠の質向上に。過剰摂取で下痢に注意。',tags:['睡眠','筋肉','疲労回復'],cat:'基本'},
+  {name:'亜鉛',use:'免疫・テストステロン・傷の回復',timing:'食後',note:'空腹時は吐き気が出ることも。銅とのバランスに注意。',tags:['免疫','ホルモン','回復'],cat:'基本'},
+  {name:'鉄分',use:'貧血予防・酸素運搬・疲労感軽減',timing:'朝・空腹時',note:'ビタミンCと一緒に摂ると吸収率UP。お茶・コーヒーは避ける。',tags:['貧血','エネルギー','疲労'],cat:'基本'},
+  {name:'葉酸',use:'細胞分裂・DNA合成・神経管発育',timing:'朝',note:'妊娠を考える女性に特に重要。水溶性で熱に弱い。',tags:['妊活','細胞','神経'],cat:'基本'},
+  {name:'ビタミンB群',use:'エネルギー代謝・神経機能・疲労回復',timing:'朝・食後',note:'水溶性のため毎日補充が必要。アルコール摂取で消耗しやすい。',tags:['エネルギー','神経','疲労'],cat:'基本'},
+  {name:'コラーゲン',use:'肌の弾力・関節・骨',timing:'朝・就寝前',note:'ビタミンCと組み合わせると生成が促進される。',tags:['美肌','関節','骨'],cat:'基本'},
+  {name:'プロバイオティクス',use:'腸内環境・免疫・メンタル',timing:'食前・起床後',note:'空腹時に摂ると生きたまま腸に届きやすい。',tags:['腸内環境','免疫','メンタル'],cat:'基本'},
+  // 筋トレ
+  {name:'クレアチン',use:'筋力・瞬発力・筋肉量増加',timing:'運動前後',note:'1日3〜5g継続摂取。ローディング不要。水分を多めに摂ること。モノハイドレートが最もエビデンスが豊富。',tags:['筋力','瞬発力','筋肥大'],cat:'筋トレ'},
+  {name:'ホエイプロテイン',use:'筋タンパク合成・筋肥大・回復促進',timing:'運動後30分以内',note:'吸収が早いため運動直後が最適。就寝前はカゼインが向いている。体重×1.6〜2.2gのタンパク質摂取を目安に。',tags:['筋肥大','回復','タンパク質'],cat:'筋トレ'},
+  {name:'カゼインプロテイン',use:'就寝中の筋分解防止・緩やかな吸収',timing:'就寝前',note:'消化吸収が遅く就寝中に筋肉へ持続的に供給。就寝30分前が目安。',tags:['筋肥大','回復','就寝前'],cat:'筋トレ'},
+  {name:'BCAA（分岐鎖アミノ酸）',use:'筋分解防止・疲労軽減・回復促進',timing:'運動前・中・後',note:'バリン・ロイシン・イソロイシンの3種。空腹時の運動前に特に有効。EAAの方が完全なアミノ酸を含む。',tags:['筋肉','疲労回復','パフォーマンス'],cat:'筋トレ'},
+  {name:'EAA（必須アミノ酸）',use:'筋タンパク合成・BCAAより広範な回復',timing:'運動前・中・後',note:'9種の必須アミノ酸すべてを含む。BCAAより筋合成効果が高いとされる。空腹トレーニング時に特に有効。',tags:['筋肥大','回復','アミノ酸'],cat:'筋トレ'},
+  {name:'シトルリン',use:'血流改善・パンプアップ・疲労軽減',timing:'運動30〜60分前',note:'一酸化窒素産生を促進し血流を改善。L-シトルリンとして6〜8g。βアラニンとの相性が良い。',tags:['パンプ','持久力','血流'],cat:'筋トレ'},
+  {name:'βアラニン（ベータアラニン）',use:'筋持久力向上・乳酸蓄積抑制',timing:'運動30分前',note:'カルノシン合成を促進し筋肉の酸性化を遅らせる。摂取後のピリピリ感（パレスセシア）は正常。3.2〜6.4g/日。',tags:['持久力','筋疲労','高強度'],cat:'筋トレ'},
+  {name:'グルタミン',use:'腸内環境保護・免疫・オーバートレーニング防止',timing:'運動後・就寝前',note:'高強度トレーニング時に体内で枯渇しやすい。腸のバリア機能維持にも。5〜10g/日。',tags:['回復','免疫','腸内環境'],cat:'筋トレ'},
+  {name:'HMB（βヒドロキシβメチル酪酸）',use:'筋分解抑制・筋肉量維持・回復促進',timing:'食事と一緒に',note:'ロイシンの代謝産物。筋分解抑制効果あり。初心者・高齢者・カロリー制限中に特に有効。3g/日を3回に分けて。',tags:['筋肉維持','分解抑制','回復'],cat:'筋トレ'},
+  {name:'ZMA（亜鉛・マグネシウム・B6）',use:'テストステロン維持・睡眠の質・回復',timing:'就寝30〜60分前',note:'カルシウムと同時摂取すると吸収が下がる。食後2時間空けて空腹時に摂取が理想。',tags:['ホルモン','睡眠','回復'],cat:'筋トレ'},
+  {name:'カフェイン',use:'運動パフォーマンス向上・集中力・脂肪燃焼',timing:'運動30〜60分前',note:'3〜6mg/kg体重が推奨。耐性がつきやすいため使用頻度に注意。就寝6時間前以降は摂取を避ける。',tags:['集中力','脂肪燃焼','パフォーマンス'],cat:'筋トレ'},
+  {name:'電解質（ナトリウム・カリウム）',use:'脱水防止・筋けいれん予防・パフォーマンス維持',timing:'運動中・後',note:'60分以上の運動や大量発汗時に必要。ナトリウム・カリウム・マグネシウムのバランスが重要。',tags:['水分補給','けいれん防止','持久力'],cat:'筋トレ'},
 ];
 
 var items = JSON.parse(localStorage.getItem('medlyItems') || '[]');
@@ -380,6 +487,7 @@ function init() {
   buildPresets();
   renderList();
   renderSchedule();
+  renderPurchaseHistory();
   renderEncyc();
   updateSummary();
   updateProUI();
@@ -476,6 +584,7 @@ function renderList() {
       +'<div class="item-info"><p class="item-name">'+item.name+'</p>'
       +'<p class="item-type">'+TYPE_LABELS[item.type]+'</p></div>'
       +'<div class="item-actions">'
+      +'<button class="btn-memo" onclick="openMemo(\''+item.id+'\')">📝 メモ</button>'
       +'<button class="btn-icon" onclick="editItem(\''+item.id+'\')">✏️</button>'
       +'<button class="btn-icon" onclick="deleteItem(\''+item.id+'\')">🗑</button>'
       +'</div></div>'
@@ -503,12 +612,14 @@ function renderList() {
 function renderSchedule() {
   var el = document.getElementById('scheduleList');
   var timings = [
-    {id:'morning', label:'🌅 朝'},
-    {id:'noon', label:'☀️ 昼'},
-    {id:'evening', label:'🌆 夕'},
-    {id:'workout', label:'💪 運動後'},
-    {id:'meal', label:'🍽️ 食後'},
-    {id:'night', label:'🌙 夜'},
+    {id:'morning',    label:'🌅 朝'},
+    {id:'noon',       label:'☀️ 昼'},
+    {id:'evening',    label:'🌆 夕'},
+    {id:'night',      label:'🌙 夜'},
+    {id:'bedtime',    label:'😴 就寝前'},
+    {id:'preworkout', label:'⚡ 運動前'},
+    {id:'workout',    label:'💪 運動後'},
+    {id:'meal',       label:'🍽️ 食後'},
   ];
   var html = '';
   timings.forEach(function(t) {
@@ -537,22 +648,40 @@ function renderSchedule() {
 
 // ── Encyclopedia ──
 function renderEncyc(list) {
+  var isSearch = !!list;
   list = list || ENCYC_DB;
   var el = document.getElementById('encycList');
-  el.innerHTML = list.map(function(e){
-    return '<div class="encyc-card">'
-      +'<p class="encyc-name">'+e.name+'</p>'
-      +'<p style="font-size:.75rem;color:var(--accent);margin-bottom:.3rem;">用途: '+e.use+'</p>'
-      +'<p style="font-size:.72rem;color:var(--muted);margin-bottom:.3rem;">摂取タイミング: '+e.timing+'</p>'
-      +'<p class="encyc-desc">'+e.note+'</p>'
-      +'<div class="encyc-tags">'+e.tags.map(function(t){ return '<span class="encyc-tag">#'+t+'</span>'; }).join('')+'</div>'
-      +'</div>';
+  if (isSearch || !list.length) {
+    el.innerHTML = list.length
+      ? list.map(encycCard).join('')
+      : '<div class="empty-state"><div class="empty-icon">🔍</div><p>見つかりませんでした</p></div>';
+    return;
+  }
+  var cats = ['基本','筋トレ'];
+  el.innerHTML = cats.map(function(cat){
+    var filtered = list.filter(function(e){ return e.cat===cat; });
+    if (!filtered.length) return '';
+    return '<p class="preset-cat-label" style="margin-bottom:.5rem;">'+cat+'</p>'
+      + filtered.map(encycCard).join('');
   }).join('');
+}
+
+function encycCard(e) {
+  return '<div class="encyc-card">'
+    +'<p class="encyc-name">'+e.name+'</p>'
+    +'<p style="font-size:.75rem;color:var(--accent);margin-bottom:.3rem;">'+e.use+'</p>'
+    +'<p style="font-size:.72rem;color:var(--muted);margin-bottom:.3rem;">⏰ '+e.timing+'</p>'
+    +'<p class="encyc-desc">'+e.note+'</p>'
+    +'<div class="encyc-tags">'+e.tags.map(function(t){ return '<span class="encyc-tag">#'+t+'</span>'; }).join('')+'</div>'
+    +'</div>';
 }
 
 function filterEncyc() {
   var q = document.getElementById('encycSearch').value.toLowerCase();
-  renderEncyc(q ? ENCYC_DB.filter(function(e){ return e.name.toLowerCase().includes(q)||e.tags.some(function(t){ return t.includes(q); }); }) : ENCYC_DB);
+  if (!q) { renderEncyc(); return; }
+  renderEncyc(ENCYC_DB.filter(function(e){
+    return e.name.toLowerCase().includes(q) || e.tags.some(function(t){ return t.includes(q); }) || (e.use||'').includes(q);
+  }));
 }
 
 // ── Actions ──
@@ -572,6 +701,9 @@ function openRestock(id) {
   restockId = id;
   var item = items.find(function(x){ return x.id===id; });
   document.getElementById('fRestock').value = item ? item.initial : '';
+  document.getElementById('fRestockPrice').value = '';
+  document.getElementById('fRestockNote').value = '';
+  document.getElementById('fRestockDate').value = new Date().toISOString().split('T')[0];
   document.getElementById('restockModal').classList.add('show');
 }
 
@@ -581,20 +713,103 @@ function confirmRestock() {
   var item = items.find(function(x){ return x.id===restockId; });
   if (!item) return;
   item.current += num;
+  var price = parseInt(document.getElementById('fRestockPrice').value) || 0;
+  var date  = document.getElementById('fRestockDate').value || new Date().toISOString().split('T')[0];
+  var note  = document.getElementById('fRestockNote').value.trim();
+  purchaseHistory.unshift({
+    id: Date.now().toString(), itemId: item.id, itemName: item.name,
+    icon: item.icon||'💊', unit: item.unit,
+    qty: num, price: price, date: date, note: note
+  });
+  localStorage.setItem('medlyPurchase', JSON.stringify(purchaseHistory));
+  dbSave('purchase', purchaseHistory);
   save();
   closeModal('restockModal');
-  renderList();
-  updateSummary();
+  renderList(); renderPurchaseHistory(); updateSummary();
   showToast('✅ '+item.name+'を補充しました');
+}
+
+// ── Purchase History ──
+function renderPurchaseHistory() {
+  var el = document.getElementById('historyList');
+  if (!purchaseHistory.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🛒</div><p>補充時に価格を記録すると<br>ここに履歴が表示されます</p></div>';
+    return;
+  }
+  var total = purchaseHistory.reduce(function(s,h){ return s+(h.price||0); },0);
+  el.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.9rem 1rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;">'
+    +'<span style="font-size:.75rem;color:var(--muted);">累計購入金額</span>'
+    +'<span style="font-size:1.2rem;font-weight:600;color:var(--accent);">¥'+total.toLocaleString()+'</span>'
+    +'</div>'
+    +purchaseHistory.map(function(h){
+      var d = new Date(h.date);
+      var dateStr = (d.getMonth()+1)+'月'+d.getDate()+'日';
+      return '<div class="history-item">'
+        +'<span class="history-icon">'+h.icon+'</span>'
+        +'<div class="history-info">'
+        +'<p class="history-name">'+h.itemName+'</p>'
+        +'<p class="history-date">'+dateStr+(h.note?' · '+h.note:'')+'</p>'
+        +'</div>'
+        +'<div class="history-right">'
+        +(h.price?'<p class="history-price">¥'+h.price.toLocaleString()+'</p>':'<p class="history-price" style="color:var(--muted)">—</p>')
+        +'<p class="history-qty">'+h.qty+h.unit+'補充</p>'
+        +'</div>'
+        +'</div>';
+    }).join('');
+}
+
+// ── Effect Memo ──
+function openMemo(id) {
+  memoItemId = id;
+  memoRatings = {condition:0, sleep:0};
+  var item = items.find(function(x){ return x.id===id; });
+  document.getElementById('memoModalTitle').textContent = (item?item.icon+' '+item.name:'') + ' 効果メモ';
+  document.getElementById('fMemoDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('fMemoNote').value = '';
+  ['condition','sleep'].forEach(function(k){
+    [1,2,3].forEach(function(n){ document.getElementById('rb-'+k+'-'+n).classList.remove('selected'); });
+  });
+  document.getElementById('memoModal').classList.add('show');
+}
+
+function setRating(key, val) {
+  memoRatings[key] = val;
+  [1,2,3].forEach(function(n){
+    document.getElementById('rb-'+key+'-'+n).classList.toggle('selected', n===val);
+  });
+}
+
+function saveMemo() {
+  var item = items.find(function(x){ return x.id===memoItemId; });
+  if (!item) return;
+  var note = document.getElementById('fMemoNote').value.trim();
+  var date = document.getElementById('fMemoDate').value;
+  effectLogs.unshift({
+    id: Date.now().toString(), itemId: memoItemId, itemName: item.name,
+    icon: item.icon||'💊', date: date,
+    condition: memoRatings.condition, sleep: memoRatings.sleep, note: note
+  });
+  localStorage.setItem('medlyEffectLogs', JSON.stringify(effectLogs));
+  dbSave('logs', effectLogs);
+  closeModal('memoModal');
+  showToast('📝 メモを保存しました');
 }
 
 // ── Presets ──
 function buildPresets() {
-  document.getElementById('presetGrid').innerHTML = PRESETS.map(function(p){
-    return '<button class="preset-btn" onclick="applyPreset('+JSON.stringify(p).replace(/"/g,'&quot;')+')">'
-      +'<span class="p-icon">'+p.icon+'</span>'
-      +'<span style="font-size:.65rem;">'+p.name+'</span>'
-      +'</button>';
+  var cats = ['基本','筋トレ'];
+  document.getElementById('presetGrid').innerHTML = cats.map(function(cat){
+    var items = PRESETS.filter(function(p){ return p.cat===cat; });
+    return '<div class="cat-section">'
+      +'<p class="preset-cat-label">'+cat+'</p>'
+      +'<div class="preset-grid" style="grid-template-columns:repeat(3,1fr);">'
+      +items.map(function(p){
+        return '<button class="preset-btn" onclick="applyPreset('+JSON.stringify(p).replace(/"/g,'&quot;')+')">'
+          +'<span class="p-icon">'+p.icon+'</span>'
+          +'<span style="font-size:.62rem;">'+p.name+'</span>'
+          +'</button>';
+      }).join('')
+      +'</div></div>';
   }).join('');
 }
 
@@ -771,12 +986,14 @@ async function syncFromCloud() {
   var res = await _sb.from('user_data').select('key,data').eq('user_id', currentUser.id).eq('app', _APP);
   if (res.data) {
     res.data.forEach(function(row) {
-      if (row.key === 'items') { items = row.data; localStorage.setItem('medlyItems', JSON.stringify(items)); }
+      if (row.key === 'items')    { items = row.data; localStorage.setItem('medlyItems', JSON.stringify(items)); }
+      if (row.key === 'purchase') { purchaseHistory = row.data; localStorage.setItem('medlyPurchase', JSON.stringify(purchaseHistory)); }
+      if (row.key === 'logs')     { effectLogs = row.data; localStorage.setItem('medlyEffectLogs', JSON.stringify(effectLogs)); }
     });
   }
   var p = await _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle();
   if (p.data) { isPro = p.data.is_pro; localStorage.setItem('isPro', String(isPro)); }
-  renderList(); renderSchedule(); updateSummary(); updateProUI();
+  renderList(); renderSchedule(); renderPurchaseHistory(); updateSummary(); updateProUI();
   showToast('☁️ データを同期しました');
 }
 
