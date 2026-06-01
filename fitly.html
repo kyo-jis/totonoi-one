@@ -245,6 +245,11 @@
     .bw-bar { width:100%; border-radius:4px 4px 0 0; background:var(--blue); opacity:.7; min-height:3px; }
     .bw-bar.latest { opacity:1; }
     .bw-bar-label { font-size:.52rem; color:var(--muted); }
+    /* Sound selector */
+    .sound-selector { display:flex; gap:.4rem; flex-wrap:wrap; margin-top:.5rem; }
+    .sound-btn { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:.45rem .7rem; font-size:.75rem; color:var(--muted); cursor:pointer; font-family:var(--font); display:flex; align-items:center; gap:.35rem; transition:all .15s; }
+    .sound-btn.active { border-color:var(--accent); color:var(--accent); background:rgba(94,207,160,.1); }
+    .sound-preview { font-size:.65rem; color:var(--muted); background:none; border:none; cursor:pointer; padding:0; font-family:var(--font); }
   </style>
 </head>
 <body>
@@ -301,6 +306,10 @@
 
 <!-- タイマータブ -->
 <div class="view" id="view-timer">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.85rem 1rem;margin-bottom:1rem;">
+    <p style="font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;">🔊 サウンド設定</p>
+    <div class="sound-selector" id="soundSelector"></div>
+  </div>
   <div class="timer-display">
     <p style="font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;">インターバルタイマー</p>
     <p class="timer-big" id="timerDisplay">01:30</p>
@@ -695,6 +704,7 @@ function checkAndUpdatePRs(exercises) {
 // ── Init ──
 function init() {
   buildCatFilter();
+  buildSoundSelector();
   renderExerciseModal();
   renderMenuList();
   renderHistory();
@@ -883,7 +893,7 @@ function startRestTimer(seconds, exerciseName, exId) {
     if (restTimeLeft <= 0) {
       clearInterval(restTimerInterval);
       document.getElementById('restOverlay').classList.remove('show');
-      // バイブレーション
+      playSound();
       if (navigator.vibrate) navigator.vibrate([200,100,200]);
       showToast('🔔 休憩終了！次のセットへ');
       // 休憩時間を記憶
@@ -973,6 +983,7 @@ function toggleTimer() {
       if (timerSeconds<=0) {
         clearInterval(timerInterval); timerRunning=false;
         document.getElementById('btnTimerMain').textContent='▶ スタート';
+        playSound();
         if (navigator.vibrate) navigator.vibrate([300,100,300]);
         showToast('🔔 タイマー終了！');
       }
@@ -986,6 +997,104 @@ function resetTimer() {
   updateTimerDisplay();
   document.getElementById('timerProgressBar').style.width='100%';
   document.getElementById('btnTimerMain').textContent='▶ スタート';
+}
+
+// ── Sound ──
+var _audioCtx = null;
+var selectedSound = localStorage.getItem('fitlySound') || 'chime';
+
+var SOUNDS = [
+  { id:'bell',    label:'🔔 ベル',         desc:'クラシックベル' },
+  { id:'chime',   label:'🎵 チャイム',     desc:'和音アルペジオ' },
+  { id:'bowl',    label:'🎶 ボウル',       desc:'シンギングボウル' },
+  { id:'crystal', label:'✨ クリスタル',   desc:'高音ペンタトニック' },
+  { id:'synth',   label:'🎺 シンセ',       desc:'クリーンな電子音' },
+  { id:'none',    label:'🔕 なし',         desc:'無音' },
+];
+
+function getAudioCtx() {
+  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (_audioCtx.state === 'suspended') _audioCtx.resume();
+  return _audioCtx;
+}
+document.addEventListener('touchstart', function(){ getAudioCtx(); }, { once: true });
+
+function playSound(id) {
+  var sid = id || selectedSound;
+  if (sid === 'none') return;
+  try {
+    var ctx = getAudioCtx();
+    var now = ctx.currentTime;
+    if (sid === 'bell') {
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'sine';
+      o.frequency.setValueAtTime(880, now);
+      o.frequency.exponentialRampToValueAtTime(440, now + 1.5);
+      g.gain.setValueAtTime(0.7, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
+      o.start(now); o.stop(now + 2.5);
+    } else if (sid === 'chime') {
+      [523.25, 659.25, 783.99, 1046.50].forEach(function(freq, i) {
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.type = 'sine'; o.frequency.value = freq;
+        var t = now + i * 0.18;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.4, t + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+        o.start(t); o.stop(t + 1.2);
+      });
+    } else if (sid === 'bowl') {
+      [432, 648].forEach(function(freq, i) {
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.type = 'sine'; o.frequency.value = freq;
+        g.gain.setValueAtTime(0, now);
+        g.gain.linearRampToValueAtTime(i === 0 ? 0.5 : 0.15, now + 0.5);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 5);
+        o.start(now); o.stop(now + 5);
+      });
+    } else if (sid === 'crystal') {
+      [1174.66, 1318.51, 1567.98, 1760, 2093].forEach(function(freq, i) {
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.type = 'sine'; o.frequency.value = freq;
+        var t = now + i * 0.11;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.25, t + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
+        o.start(t); o.stop(t + 0.9);
+      });
+    } else if (sid === 'synth') {
+      [0, 0.35].forEach(function(delay) {
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.type = 'triangle'; o.frequency.value = 660;
+        var t = now + delay;
+        g.gain.setValueAtTime(0.5, t);
+        g.gain.linearRampToValueAtTime(0, t + 0.18);
+        o.start(t); o.stop(t + 0.2);
+      });
+    }
+  } catch(e) {}
+}
+
+function buildSoundSelector() {
+  var el = document.getElementById('soundSelector');
+  if (!el) return;
+  el.innerHTML = SOUNDS.map(function(s) {
+    return '<button class="sound-btn'+(s.id===selectedSound?' active':'')+'" onclick="selectSound(\''+s.id+'\')">'
+      +s.label
+      +(s.id!=='none'?'<span class="sound-preview" onclick="event.stopPropagation();playSound(\''+s.id+'\')">▶</span>':'')
+      +'</button>';
+  }).join('');
+}
+
+function selectSound(id) {
+  selectedSound = id;
+  localStorage.setItem('fitlySound', id);
+  buildSoundSelector();
 }
 
 // ── Interval Timer ──
@@ -1027,6 +1136,7 @@ function resumeIntervalTimer() {
     ivState.timeLeft--;
     updateIvDisplay();
     if (ivState.timeLeft <= 0) {
+      playSound();
       if (navigator.vibrate) navigator.vibrate(200);
       if (ivState.phase === 'work') {
         if (ivState.currentRound >= ivState.rounds) {
@@ -1036,6 +1146,7 @@ function resumeIntervalTimer() {
           document.getElementById('ivPhaseLabel').textContent = '完了！';
           document.getElementById('ivTimeDisplay').textContent = '🎉';
           document.getElementById('ivRoundDisplay').textContent = ivState.rounds + 'セット完了';
+          playSound();
           if (navigator.vibrate) navigator.vibrate([300,100,300,100,300]);
           showToast('🎉 インターバル完了！');
           return;
