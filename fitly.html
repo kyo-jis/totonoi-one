@@ -491,7 +491,17 @@
 
 <!-- 履歴タブ -->
 <div class="view" id="view-history">
-  <p class="section-label">ワークアウト履歴</p>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;">
+    <p class="section-label" style="margin-bottom:0;">ワークアウト履歴</p>
+    <button id="btnHistorySelect" onclick="toggleHistorySelectMode()" style="background:none;border:1px solid var(--border);border-radius:10px;padding:.35rem .75rem;font-size:.72rem;color:var(--muted);cursor:pointer;font-family:var(--font);">選択</button>
+  </div>
+  <!-- 複数選択時のアクションバー -->
+  <div id="historySelectBar" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.6rem .85rem;margin-bottom:.75rem;display:none;align-items:center;justify-content:space-between;">
+    <label style="display:flex;align-items:center;gap:.5rem;font-size:.8rem;color:var(--muted);cursor:pointer;">
+      <input type="checkbox" id="checkAll" onchange="toggleSelectAll(this.checked)" style="width:16px;height:16px;accent-color:var(--accent);">すべて選択
+    </label>
+    <button onclick="deleteSelectedHistory()" style="background:var(--accent2);color:#fff;border:none;border-radius:9px;padding:.4rem .9rem;font-size:.78rem;font-weight:600;font-family:var(--font);cursor:pointer;">削除</button>
+  </div>
   <div id="historyList"></div>
 </div>
 
@@ -2136,13 +2146,20 @@ function renderHistory() {
     var dateStr=(d.getMonth()+1)+'月'+d.getDate()+'日';
     var dur=w.duration?Math.floor(w.duration/60)+'分':'—';
     var tags=(w.exercises||[]).map(function(e){ return '<span class="history-ex-tag">'+e.name+'</span>'; }).join('');
-    return '<div class="history-card">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;">'
-      +'<p class="history-date" style="margin-bottom:0;">'+(w.name?'<strong style="color:var(--text);">'+w.name+'</strong> · ':'')+dateStr+'</p>'
-      +'<div style="display:flex;gap:.35rem;">'
+    var leftCol = historySelectMode
+      ? '<input type="checkbox" class="history-check" data-idx="'+realIdx+'" style="width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;cursor:pointer;">'
+      : '';
+    var rightBtns = historySelectMode ? '' :
+      '<div style="display:flex;gap:.35rem;">'
       +'<button onclick="openHistoryEdit('+realIdx+')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:.25rem .55rem;font-size:.7rem;color:var(--muted);cursor:pointer;font-family:var(--font);">編集</button>'
       +'<button onclick="deleteHistory('+realIdx+')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:.25rem .55rem;font-size:.7rem;color:var(--accent2);cursor:pointer;font-family:var(--font);">削除</button>'
-      +'</div></div>'
+      +'</div>';
+    return '<div class="history-card" style="'+(historySelectMode?'cursor:pointer;':'')+'" '+(historySelectMode?'onclick="this.querySelector(\'.history-check\').click()"':'')+' >'
+      +'<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem;">'
+      +leftCol
+      +'<p class="history-date" style="margin-bottom:0;flex:1;">'+(w.name?'<strong style="color:var(--text);">'+w.name+'</strong> · ':'')+dateStr+'</p>'
+      +rightBtns
+      +'</div>'
       +'<div class="history-stats">'
       +'<span class="history-stat">⏱ <span>'+dur+'</span></span>'
       +'<span class="history-stat">🏋️ <span>'+((w.totalSets||0)+'セット')+'</span></span>'
@@ -2151,6 +2168,42 @@ function renderHistory() {
       +'<div class="history-exercises" style="margin-top:.5rem;">'+tags+'</div>'
       +'</div>';
   }).join('');
+}
+
+var historySelectMode = false;
+
+function toggleHistorySelectMode() {
+  historySelectMode = !historySelectMode;
+  var bar = document.getElementById('historySelectBar');
+  var btn = document.getElementById('btnHistorySelect');
+  bar.style.display = historySelectMode ? 'flex' : 'none';
+  btn.textContent = historySelectMode ? 'キャンセル' : '選択';
+  btn.style.color = historySelectMode ? 'var(--accent2)' : 'var(--muted)';
+  document.getElementById('checkAll').checked = false;
+  renderHistory();
+}
+
+function toggleSelectAll(checked) {
+  document.querySelectorAll('.history-check').forEach(function(cb) { cb.checked = checked; });
+}
+
+function deleteSelectedHistory() {
+  var checks = document.querySelectorAll('.history-check:checked');
+  if (!checks.length) { showToast('削除する記録を選択してください'); return; }
+  if (!confirm(checks.length + '件の記録を削除しますか？')) return;
+  var toDelete = [];
+  checks.forEach(function(cb) { toDelete.push(parseInt(cb.dataset.idx)); });
+  toDelete.sort(function(a, b) { return b - a; }); // 後ろから削除
+  toDelete.forEach(function(idx) { workoutHistory.splice(idx, 1); });
+  localStorage.setItem('fitlyHistory', JSON.stringify(workoutHistory));
+  dbSave('history', workoutHistory);
+  historySelectMode = false;
+  document.getElementById('historySelectBar').style.display = 'none';
+  document.getElementById('btnHistorySelect').textContent = '選択';
+  document.getElementById('btnHistorySelect').style.color = 'var(--muted)';
+  renderHistory();
+  renderWorkoutDashboard();
+  showToast('🗑 ' + toDelete.length + '件削除しました');
 }
 
 function deleteHistory(idx) {
