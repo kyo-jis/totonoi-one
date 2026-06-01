@@ -2476,21 +2476,14 @@ function deleteHistory(idx) {
 var heIdx = -1;
 
 function openHistoryEdit(idx) {
-  try {
-    heIdx = idx;
-    var w = workoutHistory[idx];
-    if (!w) { alert('記録が見つかりません (idx=' + idx + ')'); return; }
-    var dateEl = document.getElementById('heDate');
-    var nameEl = document.getElementById('heName');
-    if (!dateEl || !nameEl) { alert('モーダル要素が見つかりません'); return; }
-    dateEl.value = w.date || '';
-    nameEl.value = w.name || '';
-    document.getElementById('heExerciseList').innerHTML = '';
-    renderHeExercises();
-    document.getElementById('historyEditModal').classList.add('show');
-  } catch(e) {
-    alert('エラー: ' + e.message + '\nstack: ' + (e.stack||'').slice(0,200));
-  }
+  heIdx = idx;
+  var w = workoutHistory[idx];
+  if (!w) { showToast('記録が見つかりません'); return; }
+  document.getElementById('heDate').value = w.date || '';
+  document.getElementById('heName').value = w.name || '';
+  document.getElementById('heExerciseList').innerHTML = '';
+  renderHeExercises();
+  document.getElementById('historyEditModal').classList.add('show');
 }
 
 function renderHeExercises() {
@@ -2499,8 +2492,8 @@ function renderHeExercises() {
     var layout = setLayout(ex.cat);
     var h1 = layout.headers[0], h2 = layout.headers[1], h3 = layout.headers[2] || '';
     var is3col = layout.cls === 'set-cols-3';
+    var f = layout.fields;
     var setsHTML = (ex.sets || []).map(function(s, si) {
-      var f = layout.fields;
       var inp = function(fi) {
         var isText = layout.types && layout.types[fi] === 'text';
         return '<input type="'+(isText?'text':'number')+'" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.4rem .3rem;font-size:.82rem;color:var(--text);font-family:var(--font);text-align:center;outline:none;min-width:0;" value="'+(s[f[fi]]||'')+'" placeholder="'+layout.placeholders[fi]+'" onchange="heUpdateSet('+ei+','+si+',\''+f[fi]+'\',this.value)">';
