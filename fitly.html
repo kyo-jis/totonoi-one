@@ -330,6 +330,12 @@
 
   <!-- ダッシュボード（非ワークアウト時） -->
   <div id="workoutDashboard">
+
+    <!-- メニューから始める（最上部） -->
+    <p class="section-label" style="margin-bottom:.6rem;">メニューから始める</p>
+    <div class="wd-menu-row" id="wdMenuRow"></div>
+    <button class="btn-start-custom" onclick="startWorkoutCustom()" style="margin-bottom:1.25rem;">＋ カスタムで始める</button>
+
     <div class="wd-stats">
       <div class="wd-stat">
         <p class="wd-stat-val" id="wdStreak">0</p>
@@ -366,9 +372,6 @@
       <div id="wdPRsList"></div>
     </div>
 
-    <p class="section-label" style="margin-bottom:.6rem;">メニューから始める</p>
-    <div class="wd-menu-row" id="wdMenuRow"></div>
-    <button class="btn-start-custom" onclick="startWorkoutCustom()">＋ カスタムで始める</button>
   </div>
 
   <!-- アクティブ中ヘッダー（ワークアウト中） -->
@@ -1801,6 +1804,28 @@ function filterExercises() {
   renderExerciseModal(filtered);
 }
 
+var lastDoneMap = {}; // exId -> days ago (0=today, 1=yesterday, ...)
+
+function buildLastDoneMap() {
+  lastDoneMap = {};
+  var today = new Date(); today.setHours(0,0,0,0);
+  workoutHistory.forEach(function(w) {
+    var wDate = new Date(w.date); wDate.setHours(0,0,0,0);
+    var days = Math.round((today - wDate) / 86400000);
+    (w.exercises || []).forEach(function(ex) {
+      if (!(ex.id in lastDoneMap) || days < lastDoneMap[ex.id]) {
+        lastDoneMap[ex.id] = days;
+      }
+    });
+  });
+}
+
+function daysLabel(days) {
+  if (days === 0) return '今日';
+  if (days === 1) return '昨日';
+  return days + '日前';
+}
+
 function renderExerciseModal(list) {
   list = list || EXERCISE_DB;
   var el = document.getElementById('exerciseListModal');
@@ -1808,10 +1833,17 @@ function renderExerciseModal(list) {
 
   function exRow(ex) {
     var ytURL = 'https://www.youtube.com/results?search_query='+encodeURIComponent((ex.keyword||ex.name)+' やり方');
+    var daysBadge = '';
+    if (ex.id in lastDoneMap) {
+      var d = lastDoneMap[ex.id];
+      var color = d === 0 ? 'var(--accent)' : d <= 3 ? 'var(--muted)' : d <= 7 ? 'var(--blue)' : 'var(--muted)';
+      daysBadge = '<span style="font-size:.62rem;color:'+color+';white-space:nowrap;">'+daysLabel(d)+'</span>';
+    }
     return '<div class="exercise-list-item" onclick="addExerciseToWorkout('+JSON.stringify(ex).replace(/"/g,'&quot;')+')">'
       +'<div><p class="exercise-list-name">'+ex.name+'</p>'
       +'<p class="exercise-list-meta">'+CAT_LABELS[ex.cat]+'</p></div>'
       +'<div style="display:flex;align-items:center;gap:.5rem;">'
+      +daysBadge
       +'<a href="'+ytURL+'" target="_blank" onclick="event.stopPropagation()" class="btn-yt">▶ 動画</a>'
       +'</div></div>';
   }
@@ -1828,15 +1860,7 @@ function renderExerciseModal(list) {
     });
     el.innerHTML = html;
   } else {
-    el.innerHTML = list.map(function(ex){
-      var ytURL = 'https://www.youtube.com/results?search_query='+encodeURIComponent((ex.keyword||ex.name)+' やり方');
-      return '<div class="exercise-list-item" onclick="addExerciseToWorkout('+JSON.stringify(ex).replace(/"/g,'&quot;')+')">'
-        +'<div><p class="exercise-list-name">'+ex.name+'</p>'
-        +'<p class="exercise-list-meta">'+PART_LABELS[ex.part]+'・'+CAT_LABELS[ex.cat]+'</p></div>'
-        +'<div style="display:flex;align-items:center;gap:.5rem;">'
-        +'<a href="'+ytURL+'" target="_blank" onclick="event.stopPropagation()" class="btn-yt">▶</a>'
-        +'</div></div>';
-    }).join('');
+    el.innerHTML = list.map(exRow).join('');
   }
 }
 
@@ -1856,6 +1880,7 @@ function openAddExercise() {
   document.getElementById('exerciseSearch').value='';
   selectedCat='all';
   document.querySelectorAll('.cat-btn').forEach(function(b,i){ b.classList.toggle('active',i===0); });
+  buildLastDoneMap();
   var customEx=JSON.parse(localStorage.getItem('customExercises')||'[]');
   renderExerciseModal(EXERCISE_DB.concat(customEx));
   document.getElementById('addExerciseModal').classList.add('show');
