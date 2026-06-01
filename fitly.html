@@ -12,6 +12,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Fitly">
   <link rel="apple-touch-icon" href="/apple-touch-icon-fitly.png">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -34,7 +35,10 @@
 
     /* Header */
     .app-header { padding: 3rem 1.25rem 1.25rem; }
-    .back-link { font-size:.75rem; color:var(--muted); text-decoration:none; letter-spacing:.1em; text-transform:uppercase; display:inline-flex; align-items:center; gap:.4rem; margin-bottom:1.25rem; }
+    .back-link { font-size:.75rem; color:var(--muted); text-decoration:none; letter-spacing:.1em; text-transform:uppercase; display:inline-flex; align-items:center; gap:.4rem; margin-bottom:0; }
+    .auth-chip { background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); transition:all .2s; white-space:nowrap; }
+    .auth-chip.logged-in { border-color:var(--accent); color:var(--accent); }
+    .header-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; }
     .app-title { font-size:1.6rem; font-weight:500; letter-spacing:-.02em; }
     .app-title span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
 
@@ -227,7 +231,10 @@
 <body>
 
 <div class="app-header">
-  <a class="back-link" href="index.html"> Totonoi One</a>
+  <div class="header-top">
+    <a class="back-link" href="index.html"> Totonoi One</a>
+    <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
+  </div>
   <h1 class="app-title">Fit<span>ly</span></h1>
 </div>
 
@@ -539,6 +546,7 @@ function saveWorkout() {
   };
   workoutHistory.unshift(record);
   localStorage.setItem('fitlyHistory', JSON.stringify(workoutHistory));
+  dbSave('history', workoutHistory);
 
   // 種目ごとの設定を保存
   currentWorkout.exercises.forEach(function(ex) {
@@ -551,6 +559,7 @@ function saveWorkout() {
     }
   });
   localStorage.setItem('exerciseSettings', JSON.stringify(exerciseSettings));
+  dbSave('exSettings', exerciseSettings);
 
   clearInterval(workoutTimerInterval);
   currentWorkout = {exercises:[], startTime:null, running:false};
@@ -866,6 +875,7 @@ function saveMenu() {
   if (!name) { showToast('メニュー名を入力してください'); return; }
   savedMenus.push({name:name, exercises:currentWorkout.exercises.map(function(e){ return {id:e.id,name:e.name,cat:e.cat,part:e.part,keyword:e.keyword||''}; })});
   localStorage.setItem('fitlyMenus',JSON.stringify(savedMenus));
+  dbSave('menus', savedMenus);
   closeModal('saveMenuModal');
   renderMenuList();
   showToast('✅ メニューを保存しました');
@@ -883,6 +893,7 @@ function deleteMenu(i) {
   if (!confirm('削除しますか？')) return;
   savedMenus.splice(i,1);
   localStorage.setItem('fitlyMenus',JSON.stringify(savedMenus));
+  dbSave('menus', savedMenus);
   renderMenuList();
 }
 
@@ -1025,6 +1036,101 @@ function updateProUI() {
 }
 
 init();
+
+// ── Supabase Auth & Sync ──
+var _sb = window.supabase.createClient(
+  'https://foknpmvpgbkwgpmlgzrn.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZva25wbXZwZ2Jrd2dwbWxnenJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyODc4NTksImV4cCI6MjA5NTg2Mzg1OX0.6KP9_m4Q6x0hs7IsinNhZsODmZCjrvAL1CxtbQ32-80'
+);
+var currentUser = null;
+var _APP = 'fitly';
+
+function dbSave(key, data) {
+  if (!currentUser) return;
+  _sb.from('user_data').upsert(
+    { user_id: currentUser.id, app: _APP, key: key, data: data, updated_at: new Date().toISOString() },
+    { onConflict: 'user_id,app,key' }
+  );
+}
+
+async function syncFromCloud() {
+  var res = await _sb.from('user_data').select('key,data').eq('user_id', currentUser.id).eq('app', _APP);
+  if (res.data) {
+    res.data.forEach(function(row) {
+      if (row.key === 'history') { workoutHistory = row.data; localStorage.setItem('fitlyHistory', JSON.stringify(workoutHistory)); }
+      if (row.key === 'menus') { savedMenus = row.data; localStorage.setItem('fitlyMenus', JSON.stringify(savedMenus)); }
+      if (row.key === 'exSettings') { exerciseSettings = row.data; localStorage.setItem('exerciseSettings', JSON.stringify(exerciseSettings)); }
+    });
+  }
+  var p = await _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle();
+  if (p.data) { isPro = p.data.is_pro; localStorage.setItem('isPro', String(isPro)); }
+  renderHistory(); renderMenuList(); renderAnalysis(); updateProUI();
+  showToast('☁️ データを同期しました');
+}
+
+var _authMode = 'login';
+function openAuthModal() {
+  if (currentUser) {
+    if (confirm(currentUser.email + '\nログアウトしますか？')) { _sb.auth.signOut(); }
+    return;
+  }
+  _authMode = 'login';
+  document.getElementById('authModalTitle').textContent = 'ログイン';
+  document.getElementById('authToggle').textContent = 'アカウント作成はこちら →';
+  document.getElementById('authModal').classList.add('show');
+}
+function toggleAuthMode() {
+  _authMode = _authMode === 'login' ? 'signup' : 'login';
+  document.getElementById('authModalTitle').textContent = _authMode === 'login' ? 'ログイン' : 'アカウント作成';
+  document.getElementById('authToggle').textContent = _authMode === 'login' ? 'アカウント作成はこちら →' : 'ログインはこちら →';
+}
+async function handleAuth() {
+  var email = document.getElementById('authEmail').value.trim();
+  var pass  = document.getElementById('authPassword').value;
+  if (!email || !pass) { showToast('メールとパスワードを入力してください'); return; }
+  var result = _authMode === 'login'
+    ? await _sb.auth.signInWithPassword({ email: email, password: pass })
+    : await _sb.auth.signUp({ email: email, password: pass });
+  if (result.error) { showToast('⚠️ ' + result.error.message); return; }
+  closeModal('authModal');
+  showToast(_authMode === 'signup' ? '✅ 登録しました！確認メールをご確認ください' : '✅ ログインしました');
+}
+function updateAuthUI() {
+  var btn = document.getElementById('authBtn');
+  if (!btn) return;
+  if (currentUser) { btn.textContent = currentUser.email.split('@')[0]; btn.classList.add('logged-in'); }
+  else { btn.textContent = 'ログイン'; btn.classList.remove('logged-in'); }
+}
+_sb.auth.onAuthStateChange(function(event, session) {
+  currentUser = session ? session.user : null;
+  updateAuthUI();
+  if (currentUser && event === 'SIGNED_IN') syncFromCloud();
+  if (!currentUser) updateProUI();
+});
+_sb.auth.getSession().then(function(res) {
+  currentUser = res.data.session ? res.data.session.user : null;
+  updateAuthUI();
+  if (currentUser) syncFromCloud();
+});
 </script>
+
+<!-- Auth Modal -->
+<div class="modal-overlay" id="authModal" onclick="closeModalOutside(event,'authModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <p class="modal-title" id="authModalTitle">ログイン</p>
+    <div class="form-group">
+      <label class="form-label">メールアドレス</label>
+      <input type="email" id="authEmail" placeholder="your@email.com" style="width:100%">
+    </div>
+    <div class="form-group">
+      <label class="form-label">パスワード</label>
+      <input type="password" id="authPassword" placeholder="••••••••" style="width:100%">
+    </div>
+    <button class="btn-primary" onclick="handleAuth()">ログイン / 登録</button>
+    <button class="btn-cancel" onclick="toggleAuthMode()" id="authToggle">アカウント作成はこちら →</button>
+    <button class="btn-cancel" onclick="closeModal('authModal')">キャンセル</button>
+  </div>
+</div>
 </body>
 </html>
