@@ -2204,10 +2204,14 @@ var lastDoneMap = {}; // exId -> days ago (0=today, 1=yesterday, ...)
 
 function buildLastDoneMap() {
   lastDoneMap = {};
-  var today = new Date(); today.setHours(0,0,0,0);
+  var todayStr = localDateStr();
+  // 'T00:00:00' を付けてローカル時刻として解析（日付のみ文字列はUTC扱いになるため）
+  var todayMs = new Date(todayStr + 'T00:00:00').getTime();
   workoutHistory.forEach(function(w) {
-    var wDate = new Date(w.date); wDate.setHours(0,0,0,0);
-    var days = Math.round((today - wDate) / 86400000);
+    var ds = wDateStr(w);
+    if (!ds) return;
+    var wMs = new Date(ds + 'T00:00:00').getTime();
+    var days = Math.round((todayMs - wMs) / 86400000);
     (w.exercises || []).forEach(function(ex) {
       if (!(ex.id in lastDoneMap) || days < lastDoneMap[ex.id]) {
         lastDoneMap[ex.id] = days;
