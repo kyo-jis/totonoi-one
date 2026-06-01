@@ -979,7 +979,13 @@ function takeItem(id) {
   if (item.current < item.daily) { showToast('残量が不足しています'); return; }
   item.current = Math.max(0, item.current - item.daily);
   save();
+  // 全タイミングを服用済みにマーク（スケジュールと同期）
+  (item.timing || []).forEach(function(t){
+    dailyTaken.taken[id + '_' + t] = true;
+  });
+  saveDailyTaken();
   renderList();
+  renderSchedule();
   updateSummary();
   showToast(item.icon+' '+item.name+' 服用しました');
   if (daysRemaining(item) <= item.alert) showToast('⚠️ 残り少なくなっています！購入をご検討ください');
