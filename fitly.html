@@ -239,17 +239,17 @@
     .wd-cal-title { font-size:.72rem; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:.75rem; }
     .wd-cal-scroll { display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; padding-bottom:2px; }
     .wd-cal-scroll::-webkit-scrollbar { display:none; }
-    .wd-cal-day { flex-shrink:0; width:42px; display:flex; flex-direction:column; align-items:center; gap:5px; cursor:pointer; }
-    .wd-cal-label { font-size:.58rem; color:var(--muted); }
-    .wd-cal-date { font-size:.65rem; color:var(--muted); }
-    .wd-cal-cell { width:38px; height:42px; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; background:var(--surface2); position:relative; }
+    .wd-cal-day { flex-shrink:0; width:44px; display:flex; flex-direction:column; align-items:center; gap:4px; }
+    .wd-cal-label { font-size:.6rem; color:var(--muted); font-weight:500; }
+    .wd-cal-date { font-size:.62rem; color:var(--muted); }
+    .wd-cal-cell { width:40px; height:48px; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; background:var(--surface2); }
     .wd-cal-cell.today { border:2px solid var(--accent); }
-    .wd-cal-cell.has-workout { background:rgba(94,207,160,.22); }
-    .wd-cal-check { font-size:.75rem; color:var(--accent); font-weight:700; line-height:1; }
-    .wd-cal-parts { display:flex; flex-wrap:wrap; gap:2px; justify-content:center; align-items:center; max-width:34px; }
-    .wd-cal-part-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
-    .wd-cal-legend { display:flex; flex-wrap:wrap; gap:.4rem .75rem; margin-top:.65rem; padding:0 .25rem; }
-    .wd-cal-legend-item { display:flex; align-items:center; gap:.3rem; font-size:.62rem; color:var(--muted); }
+    .wd-cal-cell.has-workout { background:rgba(94,207,160,.3); border:1px solid rgba(94,207,160,.5); }
+    .wd-cal-check { font-size:.95rem; color:var(--accent); font-weight:700; line-height:1; }
+    .wd-cal-parts { display:flex; gap:3px; justify-content:center; align-items:center; flex-wrap:wrap; max-width:36px; }
+    .wd-cal-part-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .wd-cal-legend { display:flex; flex-wrap:wrap; gap:.35rem .65rem; margin-top:.75rem; }
+    .wd-cal-legend-item { display:flex; align-items:center; gap:.3rem; font-size:.65rem; color:var(--muted); }
     .wd-vol { font-size:.7rem; color:var(--muted); text-align:center; margin-top:.75rem; }
     /* Last workout card */
     .wd-last { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:1rem; display:flex; align-items:center; gap:.85rem; }
@@ -1159,11 +1159,16 @@ function renderWorkoutDashboard() {
   var history = workoutHistory;
   var now = new Date();
 
-  // ストリーク
-  var streak = 0;
-  var check = new Date(); check.setHours(0,0,0,0);
+  // ユニーク日付セット
   var dateSet = {};
-  history.forEach(function(w){ dateSet[w.date] = true; });
+  history.forEach(function(w){ if (w.date) dateSet[w.date] = true; });
+
+  // ストリーク（今日トレしてない場合は昨日から遡る）
+  var streak = 0;
+  var todayStr = now.toISOString().split('T')[0];
+  var check = new Date(); check.setHours(0,0,0,0);
+  // 今日トレしていなければ昨日から数え始める
+  if (!dateSet[todayStr]) check.setDate(check.getDate() - 1);
   while (dateSet[check.toISOString().split('T')[0]]) {
     streak++;
     check.setDate(check.getDate() - 1);
@@ -1237,34 +1242,42 @@ function renderWorkoutDashboard() {
     }).join('');
 
     var cellCls = 'wd-cal-cell' + (isToday ? ' today' : '') + (hasWorkout ? ' has-workout' : '');
-    var clickAttr = hasWorkout ? ' onclick="openDayDetail(\'' + ds + '\')"' : '';
+    var clickAttr = (hasWorkout || isToday) ? ' onclick="' + (hasWorkout ? "openDayDetail('" + ds + "')" : '') + '" style="cursor:pointer;"' : '';
+
+    var cellContent = '';
+    if (hasWorkout) {
+      cellContent = '<span class="wd-cal-check">✓</span>';
+      if (dotsHTML) cellContent += '<div class="wd-cal-parts">' + dotsHTML + '</div>';
+    } else if (isToday) {
+      cellContent = '<span style="font-size:.55rem;color:var(--accent);letter-spacing:.05em;">TODAY</span>';
+    }
 
     calHTML += '<div class="wd-cal-day"' + clickAttr + '>'
-      + '<span class="wd-cal-label">' + (isToday ? '今日' : days[d.getDay()]) + '</span>'
-      + '<div class="' + cellCls + '">'
-      + (hasWorkout
-          ? '<span class="wd-cal-check">✓</span>'
-            + (dotsHTML ? '<div class="wd-cal-parts">' + dotsHTML + '</div>' : '')
-          : (isToday ? '<span style="font-size:.6rem;color:var(--accent);">●</span>' : ''))
-      + '</div>'
-      + '<span class="wd-cal-date">' + d.getDate() + '</span>'
+      + '<span class="wd-cal-label">' + days[d.getDay()] + '</span>'
+      + '<div class="' + cellCls + '">' + cellContent + '</div>'
+      + '<span class="wd-cal-date" style="' + (isToday ? 'color:var(--accent);font-weight:600;' : '') + '">' + d.getDate() + '</span>'
       + '</div>';
   }
 
-  // 凡例
-  var legendParts = [
-    {p:'chest',label:'胸'},{p:'back',label:'背'},{p:'shoulder',label:'肩'},
-    {p:'arm',label:'腕'},{p:'leg',label:'脚'},{p:'core',label:'体幹'}
-  ];
-  var legendHTML = '<div class="wd-cal-legend">'
-    + legendParts.map(function(lp){
-        return '<div class="wd-cal-legend-item">'
-          + '<div style="width:8px;height:8px;border-radius:50%;background:'+partColors3[lp.p]+';flex-shrink:0;"></div>'
-          + lp.label + '</div>';
-      }).join('')
-    + '</div>';
-
   document.getElementById('wdCalGrid').innerHTML = calHTML;
+
+  // 凡例（実際に使われた部位のみ表示）
+  var usedParts = {};
+  history.forEach(function(w) {
+    (w.exercises || []).forEach(function(ex) { if (ex.part && partColors3[ex.part]) usedParts[ex.part] = true; });
+  });
+  var legendParts = ['chest','back','shoulder','arm','leg','core'];
+  var legendItems = legendParts.filter(function(p){ return usedParts[p]; });
+  var partNames = {chest:'胸',back:'背中',shoulder:'肩',arm:'腕',leg:'脚',core:'体幹'};
+  var legendHTML = legendItems.length > 0
+    ? '<div class="wd-cal-legend">'
+      + legendItems.map(function(p){
+          return '<div class="wd-cal-legend-item">'
+            + '<div style="width:9px;height:9px;border-radius:50%;background:'+partColors3[p]+';flex-shrink:0;"></div>'
+            + partNames[p] + '</div>';
+        }).join('')
+      + '</div>'
+    : '';
   document.getElementById('wdVolume').innerHTML = legendHTML;
 
   // 今月ボリュームは前回のワークアウトカードに統合済みのため削除
