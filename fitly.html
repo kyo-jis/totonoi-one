@@ -716,16 +716,23 @@ var EXERCISE_DB = [
   {id:'dumbbell_fly',name:'ダンベルフライ',cat:'strength',part:'chest',keyword:'dumbbell fly'},
   {id:'incline_db_fly',name:'インクラインダンベルフライ',cat:'strength',part:'chest',keyword:'incline dumbbell fly'},
   {id:'cable_cross',name:'ケーブルクロスオーバー',cat:'strength',part:'chest',keyword:'cable crossover'},
+  // ── フリーウェイト（胸・腕兼用） ──
+  {id:'close_grip_bench',name:'クローズグリップベンチプレス',cat:'strength',part:'chest',keyword:'close grip bench press tricep'},
   // ── フリーウェイト（背中） ──
   {id:'deadlift',name:'デッドリフト',cat:'strength',part:'back',keyword:'deadlift form'},
   {id:'rdl',name:'ルーマニアンデッドリフト',cat:'strength',part:'back',keyword:'romanian deadlift'},
   {id:'sumo_dl',name:'スモウデッドリフト',cat:'strength',part:'back',keyword:'sumo deadlift'},
+  {id:'good_morning',name:'グッドモーニング',cat:'strength',part:'back',keyword:'good morning exercise barbell'},
+  {id:'back_ext',name:'バックエクステンション',cat:'bodyweight',part:'back',keyword:'back extension hyperextension'},
   {id:'pulldown',name:'ラットプルダウン',cat:'strength',part:'back',keyword:'lat pulldown'},
   {id:'bent_row',name:'ベントオーバーロウ',cat:'strength',part:'back',keyword:'bent over row'},
   {id:'row',name:'シーテッドロウ',cat:'strength',part:'back',keyword:'seated row'},
   {id:'dumbbell_row',name:'ダンベルロウ',cat:'strength',part:'back',keyword:'dumbbell row'},
   {id:'tbar_row',name:'Tバーロウ',cat:'strength',part:'back',keyword:'T bar row'},
   {id:'pullover',name:'ダンベルプルオーバー',cat:'strength',part:'back',keyword:'dumbbell pullover'},
+  {id:'shrug',name:'バーベルシュラッグ（僧帽筋）',cat:'strength',part:'back',keyword:'barbell shrug trapezius'},
+  {id:'db_shrug',name:'ダンベルシュラッグ（僧帽筋）',cat:'strength',part:'back',keyword:'dumbbell shrug trapezius'},
+  {id:'straight_arm_pd',name:'ストレートアームプルダウン',cat:'strength',part:'back',keyword:'straight arm pulldown lat'},
   // ── フリーウェイト（肩） ──
   {id:'ohp',name:'オーバーヘッドプレス',cat:'strength',part:'shoulder',keyword:'overhead press'},
   {id:'db_shoulder_press',name:'ダンベルショルダープレス',cat:'strength',part:'shoulder',keyword:'dumbbell shoulder press'},
@@ -746,6 +753,8 @@ var EXERCISE_DB = [
   {id:'tricep_kickback',name:'トライセプスキックバック',cat:'strength',part:'arm',keyword:'tricep kickback'},
   {id:'overhead_ext',name:'オーバーヘッドエクステンション',cat:'strength',part:'arm',keyword:'overhead tricep extension'},
   {id:'wrist_curl',name:'リストカール',cat:'strength',part:'arm',keyword:'wrist curl forearm'},
+  {id:'reverse_curl',name:'リバースカール',cat:'strength',part:'arm',keyword:'reverse curl brachialis'},
+  {id:'cable_hammer',name:'ケーブルハンマーカール',cat:'strength',part:'arm',keyword:'cable hammer curl'},
   // ── フリーウェイト（脚） ──
   {id:'squat',name:'バーベルスクワット',cat:'strength',part:'leg',keyword:'barbell squat form'},
   {id:'goblet_squat',name:'ゴブレットスクワット',cat:'strength',part:'leg',keyword:'goblet squat'},
@@ -755,6 +764,8 @@ var EXERCISE_DB = [
   {id:'db_lunge',name:'ダンベルランジ',cat:'strength',part:'leg',keyword:'dumbbell lunge'},
   {id:'db_split_squat',name:'ダンベルスプリットスクワット',cat:'strength',part:'leg',keyword:'dumbbell split squat'},
   {id:'rdl_db',name:'ダンベルRDL',cat:'strength',part:'leg',keyword:'dumbbell romanian deadlift'},
+  {id:'bulgarian_squat',name:'ブルガリアンスプリットスクワット',cat:'strength',part:'leg',keyword:'bulgarian split squat dumbbell'},
+  {id:'single_rdl',name:'シングルレッグRDL',cat:'strength',part:'leg',keyword:'single leg romanian deadlift'},
   {id:'db_calf',name:'ダンベルカーフレイズ',cat:'strength',part:'leg',keyword:'dumbbell calf raise'},
   // ── フリーウェイト（体幹） ──
   {id:'woodchop',name:'ウッドチョップ',cat:'strength',part:'core',keyword:'cable wood chop'},
@@ -787,6 +798,8 @@ var EXERCISE_DB = [
   {id:'calf_raise',name:'カーフレイズ',cat:'bodyweight',part:'leg',keyword:'calf raise standing'},
   {id:'nordic_curl',name:'ノルディックカール',cat:'bodyweight',part:'leg',keyword:'nordic curl hamstring'},
   {id:'wall_sit',name:'ウォールシット',cat:'bodyweight',part:'leg',keyword:'wall sit exercise'},
+  {id:'glute_kickback',name:'グルートキックバック',cat:'bodyweight',part:'leg',keyword:'glute kickback donkey kick'},
+  {id:'donkey_calf',name:'ドンキーカーフレイズ',cat:'bodyweight',part:'leg',keyword:'donkey calf raise'},
   // ── 自重（体幹） ──
   {id:'plank',name:'プランク',cat:'bodyweight',part:'core',keyword:'plank exercise'},
   {id:'side_plank',name:'サイドプランク',cat:'bodyweight',part:'core',keyword:'side plank exercise'},
@@ -799,6 +812,10 @@ var EXERCISE_DB = [
   {id:'ab_wheel',name:'腹筋ローラー',cat:'bodyweight',part:'core',keyword:'ab wheel rollout'},
   {id:'hollow_hold',name:'ホロウホールド',cat:'bodyweight',part:'core',keyword:'hollow body hold'},
   {id:'mountain_climber',name:'マウンテンクライマー',cat:'bodyweight',part:'core',keyword:'mountain climber exercise'},
+  {id:'hanging_leg_raise',name:'ハンギングレッグレイズ',cat:'bodyweight',part:'core',keyword:'hanging leg raise abs'},
+  {id:'dragon_flag',name:'ドラゴンフラッグ',cat:'bodyweight',part:'core',keyword:'dragon flag exercise'},
+  {id:'v_sit',name:'Vシット',cat:'bodyweight',part:'core',keyword:'V sit abs exercise'},
+  {id:'tuck_crunch',name:'タッククランチ',cat:'bodyweight',part:'core',keyword:'tuck crunch abs'},
   {id:'burpee',name:'バーピー',cat:'bodyweight',part:'full',keyword:'burpee exercise'},
   {id:'inchworm',name:'インチワーム',cat:'bodyweight',part:'full',keyword:'inchworm exercise'},
   // ── 有酸素 ──
@@ -852,6 +869,13 @@ var EXERCISE_DB = [
   {id:'cobra_pose',name:'コブラポーズ',cat:'stretch',part:'core',keyword:'cobra pose yoga stretch'},
   // ── ストレッチ（全身） ──
   {id:'full_body_str',name:'全身伸び',cat:'stretch',part:'full',keyword:'full body stretch morning'},
+  {id:'down_dog',name:'ダウンドッグ',cat:'stretch',part:'full',keyword:'downward dog yoga stretch'},
+  {id:'hip_circle',name:'ヒップサークル',cat:'stretch',part:'leg',keyword:'hip circle mobility exercise'},
+  {id:'scorpion_str',name:'スコーピオンストレッチ',cat:'stretch',part:'back',keyword:'scorpion stretch thoracic'},
+  {id:'ankle_circle',name:'アンクルサークル',cat:'stretch',part:'leg',keyword:'ankle circles mobility'},
+  {id:'shoulder_blade_mob',name:'肩甲骨はがし',cat:'stretch',part:'shoulder',keyword:'shoulder blade mobilization stretch'},
+  {id:'runners_lunge',name:'ランナーズランジ',cat:'stretch',part:'leg',keyword:'runners lunge hip flexor stretch'},
+  {id:'seated_forward',name:'長座体前屈',cat:'stretch',part:'leg',keyword:'seated forward fold hamstring stretch'},
   {id:'foam_roll_back',name:'フォームローリング（背中）',cat:'stretch',part:'back',keyword:'foam rolling upper back'},
   {id:'foam_roll_leg',name:'フォームローリング（脚）',cat:'stretch',part:'leg',keyword:'foam rolling legs'},
   // ── マインドフルネス ──
