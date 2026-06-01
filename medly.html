@@ -157,6 +157,11 @@
 
     .search-input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:.75rem 1rem; font-size:.95rem; color:var(--text); font-family:var(--font); outline:none; margin-bottom:1rem; }
     .search-input:focus { border-color:var(--accent); }
+    .free-banner { margin:0 1.25rem 1.25rem; background:rgba(245,200,66,.1); border:1px solid rgba(245,200,66,.25); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+    .free-banner-text { font-size:.8rem; color:var(--yellow); }
+    .upgrade-btn { font-size:.72rem; font-weight:500; color:#1a1a24; background:var(--yellow); border:none; border-radius:8px; padding:.4rem .75rem; cursor:pointer; white-space:nowrap; font-family:var(--font); }
+    .pro-gate-small { background:rgba(245,200,66,.08); border:1px solid rgba(245,200,66,.2); border-radius:12px; padding:.9rem 1rem; text-align:center; margin-bottom:.75rem; }
+    .pro-gate-small p { font-size:.82rem; color:var(--yellow); margin-bottom:.6rem; }
     .rating-btn { flex:1; padding:.55rem .3rem; background:var(--surface2); border:1px solid var(--border); border-radius:10px; font-size:.75rem; color:var(--muted); cursor:pointer; font-family:var(--font); transition:all .15s; }
     .rating-btn.selected { background:var(--accent); border-color:var(--accent); color:#1a1a24; font-weight:600; }
     .history-item { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:.9rem 1rem; margin-bottom:.6rem; display:flex; align-items:center; justify-content:space-between; gap:.75rem; }
@@ -251,6 +256,11 @@
     </div>
   </div>
   <div id="urgentBanner"></div>
+</div>
+
+<div class="free-banner" id="medlyFreeBanner">
+  <p class="free-banner-text"><strong id="medlyCountText">0/10</strong> 件登録中（無料プラン）</p>
+  <a href="index.html" class="upgrade-btn">アップグレード</a>
 </div>
 
 <div class="tabs">
@@ -474,6 +484,9 @@
 
 <script>
 var isPro = localStorage.getItem('isPro') === 'true';
+var FREE_ITEM_LIMIT    = 10;
+var FREE_HISTORY_DAYS  = 30;
+var FREE_MEMO_LIMIT    = 10;
 var editId = null;
 var restockId = null;
 var memoItemId = null;
@@ -726,6 +739,8 @@ function updateSummary() {
     else if (days !== null && days <= 7) warning++;
   });
   document.getElementById('totalItems').textContent = items.length;
+  var ct = document.getElementById('medlyCountText');
+  if (ct) ct.textContent = items.length + (isPro ? '件' : '/'+FREE_ITEM_LIMIT);
   document.getElementById('urgentItems').textContent = urgent;
   document.getElementById('warningItems').textContent = warning;
 
@@ -1108,12 +1123,16 @@ function renderPurchaseHistory() {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">🛒</div><p>補充時に価格を記録すると<br>ここに履歴が表示されます</p></div>';
     return;
   }
-  var total = purchaseHistory.reduce(function(s,h){ return s+(h.price||0); },0);
+  var cutoff = isPro ? null : new Date(Date.now() - FREE_HISTORY_DAYS * 86400000).toISOString().split('T')[0];
+  var visible = isPro ? purchaseHistory : purchaseHistory.filter(function(h){ return h.date >= cutoff; });
+  var hidden  = isPro ? 0 : purchaseHistory.length - visible.length;
+  var total = visible.reduce(function(s,h){ return s+(h.price||0); },0);
   el.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.9rem 1rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;">'
-    +'<span style="font-size:.75rem;color:var(--muted);">累計購入金額</span>'
+    +'<span style="font-size:.75rem;color:var(--muted);">'+(isPro?'累計':'直近'+FREE_HISTORY_DAYS+'日')+'の購入金額</span>'
     +'<span style="font-size:1.2rem;font-weight:600;color:var(--accent);">¥'+total.toLocaleString()+'</span>'
     +'</div>'
-    +purchaseHistory.map(function(h){
+    +(hidden>0?'<div class="pro-gate-small"><p>📅 '+hidden+'件の古い履歴はProプランで表示できます</p><a href="index.html" class="upgrade-btn">アップグレード</a></div>':'')
+    +visible.map(function(h){
       var d = new Date(h.date);
       var dateStr = (d.getMonth()+1)+'月'+d.getDate()+'日';
       return '<div class="history-item">'
@@ -1154,6 +1173,11 @@ function setRating(key, val) {
 function saveMemo() {
   var item = items.find(function(x){ return x.id===memoItemId; });
   if (!item) return;
+  if (!isPro && effectLogs.length >= FREE_MEMO_LIMIT) {
+    showToast('無料プランはメモ'+FREE_MEMO_LIMIT+'件まで。ダッシュボードからアップグレードを');
+    closeModal('memoModal');
+    return;
+  }
   var note = document.getElementById('fMemoNote').value.trim();
   var date = document.getElementById('fMemoDate').value;
   effectLogs.unshift({
@@ -1285,6 +1309,11 @@ function saveItem() {
   var current = parseFloat(document.getElementById('fCurrent').value);
   var daily = parseFloat(document.getElementById('fDaily').value);
   if (!name||!current||!daily) { showToast('名前・残量・1日摂取量を入力してください'); return; }
+  if (!editId && !isPro && items.length >= FREE_ITEM_LIMIT) {
+    showToast('無料プランは'+FREE_ITEM_LIMIT+'件まで。ダッシュボードからアップグレードを');
+    closeModal('addModal');
+    return;
+  }
   var entry = {
     id: editId||Date.now().toString(),
     name: name,
@@ -1364,6 +1393,13 @@ function updateProUI() {
   var fab=document.querySelector('.fab');
   if (fab) fab.style.bottom=isPro?'1.25rem':'calc(72px + env(safe-area-inset-bottom))';
   document.body.style.paddingBottom=isPro?'80px':'130px';
+  FREE_ITEM_LIMIT   = isPro ? 9999 : 10;
+  FREE_HISTORY_DAYS = isPro ? 9999 : 30;
+  FREE_MEMO_LIMIT   = isPro ? 9999 : 10;
+  var banner = document.getElementById('medlyFreeBanner');
+  if (banner) banner.style.display = isPro ? 'none' : 'flex';
+  var ct = document.getElementById('medlyCountText');
+  if (ct) ct.textContent = items.length + (isPro ? '件' : '/'+FREE_ITEM_LIMIT);
 }
 
 init();
