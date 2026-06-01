@@ -337,7 +337,7 @@
     <!-- メニューから始める（最上部） -->
     <p class="section-label" style="margin-bottom:.6rem;">メニューから始める</p>
     <div class="wd-menu-row" id="wdMenuRow"></div>
-    <button class="btn-start-custom" onclick="startWorkoutCustom()" style="margin-bottom:1.25rem;">＋ カスタムで始める</button>
+    <button class="btn-start-custom" onclick="startWorkoutCustom()" style="margin-bottom:1.25rem;">＋ 種目を選んで始める</button>
 
     <div class="wd-stats">
       <div class="wd-stat">
@@ -1175,15 +1175,19 @@ function renderWorkoutDashboard() {
   }
   document.getElementById('wdStreak').textContent = streak;
 
-  // 今週の日数（ユニーク日）
-  var weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay());
+  // 今週の日数（ユニーク日・文字列比較でタイムゾーン問題を回避）
+  var weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay()); // 日曜始まり
   weekStart.setHours(0,0,0,0);
+  var weekStartStr = weekStart.getFullYear() + '-'
+    + String(weekStart.getMonth()+1).padStart(2,'0') + '-'
+    + String(weekStart.getDate()).padStart(2,'0');
   var weekDaySet = {};
-  history.forEach(function(w){ if (new Date(w.date) >= weekStart) weekDaySet[w.date] = true; });
-  document.getElementById('wdWeek').textContent = Object.keys(weekDaySet).length;
+  history.forEach(function(w){ if (w.date && w.date >= weekStartStr) weekDaySet[w.date] = true; });
+  document.getElementById('wdWeek').textContent = Object.keys(weekDaySet).length + '日';
 
   // 累計日数（ユニーク日）
-  document.getElementById('wdTotal').textContent = Object.keys(dateSet).length;
+  document.getElementById('wdTotal').textContent = Object.keys(dateSet).length + '日';
 
   // ── 前回のワークアウトカード ──
   var lastCard = document.getElementById('wdLastCard');
