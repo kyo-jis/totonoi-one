@@ -18,11 +18,15 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #0f0f14;
-      --ink: #f0eee8;
-      --muted: #6a6880;
+      --bg: #0c0c18;
+      --surface: #14142a;
+      --border: #2e2e50;
+      --ink: #f2f2fa;
+      --muted: #8888aa;
       --font: 'DM Sans', sans-serif;
       --serif: 'DM Serif Display', serif;
+      --shadow-sm: 0 2px 10px rgba(0,0,0,.3);
+      --spring: cubic-bezier(.34,1.56,.64,1);
     }
 
     html { font-size: 16px; }
@@ -31,7 +35,7 @@
       background: var(--bg);
       color: var(--ink);
       font-family: var(--font);
-      font-weight: 300;
+      font-weight: 400;
       min-height: 100vh;
     }
 

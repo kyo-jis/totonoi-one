@@ -13,6 +13,7 @@
   <meta name="apple-mobile-web-app-title" content="Subly">
   <link rel="apple-touch-icon" href="/apple-touch-icon-subly.png">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <style>
     /* Install Banner */
     .install-banner { position:fixed; top:0; left:0; right:0; z-index:200; background:linear-gradient(135deg,#252d52,#2a2040); border-bottom:1px solid #35406a; padding:.9rem 1.25rem; display:none; align-items:center; gap:.75rem; animation:slideDown .3s ease; }
@@ -27,22 +28,26 @@
     .install-banner-close { color:var(--muted); background:none; border:none; font-size:1.2rem; cursor:pointer; padding:.2rem; flex-shrink:0; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #1a1a24;
-      --surface: #22222e;
-      --surface2: #2a2a38;
-      --surface3: #323242;
-      --border: #35354a;
-      --text: #f0eee8;
-      --muted: #8888a0;
+      --bg: #0c0c18;
+      --surface: #14142a;
+      --surface2: #1c1c38;
+      --surface3: #242448;
+      --border: #2e2e50;
+      --text: #f2f2fa;
+      --muted: #9494b8;
       --accent: #6c8eff;
+      --accent-dark: #4a6ddd;
       --accent2: #ff7c6e;
       --green: #5ecfa0;
       --yellow: #f5c842;
       --purple: #b388ff;
       --font: 'Outfit', sans-serif;
+      --shadow-sm: 0 2px 10px rgba(0,0,0,.3);
+      --shadow-md: 0 4px 24px rgba(0,0,0,.4);
+      --spring: cubic-bezier(.34,1.56,.64,1);
     }
     html { font-size: 16px; }
-    body { background: var(--bg); color: var(--text); font-family: var(--font); font-weight: 300; min-height: 100vh; padding-bottom: 130px; }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); font-weight: 400; min-height: 100vh; padding-bottom: 130px; }
 
     /* Header */
     .app-header { padding: 3rem 1.25rem 1.25rem; }
@@ -70,9 +75,10 @@
     .upgrade-btn { font-size:.72rem; font-weight:500; color:#1a1a24; background:var(--yellow); border:none; border-radius:8px; padding:.4rem .75rem; cursor:pointer; white-space:nowrap; font-family:var(--font); }
 
     /* Tabs */
-    .tabs { display:flex; gap:0; margin:0 1.25rem 1.25rem; background:var(--surface); border-radius:12px; padding:3px; border:1px solid var(--border); }
-    .tab { flex:1; padding:.55rem .2rem; font-size:.72rem; font-weight:400; color:var(--muted); background:none; border:none; border-radius:9px; cursor:pointer; font-family:var(--font); transition:all .2s; }
-    .tab.active { background:var(--surface2); color:var(--text); font-weight:500; }
+    .tabs { display:flex; gap:0; margin:0 1.25rem 1.25rem; background:var(--surface); border-radius:14px; padding:4px; border:1px solid var(--border); box-shadow:var(--shadow-sm); }
+    .tab { flex:1; padding:.58rem .2rem; font-size:.72rem; font-weight:400; color:var(--muted); background:none; border:none; border-radius:10px; cursor:pointer; font-family:var(--font); transition:all .2s var(--spring); }
+    .tab.active { background:var(--surface2); color:var(--text); font-weight:600; box-shadow:var(--shadow-sm); }
+    .tab:active { transform:scale(.93); }
 
     /* Views */
     .view { display:none; }
@@ -1309,6 +1315,47 @@ _sb.auth.getSession().then(function(res) {
   updateAuthUI();
   if (currentUser) syncFromCloud();
 });
+
+// ── 共通ギミック ──
+// スワイプでタブ切替
+(function() {
+  var tabNames = (function(){ var ts=[]; document.querySelectorAll('.tab').forEach(function(t){ var m=t.getAttribute('onclick')||''; var n=m.match(/switchTab\('([^']+)'/); if(n) ts.push(n[1]); }); return ts; })();
+  if(!tabNames.length) return;
+  var currentIdx=0, sx=0, sy=0;
+  document.addEventListener('touchstart',function(e){ sx=e.touches[0].clientX; sy=e.touches[0].clientY; },{passive:true});
+  document.addEventListener('touchend',function(e){
+    if(document.querySelector('.modal-overlay.show')) return;
+    var dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)<50||Math.abs(dx)<Math.abs(dy)*1.5) return;
+    var newIdx=Math.max(0,Math.min(tabNames.length-1, currentIdx+(dx<0?1:-1)));
+    if(newIdx===currentIdx) return;
+    currentIdx=newIdx;
+    var btn=document.querySelectorAll('.tab')[currentIdx];
+    if(btn) btn.click();
+    if(navigator.vibrate) navigator.vibrate(15);
+  },{passive:true});
+  var orig=window.switchTab;
+  if(orig) window.switchTab=function(name,btn){
+    var i=tabNames.indexOf(name); if(i>=0) currentIdx=i; orig(name,btn);
+  };
+})();
+// スクロールフェードイン
+(function(){
+  if(!window.IntersectionObserver) return;
+  var style=document.createElement('style');
+  style.textContent='.fi{opacity:0;transform:translateY(14px);transition:opacity .4s ease,transform .4s ease}.fi.vis{opacity:1;transform:translateY(0)}';
+  document.head.appendChild(style);
+  var obs=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){e.target.classList.add('vis');obs.unobserve(e.target);} }); },{threshold:.08});
+  new MutationObserver(function(ms){ ms.forEach(function(m){ m.addedNodes.forEach(function(n){ if(n.nodeType!==1) return; var cs=n.classList&&(n.classList.contains('card')||n.classList.contains('item-card')||n.classList.contains('sub-card'))?[n]:Array.from(n.querySelectorAll('.card,.item-card,.sub-card')); cs.forEach(function(c){c.classList.add('fi');obs.observe(c);}); }); }); }).observe(document.body,{childList:true,subtree:true});
+})();
+// 長押し振動
+(function(){
+  if(!navigator.vibrate) return;
+  var t=null;
+  document.addEventListener('touchstart',function(e){ var el=e.target.closest('.card,.item-card,.sub-card'); if(!el) return; t=setTimeout(function(){navigator.vibrate([30,20,30]);},500); },{passive:true});
+  document.addEventListener('touchend',function(){clearTimeout(t);},{passive:true});
+  document.addEventListener('touchmove',function(){clearTimeout(t);},{passive:true});
+})();
 </script>
 
 <!-- Auth Modal -->
