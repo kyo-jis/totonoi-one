@@ -604,6 +604,7 @@
     <p class="modal-title">種目を追加</p>
     <input type="text" class="search-input" id="exerciseSearch" placeholder="🔍 種目名で検索..." oninput="filterExercises()">
     <div class="cat-filter" id="catFilter"></div>
+    <div class="cat-filter" id="partFilter" style="margin-top:-.4rem;"></div>
     <div id="exerciseListModal"></div>
     <div class="divider">または新しい種目を作成</div>
     <div class="form-group">
@@ -793,6 +794,7 @@ var timerTotal = 90;
 var timerInterval = null;
 var timerRunning = false;
 var selectedCat = 'all';
+var selectedPart = 'all';
 var exerciseSettings = JSON.parse(localStorage.getItem('exerciseSettings') || '{}');
 var savedMenus = JSON.parse(localStorage.getItem('fitlyMenus') || '[]');
 var workoutHistory = JSON.parse(localStorage.getItem('fitlyHistory') || '[]');
@@ -1812,16 +1814,48 @@ function resetIntervalTimer() {
 }
 
 // ── Add Exercise Modal ──
+var PART_FILTER_LIST = [
+  {id:'all', label:'部位: すべて'},
+  {id:'chest', label:'胸'},
+  {id:'back', label:'背中'},
+  {id:'shoulder', label:'肩'},
+  {id:'arm', label:'腕'},
+  {id:'leg', label:'脚'},
+  {id:'core', label:'体幹'},
+  {id:'full', label:'全身'},
+];
+
 function buildCatFilter() {
   var cats = [{id:'all',label:'すべて'},{id:'strength',label:'🏋️ フリー'},{id:'machine',label:'⚙️ マシン'},{id:'bodyweight',label:'🤸 自重'},{id:'cardio',label:'🏃 有酸素'},{id:'stretch',label:'🧘 ストレッチ'},{id:'mindfulness',label:'🌸 マインドフル'}];
   document.getElementById('catFilter').innerHTML = cats.map(function(c){
     return '<button class="cat-btn'+(c.id==='all'?' active':'')+'" onclick="selectCat(\''+c.id+'\',this)">'+c.label+'</button>';
   }).join('');
+  buildPartFilter();
+}
+
+function buildPartFilter() {
+  // 有酸素・ストレッチ・マインドフルネスは部位フィルター不要
+  var noPart = ['cardio','stretch','mindfulness'];
+  var show = noPart.indexOf(selectedCat) < 0;
+  var pf = document.getElementById('partFilter');
+  if (!show) { pf.innerHTML = ''; return; }
+  pf.innerHTML = PART_FILTER_LIST.map(function(p){
+    return '<button class="cat-btn'+(p.id===selectedPart?' active':'')+'" onclick="selectPart(\''+p.id+'\',this)" style="font-size:.68rem;">'+p.label+'</button>';
+  }).join('');
 }
 
 function selectCat(cat, btn) {
-  selectedCat=cat;
-  document.querySelectorAll('.cat-btn').forEach(function(b){ b.classList.remove('active'); });
+  selectedCat = cat;
+  selectedPart = 'all';
+  document.querySelectorAll('#catFilter .cat-btn').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  buildPartFilter();
+  filterExercises();
+}
+
+function selectPart(part, btn) {
+  selectedPart = part;
+  document.querySelectorAll('#partFilter .cat-btn').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
   filterExercises();
 }
@@ -1831,9 +1865,10 @@ function filterExercises() {
   var customEx = JSON.parse(localStorage.getItem('customExercises') || '[]');
   var allEx = EXERCISE_DB.concat(customEx);
   var filtered = allEx.filter(function(ex) {
-    var matchCat = selectedCat==='all' || ex.cat===selectedCat;
-    var matchQ = !q || ex.name.toLowerCase().includes(q);
-    return matchCat && matchQ;
+    var matchCat  = selectedCat  === 'all' || ex.cat  === selectedCat;
+    var matchPart = selectedPart === 'all' || ex.part === selectedPart;
+    var matchQ    = !q || ex.name.toLowerCase().includes(q);
+    return matchCat && matchPart && matchQ;
   });
   renderExerciseModal(filtered);
 }
@@ -1917,7 +1952,8 @@ function addCustomExercise() {
 function openAddExercise() {
   document.getElementById('exerciseSearch').value='';
   selectedCat='all';
-  document.querySelectorAll('.cat-btn').forEach(function(b,i){ b.classList.toggle('active',i===0); });
+  selectedPart='all';
+  buildCatFilter();
   buildLastDoneMap();
   var customEx=JSON.parse(localStorage.getItem('customExercises')||'[]');
   renderExerciseModal(EXERCISE_DB.concat(customEx));
