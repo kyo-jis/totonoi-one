@@ -2406,9 +2406,9 @@ function renderHistory() {
       ? '<input type="checkbox" class="history-check" data-idx="'+realIdx+'" style="width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;cursor:pointer;">'
       : '';
     var rightBtns = historySelectMode ? '' :
-      '<div style="display:flex;gap:.35rem;">'
-      +'<button onclick="openHistoryEdit('+realIdx+')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:.25rem .55rem;font-size:.7rem;color:var(--muted);cursor:pointer;font-family:var(--font);">編集</button>'
-      +'<button onclick="deleteHistory('+realIdx+')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:.25rem .55rem;font-size:.7rem;color:var(--accent2);cursor:pointer;font-family:var(--font);">削除</button>'
+      '<div style="display:flex;gap:.4rem;flex-shrink:0;">'
+      +'<button onclick="event.stopPropagation();openHistoryEdit('+realIdx+')" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.4rem .75rem;font-size:.75rem;color:var(--text);cursor:pointer;font-family:var(--font);min-width:44px;min-height:36px;">編集</button>'
+      +'<button onclick="event.stopPropagation();deleteHistory('+realIdx+')" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.4rem .75rem;font-size:.75rem;color:var(--accent2);cursor:pointer;font-family:var(--font);min-width:44px;min-height:36px;">削除</button>'
       +'</div>';
     return '<div class="history-card" style="'+(historySelectMode?'cursor:pointer;':'')+'" '+(historySelectMode?'onclick="this.querySelector(\'.history-check\').click()"':'')+' >'
       +'<div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem;">'
@@ -2476,12 +2476,18 @@ function deleteHistory(idx) {
 var heIdx = -1;
 
 function openHistoryEdit(idx) {
-  heIdx = idx;
-  var w = workoutHistory[idx];
-  document.getElementById('heDate').value = w.date || '';
-  document.getElementById('heName').value = w.name || '';
-  renderHeExercises();
-  document.getElementById('historyEditModal').classList.add('show');
+  try {
+    heIdx = idx;
+    var w = workoutHistory[idx];
+    if (!w) { showToast('記録が見つかりません'); return; }
+    document.getElementById('heDate').value = w.date || '';
+    document.getElementById('heName').value = w.name || '';
+    document.getElementById('heExerciseList').innerHTML = '';
+    renderHeExercises();
+    document.getElementById('historyEditModal').classList.add('show');
+  } catch(e) {
+    showToast('編集できませんでした: ' + e.message);
+  }
 }
 
 function renderHeExercises() {
