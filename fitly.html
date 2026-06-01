@@ -622,8 +622,9 @@ function bmiCategory(bmi) {
 
 // ── Body Weight ──
 function openBodyWeightModal() {
-  document.getElementById('fBwWeight').value = '';
-  document.getElementById('fBwBodyFat').value = '';
+  var last = bodyWeightLog.length ? bodyWeightLog[0] : null;
+  document.getElementById('fBwWeight').value  = last ? last.weight : '';
+  document.getElementById('fBwBodyFat').value = last && last.bodyFat ? last.bodyFat : '';
   document.getElementById('fBwNote').value = '';
   document.getElementById('fBwDate').value = new Date().toISOString().split('T')[0];
   document.getElementById('bodyWeightModal').classList.add('show');
