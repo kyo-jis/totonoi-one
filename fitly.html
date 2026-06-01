@@ -731,6 +731,18 @@ var isPro = localStorage.getItem('isPro') === 'true';
 var FREE_MENU_LIMIT = 3;
 var FREE_HISTORY_DAYS = 14;
 
+// 日付ユーティリティ（ローカル時間でYYYY-MM-DD）
+function localDateStr(d) {
+  d = d || new Date();
+  return d.getFullYear() + '-'
+    + String(d.getMonth()+1).padStart(2,'0') + '-'
+    + String(d.getDate()).padStart(2,'0');
+}
+// ワークアウト履歴のdate正規化（ISOフルタイムスタンプでも日付部分のみ返す）
+function wDateStr(w) {
+  return w.date ? w.date.split('T')[0] : '';
+}
+
 var PART_LABELS  = {chest:'💪 胸',back:'🦅 背中',shoulder:'🏋️ 肩',arm:'💪 腕',leg:'🦵 脚',core:'🧘 体幹',full:'🌟 全身',other:'その他'};
 var PART_ORDER   = ['chest','back','shoulder','arm','leg','core','full','other'];
 var CAT_LABELS   = {strength:'フリーウェイト',machine:'マシン',bodyweight:'自重',cardio:'有酸素',stretch:'ストレッチ',mindfulness:'マインドフル'};
@@ -1127,7 +1139,7 @@ function checkAndUpdatePRs(exercises) {
       personalRecords[ex.id] = {
         name: ex.name, est1RM: best,
         weight: parseFloat(bestSet.weight), reps: parseInt(bestSet.reps),
-        date: new Date().toISOString().split('T')[0]
+        date: localDateStr()
       };
       newPRs.push(ex.name);
     }
@@ -1214,12 +1226,13 @@ function renderCalendar() {
     + String(now.getMonth()+1).padStart(2,'0') + '-'
     + String(now.getDate()).padStart(2,'0');
 
-  // 日付→ワークアウトマップ
+  // 日付→ワークアウトマップ（ISO全体・日付のみ両対応）
   var workoutByDate = {};
   workoutHistory.forEach(function(w) {
-    if (!w.date) return;
-    if (!workoutByDate[w.date]) workoutByDate[w.date] = [];
-    workoutByDate[w.date].push(w);
+    var ds = wDateStr(w);
+    if (!ds) return;
+    if (!workoutByDate[ds]) workoutByDate[ds] = [];
+    workoutByDate[ds].push(w);
   });
 
   // ヘッダー
@@ -1265,7 +1278,8 @@ function renderCalendar() {
     var cls = 'cal-day'
       + (hasWorkout ? ' has-workout' : '')
       + (isToday    ? ' today'       : '');
-    var onclick = hasWorkout ? ' onclick="openDayDetail(\'' + ds + '\')"' : '';
+    // ワークアウトがある日 or 今日はタップ可能
+    var onclick = (hasWorkout || isToday) ? ' onclick="openDayDetail(\'' + ds + '\')"' : '';
 
     html += '<button class="' + cls + '"' + onclick + '>'
       + d
@@ -1347,7 +1361,7 @@ function renderWorkoutDashboard() {
   var partOrder = ['chest','back','shoulder','arm','leg','core'];
   var partLabels2 = { chest:'胸', back:'背中', shoulder:'肩', arm:'腕', leg:'脚', core:'体幹' };
   var partColors = { chest:'var(--accent2)', back:'var(--blue)', shoulder:'var(--purple)', arm:'var(--yellow)', leg:'var(--accent)', core:'var(--muted)' };
-  history.filter(function(w){ return w.date && w.date >= days14Str; }).forEach(function(w) {
+  history.filter(function(w){ var d=wDateStr(w); return d && d >= days14Str; }).forEach(function(w) {
     (w.exercises || []).forEach(function(ex) {
       if (ex.part && partOrder.indexOf(ex.part) >= 0)
         partCount[ex.part] = (partCount[ex.part] || 0) + 1;
@@ -1419,8 +1433,19 @@ function openDayDetail(ds) {
   var CAT_COLORS_D  = { cardio:'#ff9f43', stretch:'#a29bfe', mindfulness:'#feca57' };
   var CAT_LABELS_D  = { strength:'フリー', machine:'マシン', bodyweight:'自重', cardio:'有酸素', stretch:'ストレッチ', mindfulness:'マインドフル' };
 
-  var workouts = workoutHistory.filter(function(w){ return w.date === ds; });
-  if (!workouts.length) return;
+  var workouts = workoutHistory.filter(function(w){ return wDateStr(w) === ds; });
+  if (!workouts.length) {
+    // 今日タップしたが記録なし
+    var d0 = new Date(ds + 'T00:00:00');
+    var dayNames0 = ['日','月','火','水','木','金','土'];
+    document.getElementById('dayDetailTitle').textContent =
+      (d0.getMonth()+1) + '月' + d0.getDate() + '日（' + dayNames0[d0.getDay()] + '）';
+    document.getElementById('dayDetailStats').innerHTML = '';
+    document.getElementById('dayDetailContent').innerHTML =
+      '<p style="text-align:center;color:var(--muted);font-size:.88rem;padding:2rem 0;">この日の記録はありません</p>';
+    document.getElementById('dayDetailModal').classList.add('show');
+    return;
+  }
 
   // ヘッダー：日付
   var d = new Date(ds + 'T00:00:00');
@@ -1580,7 +1605,7 @@ function saveWorkout() {
   });
   var record = {
     id: Date.now().toString(),
-    date: new Date().toISOString(),
+    date: localDateStr(),
     duration: elapsed,
     exercises: currentWorkout.exercises,
     totalSets: totalSets,
