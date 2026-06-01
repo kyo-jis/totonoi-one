@@ -236,11 +236,38 @@
     .wd-cal-grid { display:flex; gap:4px; }
     .wd-cal-day { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; }
     .wd-cal-label { font-size:.6rem; color:var(--muted); }
-    .wd-cal-dot { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:.62rem; }
-    .wd-cal-dot.done { background:var(--accent); color:#1a1a24; font-weight:600; }
+    .wd-cal-dot { width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:.62rem; position:relative; }
+    .wd-cal-dot.done-low  { background:rgba(94,207,160,.28); color:var(--accent); font-weight:600; }
+    .wd-cal-dot.done-mid  { background:rgba(94,207,160,.58); color:#1a1a24; font-weight:600; }
+    .wd-cal-dot.done-high { background:var(--accent); color:#1a1a24; font-weight:600; }
     .wd-cal-dot.today { border:2px solid var(--accent); color:var(--accent); }
     .wd-cal-dot.rest { background:var(--surface2); color:var(--muted); }
     .wd-vol { font-size:.7rem; color:var(--muted); text-align:center; margin-top:.5rem; }
+    /* Last workout card */
+    .wd-last { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:1rem; display:flex; align-items:center; gap:.85rem; }
+    .wd-last-icon { width:42px; height:42px; border-radius:12px; background:rgba(94,207,160,.12); display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0; }
+    .wd-last-info { flex:1; min-width:0; }
+    .wd-last-title { font-size:.88rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .wd-last-meta { font-size:.7rem; color:var(--muted); margin-top:.2rem; }
+    .wd-last-parts { display:flex; flex-wrap:wrap; gap:.3rem; margin-top:.45rem; }
+    .wd-last-part { font-size:.62rem; background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:.15rem .45rem; color:var(--muted); }
+    /* Part balance */
+    .wd-balance { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:1rem; }
+    .wd-balance-title { font-size:.72rem; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:.75rem; }
+    .wd-balance-row { display:flex; align-items:center; gap:.6rem; margin-bottom:.45rem; }
+    .wd-balance-label { font-size:.7rem; color:var(--muted); width:28px; flex-shrink:0; text-align:right; }
+    .wd-balance-bar-bg { flex:1; height:8px; background:var(--surface2); border-radius:4px; overflow:hidden; }
+    .wd-balance-bar-fill { height:100%; border-radius:4px; transition:width .4s ease; }
+    .wd-balance-count { font-size:.68rem; color:var(--muted); width:20px; text-align:right; }
+    /* Recent PRs */
+    .wd-prs { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:1rem; }
+    .wd-prs-title { font-size:.72rem; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:.75rem; }
+    .wd-pr-row { display:flex; align-items:center; justify-content:space-between; padding:.5rem 0; border-bottom:1px solid var(--border); }
+    .wd-pr-row:last-child { border-bottom:none; }
+    .wd-pr-name { font-size:.85rem; font-weight:400; }
+    .wd-pr-right { text-align:right; }
+    .wd-pr-val { font-size:.88rem; font-weight:600; color:var(--yellow); }
+    .wd-pr-date { font-size:.65rem; color:var(--muted); margin-top:.1rem; }
     .wd-menu-row { display:flex; gap:.5rem; overflow-x:auto; padding-bottom:.25rem; margin-bottom:1rem; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
     .wd-menu-row::-webkit-scrollbar { display:none; }
     .wd-menu-chip { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:.65rem .9rem; white-space:nowrap; cursor:pointer; font-family:var(--font); flex-shrink:0; text-align:left; min-width:120px; }
@@ -312,11 +339,28 @@
         <p class="wd-stat-label">累計</p>
       </div>
     </div>
+
+    <!-- 前回のワークアウト -->
+    <div id="wdLastCard" class="wd-last" style="display:none;"></div>
+
     <div class="wd-cal">
       <p class="wd-cal-title">📅 直近2週間</p>
       <div class="wd-cal-grid" id="wdCalGrid"></div>
       <p class="wd-vol" id="wdVolume"></p>
     </div>
+
+    <!-- 今週の部位バランス -->
+    <div class="wd-balance" id="wdBalanceCard" style="display:none;">
+      <p class="wd-balance-title">💪 今週のトレーニング部位</p>
+      <div id="wdBalanceRows"></div>
+    </div>
+
+    <!-- 最近のPR -->
+    <div class="wd-prs" id="wdPRsCard" style="display:none;">
+      <p class="wd-prs-title">🏆 最近のPR</p>
+      <div id="wdPRsList"></div>
+    </div>
+
     <p class="section-label" style="margin-bottom:.6rem;">メニューから始める</p>
     <div class="wd-menu-row" id="wdMenuRow"></div>
     <button class="btn-start-custom" onclick="startWorkoutCustom()">＋ カスタムで始める</button>
@@ -861,6 +905,7 @@ function switchTab(name, btn) {
 // ── Workout Dashboard ──
 function renderWorkoutDashboard() {
   var history = workoutHistory;
+  var now = new Date();
 
   // ストリーク
   var streak = 0;
@@ -874,27 +919,80 @@ function renderWorkoutDashboard() {
   document.getElementById('wdStreak').textContent = streak;
 
   // 今週
-  var now = new Date();
   var weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay());
   weekStart.setHours(0,0,0,0);
-  var weekCount = history.filter(function(w){
-    return new Date(w.date) >= weekStart;
-  }).length;
+  var weekCount = history.filter(function(w){ return new Date(w.date) >= weekStart; }).length;
   document.getElementById('wdWeek').textContent = weekCount;
   document.getElementById('wdTotal').textContent = history.length;
 
-  // 直近14日カレンダー
+  // ── 前回のワークアウトカード ──
+  var lastCard = document.getElementById('wdLastCard');
+  if (history.length > 0) {
+    var last = history[0];
+    var lastDate = new Date(last.date);
+    var diffDays = Math.floor((now - lastDate) / 86400000);
+    var diffLabel = diffDays === 0 ? '今日' : diffDays === 1 ? '昨日' : diffDays + '日前';
+    var durLabel = last.duration ? Math.round(last.duration / 60) + '分' : '';
+    var partSet = {};
+    (last.exercises || []).forEach(function(ex){ if (ex.part) partSet[ex.part] = true; });
+    var partLabels = { chest:'胸', back:'背中', shoulder:'肩', arm:'腕', leg:'脚', core:'体幹', full:'全身', other:'その他' };
+    var partTags = Object.keys(partSet).map(function(p){
+      return '<span class="wd-last-part">'+(partLabels[p]||p)+'</span>';
+    }).join('');
+    var exCount = (last.exercises||[]).length;
+    lastCard.innerHTML = '<div class="wd-last-icon">💪</div>'
+      + '<div class="wd-last-info">'
+      + '<p class="wd-last-title">'+(last.name||'ワークアウト')+'</p>'
+      + '<p class="wd-last-meta">'+diffLabel+(durLabel?' · '+durLabel:'')+(exCount?' · '+exCount+'種目':'')+'</p>'
+      + (partTags ? '<div class="wd-last-parts">'+partTags+'</div>' : '')
+      + '</div>';
+    lastCard.style.display = 'flex';
+  } else {
+    lastCard.style.display = 'none';
+  }
+
+  // ── ヒートマップカレンダー（直近14日・ボリューム強度） ──
   var days = ['日','月','火','水','木','金','土'];
+  // 各日のボリュームを集計
+  var volByDate = {};
+  history.forEach(function(w) {
+    var vol = 0;
+    (w.exercises || []).forEach(function(ex) {
+      (ex.sets || []).forEach(function(s) {
+        if (s.done && s.weight && s.reps) vol += parseFloat(s.weight) * parseInt(s.reps);
+      });
+    });
+    if (vol > 0) volByDate[w.date] = (volByDate[w.date] || 0) + vol;
+    else if (dateSet[w.date]) volByDate[w.date] = volByDate[w.date] || -1; // bodyweight/cardioのみの日
+  });
+  // 直近14日の最大ボリュームで正規化
+  var vols14 = [];
+  for (var i = 13; i >= 0; i--) {
+    var d14 = new Date(); d14.setDate(d14.getDate()-i); d14.setHours(0,0,0,0);
+    vols14.push(volByDate[d14.toISOString().split('T')[0]] || 0);
+  }
+  var maxVol = Math.max.apply(null, vols14.filter(function(v){ return v > 0; })) || 1;
+
   var calHTML = '';
   for (var i = 13; i >= 0; i--) {
     var d = new Date(); d.setDate(d.getDate() - i); d.setHours(0,0,0,0);
     var ds = d.toISOString().split('T')[0];
-    var hasWorkout = dateSet[ds];
     var isToday = i === 0;
-    var cls = hasWorkout ? 'done' : isToday ? 'today' : 'rest';
+    var vol = volByDate[ds] || 0;
+    var hasWorkout = dateSet[ds];
+    var cls, inner;
+    if (hasWorkout) {
+      var ratio = vol > 0 ? vol / maxVol : 0;
+      cls = ratio > 0.6 ? 'done-high' : ratio > 0.25 ? 'done-mid' : 'done-low';
+      inner = '✓';
+    } else if (isToday) {
+      cls = 'today'; inner = '●';
+    } else {
+      cls = 'rest'; inner = '';
+    }
     calHTML += '<div class="wd-cal-day">'
-      + '<span class="wd-cal-label">'+(isToday?'今日':days[d.getDay()])+'</span>'
-      + '<div class="wd-cal-dot '+cls+'">'+(hasWorkout?'✓':isToday?'●':'')+'</div>'
+      + '<span class="wd-cal-label">'+(isToday?'今':days[d.getDay()])+'</span>'
+      + '<div class="wd-cal-dot '+cls+'">'+inner+'</div>'
       + '</div>';
   }
   document.getElementById('wdCalGrid').innerHTML = calHTML;
@@ -914,7 +1012,61 @@ function renderWorkoutDashboard() {
     ? '今月の総ボリューム: ' + (monthVol >= 1000 ? (monthVol/1000).toFixed(1)+'t' : monthVol.toLocaleString()+'kg')
     : '';
 
-  // メニュー一覧
+  // ── 今週の部位バランス ──
+  var balanceCard = document.getElementById('wdBalanceCard');
+  var partCount = {};
+  var partOrder = ['chest','back','shoulder','arm','leg','core'];
+  var partLabels2 = { chest:'胸', back:'背中', shoulder:'肩', arm:'腕', leg:'脚', core:'体幹' };
+  var partColors = { chest:'var(--accent2)', back:'var(--blue)', shoulder:'var(--purple)', arm:'var(--yellow)', leg:'var(--accent)', core:'var(--muted)' };
+  history.filter(function(w){ return new Date(w.date) >= weekStart; }).forEach(function(w) {
+    (w.exercises || []).forEach(function(ex) {
+      if (ex.part && partCount[ex.part] !== undefined || partOrder.indexOf(ex.part) >= 0) {
+        partCount[ex.part] = (partCount[ex.part] || 0) + 1;
+      }
+    });
+  });
+  var hasBalance = Object.keys(partCount).length > 0;
+  if (hasBalance) {
+    var maxCount = Math.max.apply(null, Object.values(partCount));
+    var rowsHTML = partOrder.filter(function(p){ return partCount[p]; }).map(function(p) {
+      var cnt = partCount[p] || 0;
+      var pct = Math.round((cnt / maxCount) * 100);
+      return '<div class="wd-balance-row">'
+        + '<span class="wd-balance-label">'+(partLabels2[p]||p)+'</span>'
+        + '<div class="wd-balance-bar-bg"><div class="wd-balance-bar-fill" style="width:'+pct+'%;background:'+partColors[p]+';"></div></div>'
+        + '<span class="wd-balance-count">'+cnt+'</span>'
+        + '</div>';
+    }).join('');
+    document.getElementById('wdBalanceRows').innerHTML = rowsHTML;
+    balanceCard.style.display = 'block';
+  } else {
+    balanceCard.style.display = 'none';
+  }
+
+  // ── 最近のPR ──
+  var prsCard = document.getElementById('wdPRsCard');
+  var prEntries = Object.values(personalRecords).filter(function(p){ return p.date; });
+  prEntries.sort(function(a,b){ return b.date.localeCompare(a.date); });
+  var recent3 = prEntries.slice(0, 3);
+  if (recent3.length > 0) {
+    var prHTML = recent3.map(function(p) {
+      var d = new Date(p.date);
+      var dateStr = (d.getMonth()+1)+'/'+(d.getDate());
+      return '<div class="wd-pr-row">'
+        + '<span class="wd-pr-name">'+p.name+'</span>'
+        + '<div class="wd-pr-right">'
+        + '<p class="wd-pr-val">'+p.weight+'kg × '+p.reps+'rep</p>'
+        + '<p class="wd-pr-date">推定1RM: '+p.est1RM+'kg · '+dateStr+'</p>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+    document.getElementById('wdPRsList').innerHTML = prHTML;
+    prsCard.style.display = 'block';
+  } else {
+    prsCard.style.display = 'none';
+  }
+
+  // ── メニュー一覧 ──
   var menuRow = document.getElementById('wdMenuRow');
   if (savedMenus.length) {
     menuRow.innerHTML = savedMenus.map(function(m, i) {
