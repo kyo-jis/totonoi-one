@@ -676,6 +676,7 @@
     <p class="section-label" style="margin-bottom:.5rem;">種目を追加</p>
     <input type="text" class="search-input" id="mbSearch" placeholder="🔍 種目名で検索..." oninput="mbFilterExercises()" style="margin-bottom:.6rem;">
     <div class="cat-filter" id="mbCatFilter"></div>
+    <div class="cat-filter" id="mbPartFilter" style="margin-top:-.4rem;"></div>
     <div id="mbExList" style="max-height:220px;overflow-y:auto;"></div>
     <div style="display:flex;gap:.5rem;margin-top:1rem;">
       <button class="btn-primary" onclick="saveMenuBuilder()" style="margin-top:0;">保存する</button>
@@ -1162,8 +1163,18 @@ function switchTab(name, btn) {
 var calViewYear  = new Date().getFullYear();
 var calViewMonth = new Date().getMonth(); // 0-indexed
 
-var PART_COLORS_CAL = { chest:'#ff7c6e', back:'#6c8eff', shoulder:'#b388ff', arm:'#f5c842', leg:'#5ecfa0', core:'#8888a0', full:'#aaaacc', other:'#555566' };
+var PART_COLORS_CAL = { chest:'#ff7c6e', back:'#6c8eff', shoulder:'#b388ff', arm:'#f5c842', leg:'#5ecfa0', core:'#8888a0' };
+var CAT_COLORS_CAL  = { cardio:'#ff9f43', stretch:'#a29bfe', mindfulness:'#feca57', strength:'#5ecfa0', machine:'#74b9ff', bodyweight:'#55efc4' };
 var PART_NAMES_CAL  = { chest:'胸', back:'背中', shoulder:'肩', arm:'腕', leg:'脚', core:'体幹', full:'全身', other:'その他' };
+
+function dotColorForEx(ex) {
+  // 有酸素・ストレッチ・マインドフルはカテゴリ色
+  if (ex.cat === 'cardio' || ex.cat === 'stretch' || ex.cat === 'mindfulness') {
+    return CAT_COLORS_CAL[ex.cat] || '#aaa';
+  }
+  // 部位が明確な場合は部位色
+  return PART_COLORS_CAL[ex.part] || CAT_COLORS_CAL[ex.cat] || '#8888a0';
+}
 
 function calMove(delta) {
   calViewMonth += delta;
@@ -1210,15 +1221,19 @@ function renderCalendar() {
     var hasWorkout = workouts.length > 0;
     var isToday = ds === todayStr;
 
-    // 部位ドット（最大3種）
-    var partsSet = {};
+    // ドット：部位+カテゴリで色分け（重複除去・最大3種）
+    var dotColors = [];
+    var dotKeys = {};
     workouts.forEach(function(w) {
-      (w.exercises || []).forEach(function(ex){ if (ex.part) partsSet[ex.part] = true; });
+      (w.exercises || []).forEach(function(ex) {
+        var key = (ex.cat==='cardio'||ex.cat==='stretch'||ex.cat==='mindfulness') ? ex.cat : (ex.part||ex.cat);
+        if (key && !dotKeys[key]) { dotKeys[key] = dotColorForEx(ex); }
+      });
     });
-    var partKeys = Object.keys(partsSet).slice(0, 3);
-    var dotsHTML = partKeys.length
-      ? '<div class="cal-day-dots">' + partKeys.map(function(p){
-          return '<div class="cal-day-dot" style="background:' + (PART_COLORS_CAL[p]||'#888') + ';"></div>';
+    var dotEntries = Object.keys(dotKeys).slice(0, 3);
+    var dotsHTML = dotEntries.length
+      ? '<div class="cal-day-dots">' + dotEntries.map(function(k){
+          return '<div class="cal-day-dot" style="background:' + dotKeys[k] + ';"></div>';
         }).join('') + '</div>'
       : '';
 
@@ -1260,17 +1275,22 @@ function renderCalendar() {
   else if (monthVol > 0) summaryParts.push(monthVol.toLocaleString() + 'kg');
   document.getElementById('calSummary').textContent = summaryParts.join(' · ');
 
-  // 凡例（全履歴で使った部位）
-  var usedParts = {};
+  // 凡例（実際に使ったもののみ）
+  var usedLegend = {};
   workoutHistory.forEach(function(w){
-    (w.exercises||[]).forEach(function(ex){ if (ex.part && PART_COLORS_CAL[ex.part]) usedParts[ex.part] = true; });
+    (w.exercises||[]).forEach(function(ex){
+      if (ex.cat==='cardio'||ex.cat==='stretch'||ex.cat==='mindfulness') {
+        usedLegend[ex.cat] = { color: CAT_COLORS_CAL[ex.cat], label: {cardio:'有酸素',stretch:'ストレッチ',mindfulness:'マインドフル'}[ex.cat] };
+      } else if (ex.part && PART_COLORS_CAL[ex.part]) {
+        usedLegend[ex.part] = { color: PART_COLORS_CAL[ex.part], label: PART_NAMES_CAL[ex.part] };
+      }
+    });
   });
-  var legendItems = ['chest','back','shoulder','arm','leg','core'].filter(function(p){ return usedParts[p]; });
-  document.getElementById('calLegend').innerHTML = legendItems.length
-    ? legendItems.map(function(p){
+  document.getElementById('calLegend').innerHTML = Object.keys(usedLegend).length
+    ? Object.keys(usedLegend).map(function(k){
         return '<div class="wd-cal-legend-item">'
-          + '<div style="width:8px;height:8px;border-radius:50%;background:'+PART_COLORS_CAL[p]+';flex-shrink:0;"></div>'
-          + PART_NAMES_CAL[p] + '</div>';
+          + '<div style="width:8px;height:8px;border-radius:50%;background:'+usedLegend[k].color+';flex-shrink:0;"></div>'
+          + usedLegend[k].label + '</div>';
       }).join('')
     : '';
 }
@@ -2251,6 +2271,7 @@ function openAddExercise() {
 var mbDraftExercises = [];
 var mbEditIdx = -1;
 var mbSelectedCat = 'all';
+var mbSelectedPart = 'all';
 
 function openMenuBuilder(editIdx) {
   if (!isPro && editIdx === -1 && savedMenus.length >= FREE_MENU_LIMIT) {
@@ -2268,6 +2289,7 @@ function openMenuBuilder(editIdx) {
     document.getElementById('menuBuilderTitle').textContent = 'メニューを作成';
   }
   mbSelectedCat = 'all';
+  mbSelectedPart = 'all';
   document.getElementById('mbSearch').value = '';
   buildMbCatFilter();
   mbRenderSelected();
@@ -2275,16 +2297,38 @@ function openMenuBuilder(editIdx) {
   document.getElementById('menuBuilderModal').classList.add('show');
 }
 
+var MB_PART_LIST = [
+  {id:'all',label:'部位: すべて'},{id:'chest',label:'胸'},{id:'back',label:'背中'},
+  {id:'shoulder',label:'肩'},{id:'arm',label:'腕'},{id:'leg',label:'脚'},{id:'core',label:'体幹'}
+];
+
 function buildMbCatFilter() {
-  var cats = [{id:'all',label:'すべて'},{id:'strength',label:'ウェイト'},{id:'machine',label:'マシン'},{id:'bodyweight',label:'自重'},{id:'cardio',label:'有酸素'},{id:'stretch',label:'ストレッチ'},{id:'mindfulness',label:'マインドフルネス'}];
+  var cats = [{id:'all',label:'すべて'},{id:'strength',label:'🏋️ フリー'},{id:'machine',label:'⚙️ マシン'},{id:'bodyweight',label:'🤸 自重'},{id:'cardio',label:'🏃 有酸素'},{id:'stretch',label:'🧘 ストレッチ'},{id:'mindfulness',label:'🌸 マインドフル'}];
   document.getElementById('mbCatFilter').innerHTML = cats.map(function(c){
     return '<button class="cat-btn'+(c.id===mbSelectedCat?' active':'')+'" onclick="mbSetCat(\''+c.id+'\')">'+c.label+'</button>';
+  }).join('');
+  buildMbPartFilter();
+}
+
+function buildMbPartFilter() {
+  var noPart = ['cardio','stretch','mindfulness'];
+  var pf = document.getElementById('mbPartFilter');
+  if (noPart.indexOf(mbSelectedCat) >= 0) { pf.innerHTML = ''; return; }
+  pf.innerHTML = MB_PART_LIST.map(function(p){
+    return '<button class="cat-btn'+(p.id===mbSelectedPart?' active':'')+'" onclick="mbSetPart(\''+p.id+'\')" style="font-size:.68rem;">'+p.label+'</button>';
   }).join('');
 }
 
 function mbSetCat(cat) {
   mbSelectedCat = cat;
+  mbSelectedPart = 'all';
   buildMbCatFilter();
+  mbFilterExercises();
+}
+
+function mbSetPart(part) {
+  mbSelectedPart = part;
+  buildMbPartFilter();
   mbFilterExercises();
 }
 
@@ -2293,9 +2337,10 @@ function mbFilterExercises() {
   var customEx = JSON.parse(localStorage.getItem('customExercises') || '[]');
   var allEx = EXERCISE_DB.concat(customEx);
   var list = allEx.filter(function(e){
-    var matchCat = mbSelectedCat === 'all' || e.cat === mbSelectedCat;
-    var matchQ = !q || e.name.toLowerCase().includes(q) || (e.keyword||'').toLowerCase().includes(q);
-    return matchCat && matchQ;
+    var matchCat  = mbSelectedCat  === 'all' || e.cat  === mbSelectedCat;
+    var matchPart = mbSelectedPart === 'all' || e.part === mbSelectedPart;
+    var matchQ    = !q || e.name.toLowerCase().includes(q) || (e.keyword||'').toLowerCase().includes(q);
+    return matchCat && matchPart && matchQ;
   });
   var alreadyIds = mbDraftExercises.map(function(e){ return e.id; });
   document.getElementById('mbExList').innerHTML = list.length
