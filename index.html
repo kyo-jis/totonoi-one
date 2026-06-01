@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Totonoi One</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="manifest" href="/manifest-portal.json">
   <link rel="icon" type="image/png" href="/favicon.ico">
   <link rel="shortcut icon" href="/favicon.ico">
-  <meta name="theme-color" content="#1a1a24">
+  <meta name="theme-color" content="#0f0f14">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Totonoi One">
   <link rel="apple-touch-icon" href="/apple-touch-icon-portal.png">
@@ -17,14 +17,11 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #f7f5f0;
-      --ink: #1a1a18;
-      --muted: #9a9890;
-      --line: #e0ddd7;
-      --accent-sub: #3d6b8e;
-      --accent-fit: #4a7c5a;
-      --accent-rec: #8e5a3d;
-      --card-bg: #ffffff;
+      --bg: #0f0f14;
+      --ink: #f0eee8;
+      --muted: #6a6880;
+      --font: 'DM Sans', sans-serif;
+      --serif: 'DM Serif Display', serif;
     }
 
     html { font-size: 16px; }
@@ -32,32 +29,47 @@
     body {
       background: var(--bg);
       color: var(--ink);
-      font-family: 'DM Sans', sans-serif;
+      font-family: var(--font);
       font-weight: 300;
       min-height: 100vh;
-      padding: 0;
     }
 
     /* ── Header ── */
     header {
-      padding: 3rem 1.5rem 2rem;
+      padding: 3rem 1.25rem 2rem;
       text-align: center;
-      border-bottom: 1px solid var(--line);
     }
 
-    .site-label {
-      font-size: 0.7rem;
-      letter-spacing: 0.2em;
+    .logo-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: .6rem;
+      margin-bottom: 1.5rem;
+      opacity: 0;
+      animation: fadeUp .4s ease .05s forwards;
+    }
+
+    .logo-img {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      object-fit: contain;
+    }
+
+    .logo-label {
+      font-size: .72rem;
+      letter-spacing: .2em;
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: 0.75rem;
     }
 
     h1 {
-      font-family: 'DM Serif Display', serif;
-      font-size: clamp(2.4rem, 8vw, 3.6rem);
+      font-family: var(--serif);
+      font-size: clamp(2.2rem, 8vw, 3.2rem);
       line-height: 1.1;
-      letter-spacing: -0.02em;
+      letter-spacing: -.02em;
+      opacity: 0;
+      animation: fadeUp .4s ease .1s forwards;
     }
 
     h1 em {
@@ -66,233 +78,252 @@
     }
 
     .tagline {
-      margin-top: 0.75rem;
-      font-size: 0.88rem;
+      margin-top: .75rem;
+      font-size: .82rem;
       color: var(--muted);
-      letter-spacing: 0.03em;
+      letter-spacing: .03em;
+      opacity: 0;
+      animation: fadeUp .4s ease .15s forwards;
     }
 
-    /* ── Grid ── */
-    main {
-      padding: 2.5rem 1.25rem 5rem;
+    /* ── Bento Grid ── */
+    .bento {
       display: grid;
-      grid-template-columns: 1fr;
-      gap: 1rem;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 1.5rem 12px 80px;
       max-width: 480px;
       margin: 0 auto;
     }
 
-    /* ── Card ── */
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--line);
-      border-radius: 2px;
-      padding: 1.75rem 1.5rem;
+    /* ── Card Base ── */
+    .bc {
+      border-radius: 22px;
+      padding: 1.25rem;
       text-decoration: none;
-      color: inherit;
+      color: #fff;
       display: flex;
-      align-items: flex-start;
-      gap: 1.25rem;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 148px;
       position: relative;
       overflow: hidden;
-      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      opacity: 0;
+      animation: fadeUp .4s ease forwards;
+      transition: transform .18s ease, box-shadow .18s ease;
     }
 
-    .card::after {
+    .bc::before {
       content: '';
       position: absolute;
-      left: 0; top: 0; bottom: 0;
-      width: 3px;
-      background: var(--accent);
-      transform: scaleY(0);
-      transform-origin: bottom;
-      transition: transform 0.22s ease;
-    }
-
-    .card:active {
-      transform: scale(0.985);
-    }
-
-    @media (hover: hover) {
-      .card:hover {
-        box-shadow: 0 4px 24px rgba(0,0,0,0.07);
-        transform: translateY(-2px);
-      }
-      .card:hover::after {
-        transform: scaleY(1);
-      }
-    }
-
-    .card.sub  { --accent: var(--accent-sub); }
-    .card.fit  { --accent: var(--accent-fit); }
-    .card.rec  { --accent: var(--accent-rec); }
-
-    .icon {
-      width: 44px;
-      height: 44px;
+      top: -30px; right: -30px;
+      width: 110px; height: 110px;
       border-radius: 50%;
-      background: color-mix(in srgb, var(--accent) 12%, transparent);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
+      background: rgba(255,255,255,.07);
+    }
+
+    .bc:active { transform: scale(.96); }
+
+    @media (hover: hover) {
+      .bc:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+    }
+
+    .bc.full  { grid-column: 1 / -1; min-height: 170px; }
+    .bc.tall  { min-height: 180px; }
+    .bc.soon  { opacity: .45 !important; pointer-events: none; }
+
+    /* ── App Colors ── */
+    .subly   { background: linear-gradient(140deg, #1e3a5f 0%, #3d6b8e 100%); animation-delay: .15s; }
+    .medly   { background: linear-gradient(140deg, #2d1a5e 0%, #7c5cbf 100%); animation-delay: .2s;  }
+    .fitly   { background: linear-gradient(140deg, #1a3d2a 0%, #4a8c5a 100%); animation-delay: .25s; }
+    .cookly  { background: linear-gradient(140deg, #5e2d1a 0%, #bf6c3c 100%); animation-delay: .3s;  }
+    .learnly { background: linear-gradient(140deg, #1a3d4a 0%, #3c8cbf 100%); animation-delay: .35s; }
+    .stockly { background: linear-gradient(140deg, #2d3d1a 0%, #7c9c3c 100%); animation-delay: .4s;  }
+    .renewly { background: linear-gradient(140deg, #4a3d1a 0%, #bf9c3c 100%); animation-delay: .45s; }
+    .mangaly { background: linear-gradient(140deg, #4a1a3a 0%, #bf3c8c 100%); animation-delay: .5s;  }
+    .readly  { background: linear-gradient(140deg, #1a2a4a 0%, #3c5cbf 100%); animation-delay: .55s; }
+    .ownly   { background: linear-gradient(140deg, #3a3a1a 0%, #9c9c3c 100%); animation-delay: .6s;  }
+
+    /* ── Card Content ── */
+    .bc-icon {
+      font-size: 2rem;
+      margin-bottom: .5rem;
+      display: block;
+    }
+
+    .bc-name {
+      font-family: var(--serif);
+      font-style: italic;
       font-size: 1.3rem;
+      letter-spacing: -.01em;
+      line-height: 1;
     }
 
-    .card-body { flex: 1; }
-
-    .card-title {
-      font-family: 'DM Serif Display', serif;
-      font-size: 1.25rem;
-      letter-spacing: -0.01em;
-      margin-bottom: 0.3rem;
+    .bc-desc {
+      font-size: .72rem;
+      opacity: .75;
+      margin-top: .3rem;
+      line-height: 1.4;
     }
 
-    .card-desc {
-      font-size: 0.82rem;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-
-    .card-arrow {
-      font-size: 1rem;
-      color: var(--muted);
-      align-self: center;
-      flex-shrink: 0;
-      transition: transform 0.18s ease, color 0.18s ease;
+    .bc-arrow {
+      font-size: .9rem;
+      opacity: .7;
+      align-self: flex-end;
+      margin-top: .75rem;
+      transition: transform .18s ease;
     }
 
     @media (hover: hover) {
-      .card:hover .card-arrow {
-        transform: translateX(4px);
-        color: var(--accent);
-      }
+      .bc:hover .bc-arrow { transform: translateX(4px); opacity: 1; }
+    }
+
+    .bc-soon-badge {
+      position: absolute;
+      top: .75rem; right: .75rem;
+      font-size: .58rem;
+      font-weight: 500;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      background: rgba(255,255,255,.15);
+      border-radius: 20px;
+      padding: .2rem .55rem;
     }
 
     /* ── Footer ── */
     footer {
       text-align: center;
       padding: 2rem 1.5rem;
-      font-size: 0.75rem;
+      font-size: .72rem;
       color: var(--muted);
-      border-top: 1px solid var(--line);
     }
 
-    /* ── Entrance animation ── */
-    .card {
-      opacity: 0;
-      transform: translateY(16px);
-      animation: fadeUp 0.45s ease forwards;
-    }
-    .card:nth-child(1) { animation-delay: 0.05s; }
-    .card:nth-child(2) { animation-delay: 0.15s; }
-    .card:nth-child(3) { animation-delay: 0.25s; }
-
+    /* ── Animation ── */
     @keyframes fadeUp {
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    header {
-      opacity: 0;
-      animation: fadeUp 0.4s ease 0s forwards;
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 <body>
 
   <header>
-    <img src="/logo.png" alt="Totonoi One" style="width:72px;height:72px;object-fit:contain;margin-bottom:.75rem;border-radius:18px;">
-    <p class="site-label">Totonoi One</p>
+    <div class="logo-wrap">
+      <img class="logo-img" src="/logo.png" alt="">
+      <span class="logo-label">Totonoi One</span>
+    </div>
     <h1>毎日を、<em>ととのえ</em>る。</h1>
     <p class="tagline">暮らしを整える、オールインワンダッシュボード</p>
   </header>
 
-  <main>
-    <a class="card sub" href="subly.html">
-      <div class="icon">💳</div>
-      <div class="card-body">
-        <p class="card-title">Subly</p>
-        <p class="card-desc">サブスクの更新日・費用を管理。<br>気にしなくていい状態をつくる。</p>
+  <main class="bento">
+
+    <!-- Subly: Full width featured -->
+    <a class="bc subly full" href="subly.html">
+      <div>
+        <span class="bc-icon">💳</span>
+        <p class="bc-name">Subly</p>
+        <p class="bc-desc">サブスクの更新日・費用を管理<br>気にしなくていい状態をつくる</p>
       </div>
-      <span class="card-arrow">→</span>
+      <span class="bc-arrow">→</span>
     </a>
-    <a class="card fit" href="medly.html">
-      <div class="icon">💊</div>
-      <div class="card-body">
-        <p class="card-title">Medly</p>
-        <p class="card-desc">サプリ・薬の在庫と残量を管理。<br>購入タイミングを自動で把握。</p>
+
+    <!-- Medly & Fitly: Half width -->
+    <a class="bc medly" href="medly.html">
+      <div>
+        <span class="bc-icon">💊</span>
+        <p class="bc-name">Medly</p>
+        <p class="bc-desc">サプリ・薬の在庫と残量を管理</p>
       </div>
-      <span class="card-arrow">→</span>
+      <span class="bc-arrow">→</span>
     </a>
-    <a class="card rec" href="fitly.html">
-      <div class="icon">💪</div>
-      <div class="card-body">
-        <p class="card-title">Fitly</p>
-        <p class="card-desc">筋トレ・有酸素・ストレッチを記録。<br>ワークアウトを積み上げる。</p>
+
+    <a class="bc fitly tall" href="fitly.html">
+      <div>
+        <span class="bc-icon">💪</span>
+        <p class="bc-name">Fitly</p>
+        <p class="bc-desc">筋トレ・有酸素・ストレッチを記録</p>
       </div>
-      <span class="card-arrow">→</span>
+      <span class="bc-arrow">→</span>
     </a>
-    <a class="card sub" href="cookly.html">
-      <div class="icon">🍳</div>
-      <div class="card-body">
-        <p class="card-title">Cookly</p>
-        <p class="card-desc">レシピを保存・整理。<br>材料・手順をすっきり管理。</p>
+
+    <!-- Cookly: Full width -->
+    <a class="bc cookly full soon" href="cookly.html">
+      <span class="bc-soon-badge">Coming Soon</span>
+      <div>
+        <span class="bc-icon">🍳</span>
+        <p class="bc-name">Cookly</p>
+        <p class="bc-desc">レシピを保存・整理<br>材料・手順をすっきり管理</p>
       </div>
-      <span class="card-arrow">→</span>
+      <span class="bc-arrow">→</span>
     </a>
-    <a class="card fit" href="learnly.html">
-      <div class="icon">📚</div>
-      <div class="card-body">
-        <p class="card-title">Learnly</p>
-        <p class="card-desc">学習の記録と進捗を管理。<br>学びを積み上げる。</p>
+
+    <!-- Learnly & Stockly -->
+    <a class="bc learnly soon" href="learnly.html">
+      <span class="bc-soon-badge">Soon</span>
+      <div>
+        <span class="bc-icon">📚</span>
+        <p class="bc-name">Learnly</p>
+        <p class="bc-desc">学習の記録と進捗を管理</p>
       </div>
-      <span class="card-arrow">→</span>
+      <span class="bc-arrow">→</span>
     </a>
-    <a class="card rec" href="mangaly.html">
-      <div class="icon">📖</div>
-      <div class="card-body">
-        <p class="card-title">Mangaly</p>
-        <p class="card-desc">漫画・読書の記録を管理。<br>読んだ本を振り返る。</p>
+
+    <a class="bc stockly soon" href="stockly.html">
+      <span class="bc-soon-badge">Soon</span>
+      <div>
+        <span class="bc-icon">📦</span>
+        <p class="bc-name">Stockly</p>
+        <p class="bc-desc">備蓄品の在庫を管理</p>
       </div>
-      <span class="card-arrow">→</span>
+      <span class="bc-arrow">→</span>
     </a>
-    <a class="card sub" href="stockly.html">
-      <div class="icon">📦</div>
-      <div class="card-body">
-        <p class="card-title">Stockly</p>
-        <p class="card-desc">備蓄品の在庫を管理。<br>切らす前に気づける。</p>
+
+    <!-- Renewly & Mangaly -->
+    <a class="bc renewly soon" href="renewly.html">
+      <span class="bc-soon-badge">Soon</span>
+      <div>
+        <span class="bc-icon">🔄</span>
+        <p class="bc-name">Renewly</p>
+        <p class="bc-desc">更新期限を一元管理</p>
       </div>
-      <span class="card-arrow">→</span>
+      <span class="bc-arrow">→</span>
     </a>
-    <a class="card fit" href="renewly.html">
-      <div class="icon">🔄</div>
-      <div class="card-body">
-        <p class="card-title">Renewly</p>
-        <p class="card-desc">更新期限を一元管理。<br>うっかり失効を防ぐ。</p>
+
+    <a class="bc mangaly soon" href="mangaly.html">
+      <span class="bc-soon-badge">Soon</span>
+      <div>
+        <span class="bc-icon">📖</span>
+        <p class="bc-name">Mangaly</p>
+        <p class="bc-desc">漫画・読書の記録を管理</p>
       </div>
-      <span class="card-arrow">→</span>
+      <span class="bc-arrow">→</span>
     </a>
-    <a class="card rec" href="readly.html">
-      <div class="icon">📝</div>
-      <div class="card-body">
-        <p class="card-title">Readly</p>
-        <p class="card-desc">本の記録・感想を管理。<br>読書体験を記録する。</p>
+
+    <!-- Readly & Ownly -->
+    <a class="bc readly soon" href="readly.html">
+      <span class="bc-soon-badge">Soon</span>
+      <div>
+        <span class="bc-icon">📝</span>
+        <p class="bc-name">Readly</p>
+        <p class="bc-desc">本の記録・感想を管理</p>
       </div>
-      <span class="card-arrow">→</span>
+      <span class="bc-arrow">→</span>
     </a>
-    <a class="card sub" href="ownly.html">
-      <div class="icon">🏠</div>
-      <div class="card-body">
-        <p class="card-title">Ownly</p>
-        <p class="card-desc">持ち物を管理・整理。<br>何を持っているか把握する。</p>
+
+    <a class="bc ownly soon" href="ownly.html">
+      <span class="bc-soon-badge">Soon</span>
+      <div>
+        <span class="bc-icon">🏠</span>
+        <p class="bc-name">Ownly</p>
+        <p class="bc-desc">持ち物を管理・整理</p>
       </div>
-      <span class="card-arrow">→</span>
+      <span class="bc-arrow">→</span>
     </a>
+
   </main>
 
-  <footer>
-    © 2026 Totonoi One
-  </footer>
+  <footer>© 2026 Totonoi One</footer>
 
 </body>
 </html>
