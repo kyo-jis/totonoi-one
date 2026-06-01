@@ -741,9 +741,20 @@ function updateSummary() {
   document.getElementById('annualCost').textContent  = hasCost ? '¥'+annual.toLocaleString()  : '¥—';
   document.getElementById('dailyCost').textContent   = hasCost ? '¥'+daily.toLocaleString()   : '¥—';
 
+  // 期限アラート
+  var expiredNames = [], expiringNames = [];
+  items.forEach(function(item) {
+    var d = daysUntilExpiry(item);
+    if (d === null) return;
+    if (d < 0)  expiredNames.push(item.name);
+    else if (d <= 30) expiringNames.push(item.name + '（あと'+d+'日）');
+  });
   var banner = document.getElementById('urgentBanner');
-  banner.innerHTML = urgentNames.length
-    ? '<div class="urgent-badge" style="margin-top:.75rem;">⚠️ 購入推奨: '+urgentNames.join('・')+'</div>' : '';
+  var bannerHTML = '';
+  if (urgentNames.length) bannerHTML += '<div class="urgent-badge" style="margin-top:.75rem;">⚠️ 購入推奨: '+urgentNames.join('・')+'</div>';
+  if (expiredNames.length) bannerHTML += '<div class="urgent-badge" style="margin-top:.5rem;background:rgba(255,80,80,.15);border-color:rgba(255,80,80,.3);">🚨 期限切れ: '+expiredNames.join('・')+'</div>';
+  if (expiringNames.length) bannerHTML += '<div class="urgent-badge" style="margin-top:.5rem;background:rgba(245,200,66,.1);border-color:rgba(245,200,66,.25);color:var(--yellow);">📅 期限間近: '+expiringNames.join('・')+'</div>';
+  banner.innerHTML = bannerHTML;
 }
 
 // ── Days remaining ──
@@ -757,6 +768,24 @@ function daysClass(days) {
   if (days <= 3) return 'urgent';
   if (days <= 7) return 'warning';
   return 'good';
+}
+
+function daysUntilExpiry(item) {
+  if (!item.expiry) return null;
+  var p = item.expiry.split('-');
+  var exp = new Date(+p[0], +p[1]-1, +p[2]);
+  var now = new Date(); now.setHours(0,0,0,0);
+  return Math.ceil((exp - now) / 86400000);
+}
+
+function expiryBadge(item) {
+  var d = daysUntilExpiry(item);
+  if (d === null) return '';
+  if (d < 0)  return '<span class="days-badge expired">⚠️ 期限切れ</span>';
+  if (d <= 7)  return '<span class="days-badge urgent">⚠️ 期限まで'+d+'日</span>';
+  if (d <= 30) return '<span class="days-badge warning">期限まで'+d+'日</span>';
+  var p = item.expiry.split('-');
+  return '<span class="days-badge good" style="font-size:.65rem;">期限 '+p[0].slice(2)+'/'+p[1]+'/'+p[2]+'</span>';
 }
 
 function pct(item) {
@@ -847,7 +876,7 @@ function renderList() {
       +'<button class="btn-restock" onclick="openRestock(\''+item.id+'\')">補充</button>'
       +'</div></div>'
       +costFooter(item)
-      +(expiryText?'<p style="font-size:.7rem;color:var(--muted);margin-top:.5rem;">'+expiryText+'</p>':'')
+      +(item.expiry?'<div style="margin-top:.5rem;">'+expiryBadge(item)+'</div>':'')
       +timingHTML
       +(item.memo?'<p style="font-size:.72rem;color:var(--muted);margin-top:.4rem;">📝 '+item.memo+'</p>':'')
       +'</div>';
