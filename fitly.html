@@ -390,14 +390,25 @@
 
 <!-- 体重タブ -->
 <div class="view" id="view-body">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.85rem 1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem;">
+    <p style="font-size:.82rem;color:var(--muted);">身長</p>
+    <div style="display:flex;align-items:center;gap:.5rem;">
+      <input type="number" id="heightInput" placeholder="170" step="0.1" style="width:80px;padding:.45rem .6rem;font-size:.95rem;text-align:center;" oninput="saveHeight()" value="">
+      <span style="font-size:.82rem;color:var(--muted);">cm</span>
+    </div>
+  </div>
   <div class="bw-summary">
     <div class="bw-stat">
       <p class="bw-stat-val" id="bwCurrent">—</p>
       <p class="bw-stat-label">現在の体重</p>
     </div>
     <div class="bw-stat">
+      <p class="bw-stat-val" id="bwBMI">—</p>
+      <p class="bw-stat-label" id="bwBMILabel">BMI</p>
+    </div>
+    <div class="bw-stat">
       <p class="bw-stat-val" id="bwChange">—</p>
-      <p class="bw-stat-label">30日間の変化</p>
+      <p class="bw-stat-label">30日の変化</p>
     </div>
   </div>
   <div class="card" style="margin-bottom:1rem;">
@@ -583,6 +594,32 @@ var workoutHistory = JSON.parse(localStorage.getItem('fitlyHistory') || '[]');
 var bodyWeightLog = JSON.parse(localStorage.getItem('fitlyBodyWeight') || '[]');
 var personalRecords = JSON.parse(localStorage.getItem('fitlyPRs') || '{}');
 
+// ── Height / BMI ──
+var userHeight = parseFloat(localStorage.getItem('fitlyHeight')) || null;
+
+function saveHeight() {
+  var h = parseFloat(document.getElementById('heightInput').value);
+  if (h > 50 && h < 300) {
+    userHeight = h;
+    localStorage.setItem('fitlyHeight', h);
+    renderBodyWeightTab();
+  }
+}
+
+function calcBMI(weight) {
+  if (!userHeight || !weight) return null;
+  return Math.round((weight / Math.pow(userHeight / 100, 2)) * 10) / 10;
+}
+
+function bmiCategory(bmi) {
+  if (!bmi) return '';
+  if (bmi < 18.5) return { label:'低体重', color:'var(--blue)' };
+  if (bmi < 25)   return { label:'標準',   color:'var(--accent)' };
+  if (bmi < 30)   return { label:'肥満①', color:'var(--yellow)' };
+  if (bmi < 35)   return { label:'肥満②', color:'var(--accent2)' };
+  return              { label:'肥満③', color:'var(--accent2)' };
+}
+
 // ── Body Weight ──
 function openBodyWeightModal() {
   document.getElementById('fBwWeight').value = '';
@@ -618,6 +655,19 @@ function renderBodyWeightTab() {
     return (now - d) / 86400000 >= 28;
   });
   document.getElementById('bwCurrent').textContent = cur ? cur + ' kg' : '—';
+
+  // BMI
+  var bmi = calcBMI(cur);
+  var cat = bmiCategory(bmi);
+  document.getElementById('bwBMI').innerHTML = bmi
+    ? '<span style="color:'+cat.color+'">'+bmi+'</span>'
+    : '—';
+  document.getElementById('bwBMILabel').textContent = bmi ? 'BMI · ' + cat.label : 'BMI（身長を入力）';
+
+  // 身長フィールドに保存済み値をセット
+  var hi = document.getElementById('heightInput');
+  if (hi && userHeight) hi.value = userHeight;
+
   if (cur && ago30) {
     var diff = Math.round((cur - ago30.weight) * 10) / 10;
     var sign = diff > 0 ? '+' : '';
@@ -660,7 +710,9 @@ function renderBodyWeightTab() {
         return '<div class="bw-entry">'
           +'<span class="bw-entry-date">'+dateStr+(e.note?' · '+e.note:'')+'</span>'
           +'<span class="bw-entry-val">'+e.weight+' kg'+trend
-          +(e.bodyFat?'<span class="bw-entry-bf">体脂'+e.bodyFat+'%</span>':'')+'</span>'
+          +(e.bodyFat?'<span class="bw-entry-bf"> 体脂'+e.bodyFat+'%</span>':'')
+          +(calcBMI(e.weight)?'<span class="bw-entry-bf"> BMI '+calcBMI(e.weight)+'</span>':'')
+          +'</span>'
           +'</div>';
       }).join('')
     : '<p style="font-size:.82rem;color:var(--muted);padding:1rem 0;text-align:center;">まだ記録がありません</p>';
