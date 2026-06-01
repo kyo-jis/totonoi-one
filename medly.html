@@ -400,24 +400,30 @@
 <div class="modal-overlay" id="restockModal" onclick="closeModalOutside(event,'restockModal')">
   <div class="modal">
     <div class="modal-handle"></div>
-    <p class="modal-title">在庫を補充</p>
+    <p class="modal-title" id="restockTitle">在庫を補充</p>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">補充数量</label>
+        <label class="form-label">入り数</label>
         <input type="number" id="fRestock" placeholder="60">
       </div>
+      <div class="form-group">
+        <label class="form-label">1日摂取量</label>
+        <input type="number" id="fRestockDaily" placeholder="1" step="0.1">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">ブランド・メーカー（任意）</label>
+      <input type="text" id="fRestockBrand" placeholder="例：NOW Foods、iHerb限定品">
+    </div>
+    <div class="form-row">
       <div class="form-group">
         <label class="form-label">購入価格（円）</label>
         <input type="number" id="fRestockPrice" placeholder="2980">
       </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">購入日</label>
-      <input type="date" id="fRestockDate">
-    </div>
-    <div class="form-group">
-      <label class="form-label">メモ（任意）</label>
-      <input type="text" id="fRestockNote" placeholder="例：Amazon定期便">
+      <div class="form-group">
+        <label class="form-label">購入日</label>
+        <input type="date" id="fRestockDate">
+      </div>
     </div>
     <button class="btn-primary" onclick="confirmRestock()">補充する</button>
     <button class="btn-cancel" onclick="closeModal('restockModal')">キャンセル</button>
@@ -994,33 +1000,39 @@ function takeItem(id) {
 function openRestock(id) {
   restockId = id;
   var item = items.find(function(x){ return x.id===id; });
-  document.getElementById('fRestock').value = item ? item.initial : '';
+  document.getElementById('restockTitle').textContent = (item ? item.icon+' '+item.name+' ' : '')+'を補充';
+  document.getElementById('fRestock').value = item ? item.initial || '' : '';
+  document.getElementById('fRestockDaily').value = item ? item.daily : '';
+  document.getElementById('fRestockBrand').value = '';
   document.getElementById('fRestockPrice').value = '';
-  document.getElementById('fRestockNote').value = '';
   document.getElementById('fRestockDate').value = new Date().toISOString().split('T')[0];
   document.getElementById('restockModal').classList.add('show');
 }
 
 function confirmRestock() {
   var num = parseInt(document.getElementById('fRestock').value);
-  if (!num) { showToast('数量を入力してください'); return; }
+  if (!num) { showToast('入り数を入力してください'); return; }
   var item = items.find(function(x){ return x.id===restockId; });
   if (!item) return;
   item.current += num;
+  item.initial = num;
+  var newDaily = parseFloat(document.getElementById('fRestockDaily').value);
+  if (newDaily && newDaily !== item.daily) item.daily = newDaily;
+  var brand = document.getElementById('fRestockBrand').value.trim();
   var price = parseInt(document.getElementById('fRestockPrice').value) || 0;
   var date  = document.getElementById('fRestockDate').value || new Date().toISOString().split('T')[0];
-  var note  = document.getElementById('fRestockNote').value.trim();
   purchaseHistory.unshift({
     id: Date.now().toString(), itemId: item.id, itemName: item.name,
     icon: item.icon||'💊', unit: item.unit,
-    qty: num, price: price, date: date, note: note
+    qty: num, price: price, date: date, note: brand
   });
   localStorage.setItem('medlyPurchase', JSON.stringify(purchaseHistory));
   dbSave('purchase', purchaseHistory);
   save();
   closeModal('restockModal');
   renderList(); renderPurchaseHistory(); updateSummary();
-  showToast('✅ '+item.name+'を補充しました');
+  var msg = brand ? brand+' '+num+item.unit : num+item.unit;
+  showToast('✅ '+item.name+' '+msg+' 補充しました');
 }
 
 // ── Purchase History ──
