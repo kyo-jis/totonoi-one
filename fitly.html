@@ -1165,16 +1165,12 @@ function startFromMenu(idx) {
   var menu = savedMenus[idx];
   if (!menu) return;
   currentWorkout.exercises = menu.exercises.map(function(e) {
-    var def = {weight:'', reps:'', rir:'', done:false};
-    var prev = exerciseSettings[e.id] || {};
-    return {
-      id: e.id, name: e.name, cat: e.cat, part: e.part, keyword: e.keyword||'',
-      sets: [
-        {weight: prev.lastWeight||'', reps: prev.lastReps||'', rir:'', done:false},
-        {weight: prev.lastWeight||'', reps: prev.lastReps||'', rir:'', done:false},
-        {weight: prev.lastWeight||'', reps: prev.lastReps||'', rir:'', done:false},
-      ]
-    };
+    var prev = getLastRecord(e.id);
+    var nSets = prev.lastSets || 3;
+    var sets = [];
+    for (var i = 0; i < nSets; i++) sets.push({weight: prev.lastWeight||'', reps: prev.lastReps||'', rir:'', done:false});
+    var restTime = (exerciseSettings[e.id] && exerciseSettings[e.id].restTime) ? exerciseSettings[e.id].restTime : DEFAULT_REST[e.cat] || 90;
+    return { id: e.id, name: e.name, cat: e.cat, part: e.part, keyword: e.keyword||'', sets: sets, restTime: restTime };
   });
   activateWorkoutUI();
   renderExerciseCards();
@@ -1289,8 +1285,9 @@ function renderExerciseCards() {
     var prHTML = pr
       ? '<span class="pr-badge">🏆 PR '+pr.weight+'kg×'+pr.reps+'回 推定1RM:'+pr.est1RM+'kg</span> '
       : '';
-    var prevHTML = settings.lastWeight
-      ? '<div class="prev-record">'+prHTML+'前回: <span>'+settings.lastWeight+'kg × '+settings.lastReps+'回 × '+settings.lastSets+'セット</span></div>'
+    var lastRec = getLastRecord(ex.id);
+    var prevHTML = lastRec.lastWeight
+      ? '<div class="prev-record">'+prHTML+'前回: <span>'+lastRec.lastWeight+'kg × '+lastRec.lastReps+'回 × '+lastRec.lastSets+'セット</span></div>'
       : (prHTML ? '<div class="prev-record">'+prHTML+'</div>' : '');
     var ytURL = 'https://www.youtube.com/results?search_query='+encodeURIComponent((ex.keyword||ex.name)+' やり方 フォーム');
     var setsHTML = ex.sets.map(function(s, si) {
@@ -1320,15 +1317,34 @@ function renderExerciseCards() {
   }).join('');
 }
 
+function getLastRecord(exId) {
+  // exerciseSettings を優先、なければ workoutHistory を遡る
+  var s = exerciseSettings[exId];
+  if (s && s.lastWeight) return s;
+  for (var i = 0; i < workoutHistory.length; i++) {
+    var exes = workoutHistory[i].exercises || [];
+    for (var j = 0; j < exes.length; j++) {
+      if (exes[j].id === exId) {
+        var done = (exes[j].sets || []).filter(function(s){ return s.done && s.reps; });
+        if (done.length) {
+          return { lastWeight: done[done.length-1].weight || '', lastReps: done[done.length-1].reps || '', lastSets: done.length };
+        }
+      }
+    }
+  }
+  return {};
+}
+
 function addExerciseToWorkout(ex) {
-  var settings = exerciseSettings[ex.id] || {};
+  var settings = getLastRecord(ex.id);
   var defaultSets = settings.lastSets || 3;
   var sets = [];
   for (var i=0;i<defaultSets;i++) {
     sets.push({weight: settings.lastWeight||'', reps: settings.lastReps||'', rir:'', done:false});
   }
-  var restTime = exerciseSettings[ex.id] && exerciseSettings[ex.id].restTime
-    ? exerciseSettings[ex.id].restTime
+  var savedSettings = exerciseSettings[ex.id] || {};
+  var restTime = savedSettings.restTime
+    ? savedSettings.restTime
     : DEFAULT_REST[ex.cat] || 90;
   currentWorkout.exercises.push({
     id: ex.id, name: ex.name, cat: ex.cat, part: ex.part,
@@ -1803,7 +1819,9 @@ function mbSetCat(cat) {
 
 function mbFilterExercises() {
   var q = document.getElementById('mbSearch').value.toLowerCase();
-  var list = EXERCISES.filter(function(e){
+  var customEx = JSON.parse(localStorage.getItem('customExercises') || '[]');
+  var allEx = EXERCISE_DB.concat(customEx);
+  var list = allEx.filter(function(e){
     var matchCat = mbSelectedCat === 'all' || e.cat === mbSelectedCat;
     var matchQ = !q || e.name.toLowerCase().includes(q) || (e.keyword||'').toLowerCase().includes(q);
     return matchCat && matchQ;
@@ -1812,10 +1830,11 @@ function mbFilterExercises() {
   document.getElementById('mbExList').innerHTML = list.length
     ? list.map(function(e){
         var added = alreadyIds.indexOf(e.id) >= 0;
-        var badgeCls = 'badge-'+e.cat;
+        var badgeCls = 'badge-'+(e.cat||'strength');
+        var partLabel = PART_LABELS[e.part] || e.part || '';
         return '<div class="exercise-list-item" onclick="mbToggleExercise(\''+e.id+'\')" style="'+(added?'opacity:.45;pointer-events:none;':'')+'">'
           +'<div><p class="exercise-list-name">'+e.name+'</p>'
-          +'<p class="exercise-list-meta">'+{chest:'胸',back:'背中',shoulder:'肩',arm:'腕',leg:'脚',core:'体幹',full:'全身',other:'その他'}[e.part]+'</p></div>'
+          +'<p class="exercise-list-meta">'+partLabel+'</p></div>'
           +'<span class="exercise-list-badge '+badgeCls+'">'+(added?'追加済':'＋')+'</span>'
           +'</div>';
       }).join('')
@@ -1823,7 +1842,9 @@ function mbFilterExercises() {
 }
 
 function mbToggleExercise(id) {
-  var ex = EXERCISES.find(function(e){ return e.id===id; });
+  var customEx = JSON.parse(localStorage.getItem('customExercises') || '[]');
+  var allEx = EXERCISE_DB.concat(customEx);
+  var ex = allEx.find(function(e){ return e.id===id; });
   if (!ex) return;
   mbDraftExercises.push({id:ex.id, name:ex.name, cat:ex.cat, part:ex.part, keyword:ex.keyword||''});
   mbRenderSelected();
