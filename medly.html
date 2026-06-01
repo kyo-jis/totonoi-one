@@ -796,20 +796,27 @@ async function startCheckout() {
 }
 
 var _authMode = 'login';
+function setAuthMode(mode) {
+  _authMode = mode;
+  var tl = document.getElementById('tabLogin'), ts = document.getElementById('tabSignup');
+  var sb = document.getElementById('authSubmitBtn');
+  if (mode === 'login') {
+    tl.style.cssText += ';background:var(--surface3);color:var(--text);font-weight:500;';
+    ts.style.cssText += ';background:none;color:var(--muted);font-weight:300;';
+    sb.textContent = 'ログイン';
+  } else {
+    ts.style.cssText += ';background:var(--surface3);color:var(--text);font-weight:500;';
+    tl.style.cssText += ';background:none;color:var(--muted);font-weight:300;';
+    sb.textContent = 'アカウントを作成';
+  }
+}
 function openAuthModal() {
   if (currentUser) {
     if (confirm(currentUser.email + '\nログアウトしますか？')) { _sb.auth.signOut(); }
     return;
   }
-  _authMode = 'login';
-  document.getElementById('authModalTitle').textContent = 'ログイン';
-  document.getElementById('authToggle').textContent = 'アカウント作成はこちら →';
+  setAuthMode('login');
   document.getElementById('authModal').classList.add('show');
-}
-function toggleAuthMode() {
-  _authMode = _authMode === 'login' ? 'signup' : 'login';
-  document.getElementById('authModalTitle').textContent = _authMode === 'login' ? 'ログイン' : 'アカウント作成';
-  document.getElementById('authToggle').textContent = _authMode === 'login' ? 'アカウント作成はこちら →' : 'ログインはこちら →';
 }
 async function handleAuth() {
   var email = document.getElementById('authEmail').value.trim();
@@ -820,7 +827,7 @@ async function handleAuth() {
     : await _sb.auth.signUp({ email: email, password: pass });
   if (result.error) { showToast('⚠️ ' + result.error.message); return; }
   closeModal('authModal');
-  showToast(_authMode === 'signup' ? '✅ 登録しました！確認メールをご確認ください' : '✅ ログインしました');
+  showToast(_authMode === 'signup' ? '✅ 登録完了！ようこそ' : '✅ ログインしました');
 }
 function updateAuthUI() {
   var btn = document.getElementById('authBtn');
@@ -845,17 +852,19 @@ _sb.auth.getSession().then(function(res) {
 <div class="modal-overlay" id="authModal" onclick="closeModalOutside(event,'authModal')">
   <div class="modal">
     <div class="modal-handle"></div>
-    <p class="modal-title" id="authModalTitle">ログイン</p>
+    <div style="display:flex;background:var(--surface2);border-radius:10px;padding:3px;margin-bottom:1.25rem;border:1px solid var(--border);">
+      <button id="tabLogin" onclick="setAuthMode('login')" style="flex:1;padding:.55rem;border:none;border-radius:8px;font-family:var(--font);font-size:.82rem;cursor:pointer;transition:all .2s;background:var(--surface3);color:var(--text);font-weight:500;">ログイン</button>
+      <button id="tabSignup" onclick="setAuthMode('signup')" style="flex:1;padding:.55rem;border:none;border-radius:8px;font-family:var(--font);font-size:.82rem;cursor:pointer;transition:all .2s;background:none;color:var(--muted);font-weight:300;">新規登録</button>
+    </div>
     <div class="form-group">
       <label class="form-label">メールアドレス</label>
       <input type="email" id="authEmail" placeholder="your@email.com" style="width:100%">
     </div>
     <div class="form-group">
-      <label class="form-label">パスワード</label>
+      <label class="form-label">パスワード（6文字以上）</label>
       <input type="password" id="authPassword" placeholder="••••••••" style="width:100%">
     </div>
-    <button class="btn-primary" onclick="handleAuth()">ログイン / 登録</button>
-    <button class="btn-cancel" onclick="toggleAuthMode()" id="authToggle">アカウント作成はこちら →</button>
+    <button class="btn-primary" id="authSubmitBtn" onclick="handleAuth()">ログイン</button>
     <button class="btn-cancel" onclick="closeModal('authModal')">キャンセル</button>
   </div>
 </div>
