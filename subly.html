@@ -666,10 +666,11 @@ function onCycleChange() {
 
 function calcNextBillingDate(startStr, cycle, customNum, customUnit) {
   if (!startStr || cycle === 'once') return '';
-  var next = new Date(startStr);
+  var p = startStr.split('-');
+  var next = new Date(+p[0], +p[1]-1, +p[2]); // ローカル時刻で解釈
   var now = new Date(); now.setHours(0,0,0,0);
   var max = 1000;
-  while (next < now && max-- > 0) {
+  do {
     if (cycle === 'weekly')       next.setDate(next.getDate() + 7);
     else if (cycle === 'monthly') next.setMonth(next.getMonth() + 1);
     else if (cycle === '3months') next.setMonth(next.getMonth() + 3);
@@ -682,8 +683,11 @@ function calcNextBillingDate(startStr, cycle, customNum, customUnit) {
       if (customUnit === 'years') next.setFullYear(next.getFullYear() + n);
       else next.setMonth(next.getMonth() + n);
     } else break;
-  }
-  return next.toISOString().split('T')[0];
+  } while (next <= now && --max > 0);
+  var y = next.getFullYear();
+  var m = String(next.getMonth()+1).padStart(2,'0');
+  var d = String(next.getDate()).padStart(2,'0');
+  return y + '-' + m + '-' + d;
 }
 
 function onStartDateChange() {
