@@ -523,6 +523,24 @@ var PRESETS = [
   {name:'アシュワガンダ',icon:'🌱',type:'supplement',daily:300,unit:'mg',alert:7, timing:['bedtime'],   cat:'筋トレ'},
   {name:'アルファリポ酸',icon:'⚗️',type:'supplement',daily:300,unit:'mg',alert:7, timing:['meal'],      cat:'筋トレ'},
   {name:'NMN',         icon:'🧬', type:'supplement',daily:250,unit:'mg',alert:7, timing:['morning'],    cat:'筋トレ'},
+  // 男性向け
+  {name:'ノコギリヤシ',  icon:'🪴', type:'supplement', daily:1,   unit:'錠',alert:7, timing:['meal'],       cat:'男性向け'},
+  {name:'トンカットアリ',icon:'🔵', type:'supplement', daily:200, unit:'mg',alert:7, timing:['morning'],    cat:'男性向け'},
+  {name:'マカ',          icon:'🌾', type:'supplement', daily:1,   unit:'錠',alert:7, timing:['morning'],    cat:'男性向け'},
+  {name:'D-アスパラギン酸',icon:'💙',type:'supplement',daily:3,   unit:'g', alert:5, timing:['morning'],    cat:'男性向け'},
+  {name:'ボロン',        icon:'⚡', type:'supplement', daily:3,   unit:'mg',alert:7, timing:['meal'],       cat:'男性向け'},
+  {name:'ビオチン（育毛）',icon:'🦲',type:'supplement',daily:1,   unit:'錠',alert:7, timing:['morning'],    cat:'男性向け'},
+  {name:'フィナステリド', icon:'💊', type:'prescription',daily:1,  unit:'錠',alert:7, timing:['morning'],    cat:'男性向け'},
+  {name:'ミノキシジル',  icon:'💊', type:'medicine',   daily:1,   unit:'錠',alert:7, timing:['morning'],    cat:'男性向け'},
+  // 女性向け
+  {name:'エクオール',    icon:'🌸', type:'supplement', daily:1,   unit:'錠',alert:7, timing:['morning'],    cat:'女性向け'},
+  {name:'チェストベリー',icon:'🫐', type:'supplement', daily:1,   unit:'錠',alert:7, timing:['morning'],    cat:'女性向け'},
+  {name:'プラセンタ',    icon:'🌺', type:'supplement', daily:1,   unit:'錠',alert:7, timing:['morning'],    cat:'女性向け'},
+  {name:'ヒアルロン酸',  icon:'💧', type:'supplement', daily:1,   unit:'錠',alert:7, timing:['morning'],    cat:'女性向け'},
+  {name:'月見草オイル',  icon:'🌼', type:'supplement', daily:2,   unit:'粒',alert:7, timing:['meal'],       cat:'女性向け'},
+  {name:'大豆イソフラボン',icon:'🌿',type:'supplement',daily:1,   unit:'錠',alert:7, timing:['meal'],       cat:'女性向け'},
+  {name:'ビオチン（美容）',icon:'🩷',type:'supplement',daily:1,   unit:'錠',alert:7, timing:['morning'],    cat:'女性向け'},
+  {name:'葉酸（妊活）',  icon:'🌷', type:'supplement', daily:1,   unit:'錠',alert:7, timing:['morning'],    cat:'女性向け'},
 ];
 
 var ENCYC_DB = [
@@ -550,6 +568,23 @@ var ENCYC_DB = [
   {name:'ZMA（亜鉛・マグネシウム・B6）',use:'テストステロン維持・睡眠の質・回復',timing:'就寝30〜60分前',note:'カルシウムと同時摂取すると吸収が下がる。食後2時間空けて空腹時に摂取が理想。',tags:['ホルモン','睡眠','回復'],cat:'筋トレ'},
   {name:'カフェイン',use:'運動パフォーマンス向上・集中力・脂肪燃焼',timing:'運動30〜60分前',note:'3〜6mg/kg体重が推奨。耐性がつきやすいため使用頻度に注意。就寝6時間前以降は摂取を避ける。',tags:['集中力','脂肪燃焼','パフォーマンス'],cat:'筋トレ'},
   {name:'電解質（ナトリウム・カリウム）',use:'脱水防止・筋けいれん予防・パフォーマンス維持',timing:'運動中・後',note:'60分以上の運動や大量発汗時に必要。ナトリウム・カリウム・マグネシウムのバランスが重要。',tags:['水分補給','けいれん防止','持久力'],cat:'筋トレ'},
+  // 男性向け
+  {name:'ノコギリヤシ（Saw Palmetto）',use:'前立腺サポート・薄毛予防・DHT抑制',timing:'食後',note:'DHT（ジヒドロテストステロン）の産生を抑制。前立腺肥大の初期症状緩和や薄毛（AGA）の予防に使われる。320mg/日。効果が出るまで3〜6ヶ月必要。',tags:['前立腺','薄毛','AGA','ホルモン'],cat:'男性向け'},
+  {name:'トンカットアリ（Tongkat Ali）',use:'テストステロン向上・活力・抗ストレス',timing:'朝',note:'テストステロンの遊離を促進し活力・性機能をサポート。コルチゾール低下にも効果あり。200〜400mg/日。継続4週間以上で効果実感が多い。',tags:['テストステロン','活力','ホルモン','ストレス'],cat:'男性向け'},
+  {name:'マカ',use:'活力・精力・ホルモンバランス・不妊サポート',timing:'朝',note:'アンデス原産の根菜。テストステロンを直接増やすわけではないがホルモンバランスを整える。男女ともに有効。精子数・運動率の改善も報告されている。',tags:['活力','精力','ホルモン','妊活'],cat:'男性向け'},
+  {name:'D-アスパラギン酸（DAA）',use:'テストステロン産生刺激・精子形成',timing:'朝',note:'脳下垂体に作用しテストステロン産生を刺激。短期間（2〜3週間）で効果が出やすいが、長期継続で効果が減弱するケースも。3g/日を目安に。',tags:['テストステロン','精子','ホルモン'],cat:'男性向け'},
+  {name:'ボロン',use:'テストステロン維持・骨密度・炎症抑制',timing:'食後',note:'微量ミネラル。フリーテストステロンの増加とエストロゲンの適正化に寄与。3〜10mg/日。日本では認知度が低いが海外では注目されている。',tags:['テストステロン','骨','ミネラル'],cat:'男性向け'},
+  {name:'ビオチン（育毛・美爪）',use:'ケラチン合成・育毛・爪の強化',timing:'朝',note:'ビタミンB7。ケラチンタンパクの生成に関与し髪・爪を丈夫にする。欠乏は脱毛の原因になることも。2500〜5000μg/日。効果実感まで3〜6ヶ月。',tags:['育毛','爪','美肌','ビタミンB'],cat:'男性向け'},
+  {name:'フィナステリド（処方薬）',use:'AGA（男性型脱毛症）治療・DHT抑制',timing:'毎日同じ時間',note:'5α還元酵素II型を阻害しDHTの産生を約70%抑制。AGA治療の第一選択薬。処方箋が必要。効果実感まで6〜12ヶ月。服用中止で効果は消失。女性・子供は触れないこと。',tags:['AGA','薄毛','処方薬','DHT'],cat:'男性向け'},
+  {name:'ミノキシジル',use:'育毛・発毛促進・血流改善',timing:'1日1〜2回',note:'血管拡張作用で毛根への血流を改善し発毛を促進。内服薬（処方）と外用薬（市販）がある。フィナステリドとの併用で効果が高まる。内服は血圧低下に注意。',tags:['育毛','発毛','血流','薄毛'],cat:'男性向け'},
+  // 女性向け
+  {name:'エクオール',use:'更年期症状緩和・骨粗鬆症予防・美肌',timing:'朝',note:'大豆イソフラボンが腸内細菌で変換されたエストロゲン様物質。日本人の約50%はエクオールを産生できない。産生できない人は直接摂取が有効。ほてり・発汗・気分の揺らぎに。',tags:['更年期','エストロゲン','骨','美肌'],cat:'女性向け'},
+  {name:'チェストベリー（Vitex）',use:'PMS症状緩和・月経不順・プロゲステロン調整',timing:'朝（起床後）',note:'プロゲステロン様作用でPMSの胸の張り・イライラ・むくみを緩和。月経周期の調整にも。効果実感まで3ヶ月程度必要。ホルモン剤との併用は医師に相談を。',tags:['PMS','月経','ホルモン','妊活'],cat:'女性向け'},
+  {name:'プラセンタ',use:'更年期症状・肌再生・疲労回復・肝機能サポート',timing:'朝または就寝前',note:'胎盤由来の成長因子・アミノ酸を含む。更年期症状の緩和（保険適用の注射薬もある）。内服サプリは効果の個人差が大きい。美肌・疲労回復を実感する人も多い。',tags:['更年期','美肌','疲労','肝臓'],cat:'女性向け'},
+  {name:'ヒアルロン酸',use:'皮膚の保水・関節サポート・目の乾燥',timing:'朝または食後',note:'体内のヒアルロン酸は20代から減少。経口摂取で皮膚の潤い・弾力向上の報告あり。関節痛の緩和にも。120〜240mg/日。ビタミンCとの組み合わせで効果UP。',tags:['美肌','保湿','関節','エイジング'],cat:'女性向け'},
+  {name:'月見草オイル（EPO）',use:'PMS・肌荒れ・ホルモンバランス',timing:'食後',note:'γ-リノレン酸（GLA）を豊富に含む。プロスタグランジンの産生を調整しPMSや乳房痛・肌荒れに効果あり。2〜4g/日。効果実感まで1〜3ヶ月。',tags:['PMS','肌荒れ','ホルモン','オメガ6'],cat:'女性向け'},
+  {name:'大豆イソフラボン',use:'更年期症状・骨粗鬆症予防・美肌',timing:'食後',note:'エストロゲン様作用。更年期のほてり・骨密度低下に効果あり。1日40〜70mgが目安（過剰摂取は逆効果の可能性）。エクオール産生能がある人はエクオールの方が効果的。',tags:['更年期','エストロゲン','骨','美肌'],cat:'女性向け'},
+  {name:'葉酸（妊活・妊娠中）',use:'神経管閉鎖障害予防・DNA合成・妊活',timing:'朝',note:'妊娠を考える場合は最低1ヶ月前から400〜800μg/日の摂取を開始。妊娠初期（〜12週）に特に重要。モノグルタミン酸型（アクティブ葉酸）が吸収率が高い。',tags:['妊活','妊娠','葉酸','神経'],cat:'女性向け'},
 ];
 
 var INTERACTION_RULES = [
@@ -868,7 +903,7 @@ function renderEncyc(list) {
       : '<div class="empty-state"><div class="empty-icon">🔍</div><p>見つかりませんでした</p></div>';
     return;
   }
-  var cats = ['基本','筋トレ'];
+  var cats = ['基本','筋トレ','男性向け','女性向け'];
   el.innerHTML = cats.map(function(cat){
     var filtered = list.filter(function(e){ return e.cat===cat; });
     if (!filtered.length) return '';
@@ -1109,6 +1144,10 @@ var ICON_LIST = [
   '💪','🥛','🌛','🏋️','🔬','🫀','🔥','🛡️','⚙️','☕',
   '💧','💎','🧬','🌱','⚗️','❤️','🦠','👁️','✨','🌟',
   '🩸','⭐','🔐','🧪','🫒','🦴','🍋','🥦','🧄','🫚',
+  // 男性向け
+  '🔵','💙','🧔','💇','🦲','🪴','🫐','🌾',
+  // 女性向け
+  '🌸','🌺','🩷','💗','🌷','🌼','🪷','🍃',
 ];
 
 function buildIconPicker(selected) {
@@ -1128,7 +1167,7 @@ function selectIcon(ic) {
 
 // ── Presets ──
 function buildPresets() {
-  var cats = ['基本','筋トレ'];
+  var cats = ['基本','筋トレ','男性向け','女性向け'];
   document.getElementById('presetGrid').innerHTML = cats.map(function(cat){
     var catItems = PRESETS.filter(function(p){ return p.cat===cat; });
     return '<div class="cat-section">'
