@@ -376,6 +376,10 @@
       </div>
     </div>
     <div class="form-group">
+      <label class="form-label">参考価格（円）<span style="font-size:.65rem;color:var(--muted);font-weight:400;margin-left:.4rem;">現在の残量の購入価格</span></label>
+      <input type="number" id="fPrice" placeholder="2980" min="0">
+    </div>
+    <div class="form-group">
       <label class="form-label">使用期限（任意）</label>
       <input type="date" id="fExpiry">
     </div>
@@ -720,10 +724,16 @@ function switchTab(name, btn) {
 // ── Cost calculation ──
 function avgPricePerUnit(item) {
   var hist = purchaseHistory.filter(function(h){ return h.itemId===item.id && h.price>0 && h.qty>0; });
-  if (!hist.length) return null;
-  var totalPrice = hist.reduce(function(s,h){ return s+h.price; },0);
-  var totalQty   = hist.reduce(function(s,h){ return s+h.qty; },0);
-  return totalPrice / totalQty;
+  if (hist.length) {
+    var totalPrice = hist.reduce(function(s,h){ return s+h.price; },0);
+    var totalQty   = hist.reduce(function(s,h){ return s+h.qty; },0);
+    return totalPrice / totalQty;
+  }
+  // 参考価格フォールバック: refPrice ÷ initial量
+  if (item.refPrice > 0 && item.initial > 0) {
+    return item.refPrice / item.initial;
+  }
+  return null;
 }
 
 function costPerDay(item) {
@@ -1281,7 +1291,7 @@ function toggleTiming(t) {
 function openModal() {
   editId = null;
   document.getElementById('modalTitle').textContent = 'アイテムを追加';
-  ['fName','fIcon','fCurrent','fDaily','fAlert','fMemo'].forEach(function(id){ document.getElementById(id).value=''; });
+  ['fName','fIcon','fCurrent','fDaily','fAlert','fPrice','fMemo'].forEach(function(id){ document.getElementById(id).value=''; });
   document.getElementById('fType').value = 'supplement';
   document.getElementById('fUnit').value = '錠';
   document.getElementById('fExpiry').value = '';
@@ -1304,6 +1314,7 @@ function editItem(id) {
   document.getElementById('fCurrent').value = item.current;
   document.getElementById('fDaily').value = item.daily;
   document.getElementById('fAlert').value = item.alert||7;
+  document.getElementById('fPrice').value = item.refPrice||'';
   document.getElementById('fMemo').value = item.memo||'';
   document.getElementById('fExpiry').value = item.expiry||'';
   selectedTimings = item.timing||[];
@@ -1336,6 +1347,7 @@ function saveItem() {
     initial: editId ? (items.find(function(x){return x.id===editId;})||{}).initial||current : current,
     daily: daily,
     alert: parseInt(document.getElementById('fAlert').value)||7,
+    refPrice: parseFloat(document.getElementById('fPrice').value)||0,
     memo: document.getElementById('fMemo').value.trim(),
     expiry: document.getElementById('fExpiry').value,
     timing: selectedTimings.slice(),
