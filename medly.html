@@ -36,14 +36,16 @@
     .app-title span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
 
     /* Summary Card */
-    .summary-card { margin:0 1.25rem 1.25rem; background:linear-gradient(135deg,#1e1a2e 0%,#241a2e 100%); border:1px solid #3a2d5a; border-radius:20px; padding:1.5rem; position:relative; overflow:hidden; }
-    .summary-card::before { content:''; position:absolute; top:-40px; right:-40px; width:160px; height:160px; background:radial-gradient(circle,rgba(179,136,255,.2) 0%,transparent 70%); border-radius:50%; }
+    .summary-card { margin:0 1.25rem 1.25rem; background:linear-gradient(145deg,#1b1530 0%,#110d25 100%); border:1px solid rgba(179,136,255,.38); border-radius:24px; padding:1.5rem; position:relative; overflow:hidden; box-shadow:0 0 60px rgba(179,136,255,.1),inset 0 1px 0 rgba(255,255,255,.07),0 8px 40px rgba(0,0,0,.5); }
+    .summary-card::before { content:''; position:absolute; top:-80px; right:-80px; width:280px; height:280px; background:radial-gradient(circle,rgba(179,136,255,.5) 0%,transparent 60%); border-radius:50%; }
+    .summary-card::after { content:''; position:absolute; bottom:-60px; left:-40px; width:200px; height:200px; background:radial-gradient(circle,rgba(108,142,255,.22) 0%,transparent 65%); border-radius:50%; }
     .summary-label { font-size:.72rem; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-bottom:.5rem; }
     .summary-stats { display:flex; gap:1.5rem; margin-top:.5rem; }
     .summary-stat { }
-    .summary-stat-value { font-size:1.8rem; font-weight:600; letter-spacing:-.02em; }
+    .summary-stat-value { font-size:2.2rem; font-weight:600; letter-spacing:-.03em; }
     .summary-stat-label { font-size:.7rem; color:var(--muted); margin-top:.1rem; }
     .urgent-badge { display:inline-flex; align-items:center; gap:.4rem; background:rgba(255,124,110,.15); border:1px solid rgba(255,124,110,.25); border-radius:20px; padding:.4rem .8rem; font-size:.75rem; color:var(--accent2); margin-top:.75rem; }
+    .card-deco { position:absolute; right:1rem; bottom:-.75rem; font-size:8.5rem; font-weight:700; line-height:1; color:rgba(255,255,255,.04); font-family:'Outfit',sans-serif; pointer-events:none; user-select:none; letter-spacing:-.05em; z-index:0; }
 
     /* Tabs */
     .tabs { display:flex; gap:0; margin:0 1.25rem 1.25rem; background:var(--surface); border-radius:14px; padding:4px; border:1px solid var(--border); box-shadow:var(--shadow-sm); }
@@ -260,6 +262,7 @@
     </div>
   </div>
   <div id="urgentBanner"></div>
+  <span class="card-deco" aria-hidden="true">+</span>
 </div>
 
 <div class="free-banner" id="medlyFreeBanner">

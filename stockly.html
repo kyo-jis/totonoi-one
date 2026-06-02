@@ -56,10 +56,12 @@
     .auth-chip.logged-in { border-color:var(--accent); color:var(--accent); }
     .header-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; }
 
-    .summary-card { margin:0 1.25rem 1.25rem; background:linear-gradient(135deg,#162010 0%,#1e2c14 100%); border:1px solid #2e4020; border-radius:20px; padding:1.5rem; position:relative; overflow:hidden; }
-    .summary-card::before { content:''; position:absolute; top:-40px; right:-40px; width:160px; height:160px; background:radial-gradient(circle,rgba(125,186,69,.2) 0%,transparent 70%); border-radius:50%; }
+    .summary-card { margin:0 1.25rem 1.25rem; background:linear-gradient(145deg,#142212 0%,#0c160a 100%); border:1px solid rgba(125,186,69,.38); border-radius:24px; padding:1.5rem; position:relative; overflow:hidden; box-shadow:0 0 60px rgba(125,186,69,.1),inset 0 1px 0 rgba(255,255,255,.07),0 8px 40px rgba(0,0,0,.5); }
+    .summary-card::before { content:''; position:absolute; top:-80px; right:-80px; width:280px; height:280px; background:radial-gradient(circle,rgba(125,186,69,.5) 0%,transparent 60%); border-radius:50%; }
+    .summary-card::after { content:''; position:absolute; bottom:-60px; left:-40px; width:200px; height:200px; background:radial-gradient(circle,rgba(94,207,160,.22) 0%,transparent 65%); border-radius:50%; }
     .summary-label { font-size:.72rem; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-bottom:.5rem; }
-    .summary-main { font-size:2.6rem; font-weight:600; letter-spacing:-.03em; }
+    .summary-main { font-size:3rem; font-weight:600; letter-spacing:-.04em; }
+    .card-deco { position:absolute; right:1rem; bottom:-.75rem; font-size:8.5rem; font-weight:700; line-height:1; color:rgba(255,255,255,.04); font-family:'Outfit',sans-serif; pointer-events:none; user-select:none; letter-spacing:-.05em; z-index:0; }
     .summary-sub { font-size:.78rem; color:var(--muted); margin-top:.4rem; }
     .summary-bar { display:flex; gap:.75rem; margin-top:1rem; flex-wrap:wrap; }
     .summary-bar-item { display:flex; align-items:center; gap:.4rem; font-size:.75rem; color:var(--muted); }
@@ -219,6 +221,7 @@
   <p class="summary-main" id="summaryMain">0件</p>
   <p class="summary-sub" id="summarySub">アイテム未登録</p>
   <div class="summary-bar" id="summaryBar"></div>
+  <span class="card-deco" aria-hidden="true">件</span>
 </div>
 
 <div class="free-banner" id="freeBanner">

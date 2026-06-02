@@ -59,11 +59,13 @@
     .header-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; }
 
     /* Total Card */
-    .total-card { margin:0 1.25rem 1.25rem; background:linear-gradient(135deg,#252d52 0%,#2a2040 100%); border:1px solid #35406a; border-radius:20px; padding:1.5rem; position:relative; overflow:hidden; }
-    .total-card::before { content:''; position:absolute; top:-40px; right:-40px; width:160px; height:160px; background:radial-gradient(circle,rgba(108,142,255,.2) 0%,transparent 70%); border-radius:50%; }
+    .total-card { margin:0 1.25rem 1.25rem; background:linear-gradient(145deg,#1c2550 0%,#13102e 100%); border:1px solid rgba(108,142,255,.38); border-radius:24px; padding:1.5rem; position:relative; overflow:hidden; box-shadow:0 0 60px rgba(108,142,255,.12),inset 0 1px 0 rgba(255,255,255,.07),0 8px 40px rgba(0,0,0,.5); }
+    .total-card::before { content:''; position:absolute; top:-80px; right:-80px; width:300px; height:300px; background:radial-gradient(circle,rgba(108,142,255,.5) 0%,transparent 60%); border-radius:50%; }
+    .total-card::after { content:''; position:absolute; bottom:-60px; left:-40px; width:220px; height:220px; background:radial-gradient(circle,rgba(179,136,255,.28) 0%,transparent 65%); border-radius:50%; }
     .total-label { font-size:.72rem; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-bottom:.5rem; }
-    .total-amount { font-size:2.6rem; font-weight:600; letter-spacing:-.03em; }
-    .total-amount sup { font-size:1rem; font-weight:400; }
+    .total-amount { font-size:3rem; font-weight:600; letter-spacing:-.04em; }
+    .total-amount sup { font-size:1.1rem; font-weight:400; }
+    .card-deco { position:absolute; right:1rem; bottom:-.75rem; font-size:8.5rem; font-weight:700; line-height:1; color:rgba(255,255,255,.04); font-family:'Outfit',sans-serif; pointer-events:none; user-select:none; letter-spacing:-.05em; z-index:0; }
     .total-sub { font-size:.78rem; color:var(--muted); margin-top:.4rem; }
     .total-bar { display:flex; gap:.75rem; margin-top:1rem; flex-wrap:wrap; }
     .total-bar-item { display:flex; align-items:center; gap:.4rem; font-size:.75rem; color:var(--muted); }
@@ -263,6 +265,7 @@
   <div id="totalAmounts"><p class="total-amount"><sup>¥</sup><span>0</span></p></div>
   <p class="total-sub" id="totalSub">登録なし</p>
   <div class="total-bar" id="totalBar"></div>
+  <span class="card-deco" aria-hidden="true">¥</span>
 </div>
 
 <div class="free-banner" id="freeBanner">
