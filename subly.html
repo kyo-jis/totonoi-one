@@ -462,6 +462,7 @@
             <span id="iconPreviewFb" style="display:none;font-size:1.3rem"></span>
           </div>
           <p id="iconPreviewLabel" class="icon-preview-label"></p>
+          <button type="button" onclick="switchToCustomIcon()" style="flex-shrink:0;background:var(--surface3);border:1px solid var(--border);border-radius:8px;padding:.3rem .65rem;font-size:.7rem;color:var(--muted);cursor:pointer;font-family:var(--font);">絵文字に変更</button>
         </div>
       </div>
       <div id="iconCustomWrap">
@@ -714,6 +715,14 @@ function showIconPreview(icon, domain, name) {
 function showIconCustom() {
   document.getElementById('iconPreviewWrap').style.display = 'none';
   document.getElementById('iconCustomWrap').style.display = 'block';
+}
+
+function switchToCustomIcon() {
+  document.getElementById('fIcon').value = '';
+  document.querySelectorAll('.preset-btn').forEach(function(b){ b.classList.remove('selected'); });
+  showIconCustom();
+  syncEmojiPalette();
+  document.getElementById('fIcon').focus();
 }
 
 var subs = JSON.parse(localStorage.getItem('subs') || '[]');
