@@ -1480,8 +1480,13 @@ function openDayDetail(ds) {
   }).join('');
   document.getElementById('dayDetailStats').innerHTML = statsHTML;
 
+  // workoutHistory上の実インデックスを取得
+  var workoutIndices = [];
+  workoutHistory.forEach(function(w, i) { if (wDateStr(w) === ds) workoutIndices.push(i); });
+
   // 種目リスト
   var html = workouts.map(function(w, wi) {
+    var realIdx = workoutIndices[wi];
     var exHTML = (w.exercises || []).map(function(ex) {
       var isCat = ex.cat === 'cardio' || ex.cat === 'stretch' || ex.cat === 'mindfulness';
       var badgeColor = isCat ? (CAT_COLORS_D[ex.cat]||'#888') : (PART_COLORS_D[ex.part]||'#888');
@@ -1510,14 +1515,35 @@ function openDayDetail(ds) {
         + '</div>';
     }).join('');
 
+    var actionBtns = '<div style="display:flex;gap:.5rem;margin-top:.75rem;">'
+      + '<button onclick="closeModal(\'dayDetailModal\');openHistoryEdit(' + realIdx + ')" style="flex:1;padding:.55rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-size:.8rem;color:var(--text);cursor:pointer;font-family:var(--font);">編集</button>'
+      + '<button onclick="deleteDayHistory(' + realIdx + ',\'' + ds + '\')" style="flex:1;padding:.55rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-size:.8rem;color:var(--accent2);cursor:pointer;font-family:var(--font);">削除</button>'
+      + '</div>';
+
     return (wi > 0 ? '<div style="height:1px;background:var(--border);margin:.5rem 0;"></div>' : '')
       + (w.name ? '<p style="font-size:.72rem;font-weight:600;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.25rem;">' + w.name + '</p>' : '')
-      + exHTML;
+      + exHTML
+      + actionBtns;
   }).join('');
 
   document.getElementById('dayDetailContent').innerHTML = html ||
     '<p style="font-size:.82rem;color:var(--muted);text-align:center;padding:1rem 0;">記録なし</p>';
   document.getElementById('dayDetailModal').classList.add('show');
+}
+
+function deleteDayHistory(idx, ds) {
+  if (!confirm('この記録を削除しますか？')) return;
+  workoutHistory.splice(idx, 1);
+  localStorage.setItem('fitlyHistory', JSON.stringify(workoutHistory));
+  dbSave('history', workoutHistory);
+  renderHistory();
+  renderWorkoutDashboard();
+  renderCalendar();
+  showToast('🗑 記録を削除しました');
+  // 同じ日に他の記録があれば再表示、なければ閉じる
+  var remaining = workoutHistory.filter(function(w){ return wDateStr(w) === ds; });
+  if (remaining.length) openDayDetail(ds);
+  else closeModal('dayDetailModal');
 }
 
 function startFromMenu(idx) {
@@ -2813,6 +2839,7 @@ function saveHistoryEdit() {
   closeModal('historyEditModal');
   renderHistory();
   renderWorkoutDashboard();
+  renderCalendar();
   showToast('✅ 記録を更新しました');
 }
 
