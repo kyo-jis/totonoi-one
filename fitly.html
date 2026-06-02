@@ -305,6 +305,30 @@
     .wd-menu-chip:active { border-color:var(--accent); }
     .wd-menu-chip-name { font-size:.82rem; font-weight:500; color:var(--text); }
     .wd-menu-chip-meta { font-size:.65rem; color:var(--muted); margin-top:.2rem; }
+    /* Hero summary card */
+    .wd-hero { background:linear-gradient(145deg,#162416 0%,#0e1a0a 100%); border:1px solid rgba(94,207,160,.38); border-radius:24px; padding:1.5rem; margin-bottom:1.25rem; position:relative; overflow:hidden; box-shadow:0 0 60px rgba(94,207,160,.1),inset 0 1px 0 rgba(255,255,255,.07),0 8px 40px rgba(0,0,0,.5); }
+    .wd-hero::before { content:''; position:absolute; top:-70px; right:-70px; width:240px; height:240px; background:radial-gradient(circle,rgba(94,207,160,.45) 0%,transparent 60%); border-radius:50%; }
+    .wd-hero::after  { content:''; position:absolute; bottom:-50px; left:-30px; width:180px; height:180px; background:radial-gradient(circle,rgba(62,174,130,.2) 0%,transparent 65%); border-radius:50%; }
+    .wd-hero-deco { position:absolute; right:.5rem; bottom:-1.25rem; font-size:8rem; line-height:1; color:rgba(255,255,255,.04); pointer-events:none; user-select:none; }
+    .wd-hero-label { font-size:.68rem; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-bottom:.85rem; }
+    .wd-hero-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.6rem; position:relative; z-index:1; }
+    .wd-hero-stat { background:rgba(255,255,255,.06); border-radius:14px; padding:.8rem .5rem; text-align:center; }
+    .wd-hero-stat-val { font-size:2rem; font-weight:700; letter-spacing:-.04em; line-height:1; color:var(--text); }
+    .wd-hero-stat-val.streak { color:var(--accent); }
+    .wd-hero-stat-label { font-size:.6rem; color:var(--muted); margin-top:.35rem; letter-spacing:.04em; }
+    /* Recent workouts list */
+    .wd-recent-title { font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:.75rem; font-weight:500; }
+    .wd-recent-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:.625rem; cursor:pointer; transition:all .15s; }
+    .wd-recent-card:active { border-color:var(--accent); transform:scale(.98); }
+    .wd-recent-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:.5rem; }
+    .wd-recent-date { font-size:.88rem; font-weight:500; }
+    .wd-recent-duration { font-size:.72rem; color:var(--muted); }
+    .wd-recent-parts { display:flex; gap:.35rem; flex-wrap:wrap; margin-bottom:.65rem; }
+    .wd-recent-part-tag { font-size:.65rem; padding:.2rem .55rem; border-radius:20px; font-weight:500; }
+    .wd-recent-vol-wrap { display:flex; align-items:center; gap:.75rem; }
+    .wd-recent-vol-bar { flex:1; height:4px; background:var(--surface3); border-radius:2px; overflow:hidden; }
+    .wd-recent-vol-fill { height:100%; border-radius:2px; background:var(--accent); }
+    .wd-recent-vol-text { font-size:.72rem; color:var(--muted); flex-shrink:0; white-space:nowrap; }
     .btn-start-custom { width:100%; padding:.9rem; background:var(--surface); border:1px solid var(--border); color:var(--text); border-radius:14px; font-size:.9rem; font-weight:500; font-family:var(--font); cursor:pointer; transition:all .18s; }
     .btn-start-custom:active { background:var(--surface2); transform:scale(.97); }
     /* PR badge */
@@ -358,7 +382,24 @@
   <!-- ダッシュボード（非ワークアウト時） -->
   <div id="workoutDashboard">
 
-    <!-- メニューから始める（最上部） -->
+    <!-- ヒーローサマリーカード -->
+    <div class="wd-hero">
+      <p class="wd-hero-label">ワークアウトサマリー</p>
+      <div class="wd-hero-stats" id="wdHeroStats">
+        <div class="wd-hero-stat"><p class="wd-hero-stat-val streak">—</p><p class="wd-hero-stat-label">週連続</p></div>
+        <div class="wd-hero-stat"><p class="wd-hero-stat-val">—</p><p class="wd-hero-stat-label">今週</p></div>
+        <div class="wd-hero-stat"><p class="wd-hero-stat-val">—</p><p class="wd-hero-stat-label">今月</p></div>
+      </div>
+      <span class="wd-hero-deco" aria-hidden="true">💪</span>
+    </div>
+
+    <!-- 直近のワークアウト -->
+    <div id="wdRecentSection" style="display:none;">
+      <p class="wd-recent-title">直近のワークアウト</p>
+      <div id="wdRecentList"></div>
+    </div>
+
+    <!-- メニューから始める -->
     <p class="section-label" style="margin-bottom:.6rem;">メニューから始める</p>
     <div class="wd-menu-row" id="wdMenuRow"></div>
     <button class="btn-start-custom" onclick="startWorkoutCustom()" style="margin-bottom:1.25rem;">＋ 種目を選んで始める</button>
@@ -1340,10 +1381,87 @@ function renderCalendar() {
     : '';
 }
 
+// ── Dashboard Helpers ──
+function calcStreak() {
+  if (!workoutHistory.length) return 0;
+  var now = new Date();
+  var streak = 0;
+  var weekStart = new Date(now);
+  var dow = weekStart.getDay() === 0 ? 6 : weekStart.getDay() - 1;
+  weekStart.setDate(weekStart.getDate() - dow);
+  weekStart.setHours(0,0,0,0);
+  for (var i = 0; i < 200; i++) {
+    var ws = weekStart.getFullYear()+'-'+String(weekStart.getMonth()+1).padStart(2,'0')+'-'+String(weekStart.getDate()).padStart(2,'0');
+    var we = new Date(weekStart); we.setDate(we.getDate()+6);
+    var weStr = we.getFullYear()+'-'+String(we.getMonth()+1).padStart(2,'0')+'-'+String(we.getDate()).padStart(2,'0');
+    if (!workoutHistory.some(function(w){ var d=wDateStr(w); return d>=ws&&d<=weStr; })) break;
+    streak++;
+    weekStart.setDate(weekStart.getDate()-7);
+  }
+  return streak;
+}
+function checkHasPR(w) {
+  var d = wDateStr(w);
+  return d && Object.values(personalRecords).some(function(pr){ return pr.date===d; });
+}
+
 // ── Workout Dashboard ──
 function renderWorkoutDashboard() {
   var history = workoutHistory;
   var now = new Date();
+
+  // ── ヒーローカード ──
+  var streakWeeks = calcStreak();
+  var dow0 = now.getDay() === 0 ? 6 : now.getDay() - 1;
+  var weekMonday = new Date(now); weekMonday.setDate(now.getDate()-dow0); weekMonday.setHours(0,0,0,0);
+  var weekMondayStr = weekMonday.getFullYear()+'-'+String(weekMonday.getMonth()+1).padStart(2,'0')+'-'+String(weekMonday.getDate()).padStart(2,'0');
+  var monthPfx = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  var thisWeekCount  = history.filter(function(w){ return wDateStr(w)>=weekMondayStr; }).length;
+  var thisMonthCount = history.filter(function(w){ return (wDateStr(w)||'').startsWith(monthPfx); }).length;
+  document.getElementById('wdHeroStats').innerHTML =
+    '<div class="wd-hero-stat"><p class="wd-hero-stat-val streak">'+streakWeeks+'</p><p class="wd-hero-stat-label">週連続 🔥</p></div>'
+    +'<div class="wd-hero-stat"><p class="wd-hero-stat-val">'+thisWeekCount+'</p><p class="wd-hero-stat-label">今週</p></div>'
+    +'<div class="wd-hero-stat"><p class="wd-hero-stat-val">'+thisMonthCount+'</p><p class="wd-hero-stat-label">今月</p></div>';
+
+  // ── 直近3ワークアウト ──
+  var partOrder2   = ['chest','back','shoulder','arm','leg','core'];
+  var partLabels3  = {chest:'胸',back:'背中',shoulder:'肩',arm:'腕',leg:'脚',core:'体幹'};
+  var partColors2  = {chest:'#ff7c6e',back:'#6c8eff',shoulder:'#b388ff',arm:'#f5c842',leg:'#5ecfa0',core:'#8888a0'};
+  var weekdays     = ['日','月','火','水','木','金','土'];
+  var recent3 = history.slice(0, 3);
+  var maxVol  = Math.max.apply(null, recent3.map(function(w){ return w.totalVolume||0; }).concat([1]));
+  var recentSection = document.getElementById('wdRecentSection');
+  if (recent3.length) {
+    document.getElementById('wdRecentList').innerHTML = recent3.map(function(w) {
+      var ds = wDateStr(w);
+      var d  = new Date(ds);
+      var dateStr = (d.getMonth()+1)+'/'+(d.getDate())+'（'+weekdays[d.getDay()]+'）';
+      var dur = w.duration ? Math.floor(w.duration/60)+'分' : '';
+      var parts = {};
+      (w.exercises||[]).forEach(function(ex){ if (ex.part && partOrder2.indexOf(ex.part)>=0) parts[ex.part]=true; });
+      var partTags = Object.keys(parts).map(function(p){
+        return '<span class="wd-recent-part-tag" style="background:'+partColors2[p]+'22;color:'+partColors2[p]+'">'+(partLabels3[p]||p)+'</span>';
+      }).join('');
+      var vol = w.totalVolume || 0;
+      var pct = Math.round((vol/maxVol)*100);
+      var volStr = vol>=1000?(vol/1000).toFixed(1)+'t':vol>0?vol.toLocaleString()+'kg':'';
+      var prBadge = checkHasPR(w) ? ' <span style="font-size:.65rem;color:var(--yellow);">🏆 PR</span>' : '';
+      return '<div class="wd-recent-card" onclick="openDayDetail(\''+ds+'\')">'
+        +'<div class="wd-recent-top">'
+        +'<span class="wd-recent-date">'+dateStr+prBadge+'</span>'
+        +'<span class="wd-recent-duration">'+dur+'</span>'
+        +'</div>'
+        +(partTags?'<div class="wd-recent-parts">'+partTags+'</div>':'')
+        +'<div class="wd-recent-vol-wrap">'
+        +'<div class="wd-recent-vol-bar"><div class="wd-recent-vol-fill" style="width:'+pct+'%"></div></div>'
+        +(volStr?'<span class="wd-recent-vol-text">'+volStr+'</span>':'')
+        +'</div>'
+        +'</div>';
+    }).join('');
+    recentSection.style.display = 'block';
+  } else {
+    recentSection.style.display = 'none';
+  }
 
   // 月間カレンダーを描画
   renderCalendar();
