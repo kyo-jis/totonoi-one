@@ -446,7 +446,7 @@
     </div>
     <div class="form-group">
       <label>アイコン（絵文字）</label>
-      <input type="text" id="fIcon" placeholder="🎬" maxlength="2" oninput="syncEmojiPalette()">
+      <input type="text" id="fIcon" placeholder="🎬" maxlength="8" oninput="syncEmojiPalette()">
       <div class="emoji-palette" id="emojiPalette"></div>
     </div>
     <div class="form-row">
@@ -631,19 +631,20 @@ function buildEmojiPalette() {
   var el = document.getElementById('emojiPalette');
   if (!el) return;
   el.innerHTML = EMOJI_PALETTE.map(function(e) {
-    return '<button type="button" class="emoji-btn" onclick="pickEmoji(\'' + e + '\')">' + e + '</button>';
+    return '<button type="button" class="emoji-btn" data-emoji="' + e + '">' + e + '</button>';
   }).join('');
-}
-
-function pickEmoji(e) {
-  document.getElementById('fIcon').value = e;
-  syncEmojiPalette();
+  el.addEventListener('click', function(evt) {
+    var btn = evt.target.closest('.emoji-btn');
+    if (!btn) return;
+    document.getElementById('fIcon').value = btn.dataset.emoji;
+    syncEmojiPalette();
+  });
 }
 
 function syncEmojiPalette() {
   var cur = document.getElementById('fIcon').value.trim();
   document.querySelectorAll('.emoji-btn').forEach(function(btn) {
-    btn.classList.toggle('selected', btn.textContent === cur);
+    btn.classList.toggle('selected', btn.dataset.emoji === cur);
   });
 }
 
