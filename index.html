@@ -234,7 +234,22 @@
     /* ── Auth chip ── */
     .auth-chip { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); }
     .auth-chip.logged-in { border-color:rgba(94,207,160,.4); color:#5ecfa0; }
-    .header-row { display:flex; justify-content:flex-end; padding:.75rem 1.25rem 0; }
+    .header-row { display:flex; justify-content:flex-end; align-items:center; padding:.75rem 1.25rem 0; gap:.5rem; }
+    .edit-dash-btn { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); transition:all .2s; }
+    .edit-dash-btn:active { background:rgba(255,255,255,.1); color:var(--ink); }
+    /* Bento edit modal */
+    .bento-edit-item { display:flex; align-items:center; gap:.6rem; padding:.65rem .75rem; background:var(--surface); border:1px solid var(--border); border-radius:12px; margin-bottom:.4rem; transition:opacity .2s; }
+    .bento-edit-item.is-hidden { opacity:.4; }
+    .bento-edit-vis { width:30px; height:30px; border-radius:8px; border:1px solid var(--border); background:none; font-size:.85rem; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .15s; }
+    .bento-edit-vis:active { background:#2a2a3a; }
+    .bento-edit-dot { width:10px; height:10px; border-radius:3px; flex-shrink:0; }
+    .bento-edit-info { flex:1; min-width:0; }
+    .bento-edit-name { font-size:.85rem; font-weight:500; }
+    .bento-edit-tag { font-size:.65rem; color:var(--muted); margin-top:.1rem; }
+    .bento-edit-arrows { display:flex; gap:.25rem; flex-shrink:0; }
+    .bento-edit-arrow { width:28px; height:28px; border-radius:7px; border:1px solid var(--border); background:#1a1a2e; color:var(--muted); font-size:.75rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .bento-edit-arrow:active { background:#2a2a3a; color:var(--ink); }
+    .bento-edit-arrow:disabled { opacity:.2; cursor:default; }
 
     /* ── Modal ── */
     .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); backdrop-filter:blur(6px); z-index:100; display:none; align-items:flex-end; }
@@ -272,6 +287,7 @@
 <body>
 
   <div class="header-row">
+    <button class="edit-dash-btn" onclick="openBentoEdit()">⚙️ 編集</button>
     <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
   </div>
 
@@ -429,6 +445,19 @@
       <p id="promoMsg" style="font-size:.68rem;margin-top:.35rem;min-height:.9rem;color:var(--muted);"></p>
     </div>
   </footer>
+
+  <!-- Bento Edit Modal -->
+  <div class="modal-overlay" id="bentoEditModal" onclick="if(event.target===this)closeBentoEdit()">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <p class="modal-title">ダッシュボードをカスタマイズ</p>
+      <p style="font-size:.75rem;color:var(--muted);margin-bottom:1rem;">👁 で表示/非表示、▲▼ で並び替え</p>
+      <div id="bentoEditList"></div>
+      <button class="btn-primary" onclick="saveBentoPrefs()" style="margin-top:.75rem;">保存する</button>
+      <button class="btn-cancel" onclick="resetBentoPrefs()" style="font-size:.72rem;color:var(--muted);">デフォルトに戻す</button>
+      <button class="btn-cancel" onclick="closeBentoEdit()">キャンセル</button>
+    </div>
+  </div>
 
   <!-- Auth Modal -->
   <div class="modal-overlay" id="authModal" onclick="if(event.target===this)this.classList.remove('show')">
@@ -591,6 +620,107 @@
     }
 
     updateProUI();
+
+    // ── Bento Customization ──
+    var APP_KEYS = ['subly','medly','fitly','stockly','cookly','learnly','renewly','mangaly','readly','ownly'];
+    var APP_META = {
+      subly:   { name:'Subly',   icon:'💳', tag:'サブスク管理',     soon:false },
+      medly:   { name:'Medly',   icon:'💊', tag:'サプリ・薬',       soon:false },
+      fitly:   { name:'Fitly',   icon:'🏋️', tag:'ワークアウト記録', soon:false },
+      stockly: { name:'Stockly', icon:'📦', tag:'備蓄・在庫',       soon:false },
+      cookly:  { name:'Cookly',  icon:'🍳', tag:'レシピ管理',       soon:true  },
+      learnly: { name:'Learnly', icon:'📚', tag:'学習記録',         soon:true  },
+      renewly: { name:'Renewly', icon:'🔄', tag:'期限管理',         soon:true  },
+      mangaly: { name:'Mangaly', icon:'📖', tag:'読書・漫画',       soon:true  },
+      readly:  { name:'Readly',  icon:'📝', tag:'メモ・日記',       soon:true  },
+      ownly:   { name:'Ownly',   icon:'🏠', tag:'持ち物管理',       soon:true  },
+    };
+    var APP_COLORS = {
+      subly:'#3d6b8e', medly:'#7c5cbf', fitly:'#4a8c5a', stockly:'#7c9c3c',
+      cookly:'#bf6c3c', learnly:'#3c8cbf', renewly:'#bf9c3c', mangaly:'#bf3c8c',
+      readly:'#3c5cbf', ownly:'#9c9c3c'
+    };
+
+    var _defaultPrefs = { order: APP_KEYS.slice(), hidden: [] };
+    var bentoPrefs = JSON.parse(localStorage.getItem('bentoPrefs') || 'null') || JSON.parse(JSON.stringify(_defaultPrefs));
+
+    function applyBentoPrefs() {
+      var bento = document.querySelector('.bento');
+      var proCard = document.getElementById('proCard');
+      bentoPrefs.order.forEach(function(key) {
+        var el = bento.querySelector('.bc.' + key);
+        if (el) bento.insertBefore(el, proCard);
+      });
+      APP_KEYS.forEach(function(key) {
+        var el = bento.querySelector('.bc.' + key);
+        if (!el) return;
+        el.style.display = bentoPrefs.hidden.indexOf(key) !== -1 ? 'none' : '';
+      });
+    }
+
+    var _editOrder = [], _editHidden = [];
+
+    function openBentoEdit() {
+      _editOrder  = bentoPrefs.order.slice();
+      _editHidden = bentoPrefs.hidden.slice();
+      renderBentoEditList();
+      document.getElementById('bentoEditModal').classList.add('show');
+    }
+    function closeBentoEdit() {
+      document.getElementById('bentoEditModal').classList.remove('show');
+    }
+
+    function renderBentoEditList() {
+      document.getElementById('bentoEditList').innerHTML = _editOrder.map(function(key, i) {
+        var m = APP_META[key] || {};
+        var hidden = _editHidden.indexOf(key) !== -1;
+        return '<div class="bento-edit-item'+(hidden?' is-hidden':'')+'">'
+          +'<button class="bento-edit-vis" onclick="toggleBentoHidden(\''+key+'\')">'+(hidden?'🚫':'👁')+'</button>'
+          +'<div class="bento-edit-dot" style="background:'+(APP_COLORS[key]||'#666')+'"></div>'
+          +'<div class="bento-edit-info">'
+            +'<p class="bento-edit-name">'+(m.icon||'')+'  '+(m.name||key)+'</p>'
+            +'<p class="bento-edit-tag">'+(m.tag||'')+(m.soon?' · Soon':'')+'</p>'
+          +'</div>'
+          +'<div class="bento-edit-arrows">'
+            +'<button class="bento-edit-arrow" onclick="moveBentoItem('+i+',-1)"'+(i===0?' disabled':'')+'>▲</button>'
+            +'<button class="bento-edit-arrow" onclick="moveBentoItem('+i+',1)"'+(i===_editOrder.length-1?' disabled':'')+'>▼</button>'
+          +'</div>'
+          +'</div>';
+      }).join('');
+    }
+
+    function toggleBentoHidden(key) {
+      var idx = _editHidden.indexOf(key);
+      if (idx === -1) _editHidden.push(key);
+      else _editHidden.splice(idx, 1);
+      renderBentoEditList();
+    }
+
+    function moveBentoItem(i, dir) {
+      var j = i + dir;
+      if (j < 0 || j >= _editOrder.length) return;
+      var tmp = _editOrder[i]; _editOrder[i] = _editOrder[j]; _editOrder[j] = tmp;
+      renderBentoEditList();
+    }
+
+    function saveBentoPrefs() {
+      bentoPrefs.order  = _editOrder.slice();
+      bentoPrefs.hidden = _editHidden.slice();
+      localStorage.setItem('bentoPrefs', JSON.stringify(bentoPrefs));
+      applyBentoPrefs();
+      closeBentoEdit();
+      showToast('✅ ダッシュボードを保存しました');
+    }
+
+    function resetBentoPrefs() {
+      bentoPrefs = JSON.parse(JSON.stringify(_defaultPrefs));
+      localStorage.removeItem('bentoPrefs');
+      applyBentoPrefs();
+      closeBentoEdit();
+      showToast('↩️ デフォルトに戻しました');
+    }
+
+    applyBentoPrefs();
   </script>
 
 </body>
