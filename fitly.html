@@ -306,6 +306,22 @@
     .wd-menu-chip-num  { font-size:.58rem; color:var(--muted); letter-spacing:.05em; margin-bottom:.15rem; }
     .wd-menu-chip-name { font-size:.82rem; font-weight:500; color:var(--text); }
     .wd-menu-chip-meta { font-size:.65rem; color:var(--muted); margin-top:.2rem; }
+    /* Menu list (replaces horizontal chips) */
+    .wd-menu-list { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; margin-bottom:1rem; }
+    .wd-menu-item { display:flex; align-items:center; gap:.85rem; padding:.85rem 1rem; border-bottom:1px solid var(--border); transition:background .15s; }
+    .wd-menu-item:last-child { border-bottom:none; }
+    .wd-menu-item:active { background:var(--surface2); }
+    .wd-menu-item-icon { width:40px; height:40px; border-radius:12px; background:rgba(94,207,160,.1); display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; }
+    .wd-menu-item-body { flex:1; min-width:0; }
+    .wd-menu-item-num  { font-size:.6rem; color:var(--muted); letter-spacing:.05em; }
+    .wd-menu-item-name { font-size:.9rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .wd-menu-item-meta { font-size:.68rem; color:var(--muted); margin-top:.1rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .wd-menu-item-start { background:var(--accent); color:#0c0c18; border:none; border-radius:10px; width:38px; height:38px; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-weight:700; transition:all .15s; }
+    .wd-menu-item-start:active { transform:scale(.88); }
+    /* Menu icon picker */
+    .menu-icon-row { display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.5rem; }
+    .menu-icon-btn { width:36px; height:36px; border-radius:9px; border:1px solid transparent; background:var(--surface2); font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+    .menu-icon-btn.selected { border-color:var(--accent); background:rgba(94,207,160,.12); }
     /* Hero summary card */
     .wd-hero { background:linear-gradient(145deg,#162416 0%,#0e1a0a 100%); border:1px solid rgba(94,207,160,.38); border-radius:24px; padding:1.5rem; margin-bottom:1.25rem; position:relative; overflow:hidden; box-shadow:0 0 60px rgba(94,207,160,.1),inset 0 1px 0 rgba(255,255,255,.07),0 8px 40px rgba(0,0,0,.5); }
     .wd-hero::before { content:''; position:absolute; top:-70px; right:-70px; width:240px; height:240px; background:radial-gradient(circle,rgba(94,207,160,.45) 0%,transparent 60%); border-radius:50%; }
@@ -402,7 +418,7 @@
 
     <!-- メニューから始める -->
     <p class="section-label" style="margin-bottom:.6rem;">メニューから始める</p>
-    <div class="wd-menu-row" id="wdMenuRow"></div>
+    <div class="wd-menu-list" id="wdMenuList"></div>
     <button class="btn-start-custom" onclick="startWorkoutCustom()" style="margin-bottom:1.25rem;">＋ 種目を選んで始める</button>
 
     <!-- 月間カレンダー -->
@@ -731,6 +747,11 @@
       <label class="form-label">メニュー名</label>
       <input type="text" id="mbName" placeholder="例：胸の日・脚の日・全身A" style="width:100%;">
     </div>
+    <div class="form-group">
+      <label class="form-label">アイコン</label>
+      <input type="text" id="mbIcon" placeholder="💪" maxlength="8" style="width:100%;" oninput="syncMenuIconBtns('mbIcon','mbIconBtns')">
+      <div class="menu-icon-row" id="mbIconBtns"></div>
+    </div>
     <!-- 選択済み種目 -->
     <div id="mbSelectedWrap" style="margin-bottom:.75rem;display:none;">
       <p class="section-label" style="margin-bottom:.5rem;">選択済み種目</p>
@@ -757,6 +778,11 @@
     <div class="form-group">
       <label class="form-label">メニュー名</label>
       <input type="text" id="menuName" placeholder="例：胸の日・脚の日" style="width:100%;">
+    </div>
+    <div class="form-group">
+      <label class="form-label">アイコン</label>
+      <input type="text" id="menuIconInput" placeholder="💪" maxlength="8" style="width:100%;" oninput="syncMenuIconBtns('menuIconInput','menuIconBtns')">
+      <div class="menu-icon-row" id="menuIconBtns"></div>
     </div>
     <button class="btn-primary" onclick="saveMenu()">保存する</button>
     <button class="btn-cancel" onclick="closeModal('saveMenuModal')">キャンセル</button>
@@ -1227,6 +1253,7 @@ function init() {
   renderWorkoutDashboard();
   renderExerciseModal();
   renderMenuList();
+  initMenuIconPickers();
   renderHistory();
   renderBodyWeightTab();
   renderAnalysis();
@@ -1382,6 +1409,30 @@ function renderCalendar() {
     : '';
 }
 
+// ── Menu Icon Picker ──
+var MENU_ICONS = ['💪','🏋️','🦵','🏃','🧘','🚴','🥊','⚡','🔥','🏆','💥','🎯','🧗','🤸','⛹️','🏊','🏸','⚽','🦾','❤️'];
+
+function initMenuIconPickers() {
+  [['menuIconInput','menuIconBtns'],['mbIcon','mbIconBtns']].forEach(function(pair) {
+    var inputId = pair[0], rowId = pair[1];
+    var row = document.getElementById(rowId); if (!row) return;
+    row.innerHTML = MENU_ICONS.map(function(e){
+      return '<button type="button" class="menu-icon-btn" data-emoji="'+e+'" data-input="'+inputId+'" data-row="'+rowId+'">'+e+'</button>';
+    }).join('');
+    row.addEventListener('click', function(evt) {
+      var btn = evt.target.closest('.menu-icon-btn'); if (!btn) return;
+      document.getElementById(btn.dataset.input).value = btn.dataset.emoji;
+      syncMenuIconBtns(btn.dataset.input, btn.dataset.row);
+    });
+  });
+}
+function syncMenuIconBtns(inputId, rowId) {
+  var cur = (document.getElementById(inputId)||{}).value || '';
+  document.querySelectorAll('#'+rowId+' .menu-icon-btn').forEach(function(btn){
+    btn.classList.toggle('selected', btn.dataset.emoji === cur.trim());
+  });
+}
+
 // ── Dashboard Helpers ──
 function calcStreak() {
   if (!workoutHistory.length) return 0;
@@ -1534,21 +1585,24 @@ function renderWorkoutDashboard() {
   }
 
   // ── メニュー一覧 ──
-  var menuRow = document.getElementById('wdMenuRow');
+  var menuEl = document.getElementById('wdMenuList');
   if (savedMenus.length) {
-    menuRow.innerHTML = savedMenus.map(function(m, i) {
+    menuEl.innerHTML = savedMenus.map(function(m, i) {
+      var icon = m.icon || '💪';
       var exNames = m.exercises.slice(0,3).map(function(e){ return e.name; }).join('・');
       var more = m.exercises.length > 3 ? ' 他'+(m.exercises.length-3)+'種' : '';
-      return '<button class="wd-menu-chip" onclick="startFromMenu('+i+')">'
-        +'<p class="wd-menu-chip-num">マイセット '+(i+1)+'</p>'
-        +'<p class="wd-menu-chip-name">'+m.name+'</p>'
-        +'<p class="wd-menu-chip-meta">'+exNames+more+'</p>'
-        +'</button>';
+      return '<div class="wd-menu-item">'
+        +'<div class="wd-menu-item-icon">'+icon+'</div>'
+        +'<div class="wd-menu-item-body">'
+          +'<p class="wd-menu-item-num">マイセット '+(i+1)+'</p>'
+          +'<p class="wd-menu-item-name">'+m.name+'</p>'
+          +'<p class="wd-menu-item-meta">'+exNames+more+'</p>'
+        +'</div>'
+        +'<button class="wd-menu-item-start" onclick="startFromMenu('+i+')">▶</button>'
+        +'</div>';
     }).join('');
-    menuRow.style.display = 'flex';
   } else {
-    menuRow.innerHTML = '<p style="font-size:.78rem;color:var(--muted);">保存済みメニューがありません。メニュータブから作成できます。</p>';
-    menuRow.style.display = 'block';
+    menuEl.innerHTML = '<p style="font-size:.78rem;color:var(--muted);padding:.85rem 1rem;">保存済みメニューがありません。メニュータブから作成できます。</p>';
   }
 }
 
@@ -2567,12 +2621,15 @@ function openMenuBuilder(editIdx) {
     var m = savedMenus[editIdx];
     mbDraftExercises = m.exercises.map(function(e){ return Object.assign({}, e); });
     document.getElementById('mbName').value = m.name;
+    document.getElementById('mbIcon').value = m.icon || '💪';
     document.getElementById('menuBuilderTitle').textContent = 'メニューを編集';
   } else {
     mbDraftExercises = [];
     document.getElementById('mbName').value = '';
+    document.getElementById('mbIcon').value = '💪';
     document.getElementById('menuBuilderTitle').textContent = 'メニューを作成';
   }
+  syncMenuIconBtns('mbIcon','mbIconBtns');
   mbSelectedCat = 'all';
   mbSelectedPart = 'all';
   document.getElementById('mbSearch').value = '';
@@ -2709,7 +2766,8 @@ function saveMenuBuilder() {
   var name = document.getElementById('mbName').value.trim();
   if (!name) { showToast('メニュー名を入力してください'); return; }
   if (!mbDraftExercises.length) { showToast('種目を1つ以上追加してください'); return; }
-  var entry = { name: name, exercises: mbDraftExercises.slice() };
+  var icon = (document.getElementById('mbIcon').value||'').trim()||'💪';
+  var entry = { name: name, icon: icon, exercises: mbDraftExercises.slice() };
   if (mbEditIdx >= 0) {
     savedMenus[mbEditIdx] = entry;
   } else {
@@ -2731,9 +2789,14 @@ function renderMenuList() {
     return;
   }
   el.innerHTML=savedMenus.map(function(m,i){
+    var icon = m.icon || '💪';
     var tags=m.exercises.map(function(e){ return '<span class="menu-ex-tag">'+e.name+'</span>'; }).join('');
     return '<div class="menu-card">'
-      +'<div class="menu-card-header"><p class="menu-card-name">'+m.name+'</p>'
+      +'<div class="menu-card-header">'
+      +'<div style="display:flex;align-items:center;gap:.6rem;">'
+      +'<div style="width:36px;height:36px;border-radius:10px;background:rgba(94,207,160,.1);display:flex;align-items:center;justify-content:center;font-size:1.15rem;flex-shrink:0;">'+icon+'</div>'
+      +'<div><p class="menu-card-name">'+m.name+'</p><p style="font-size:.62rem;color:var(--muted);margin-top:.1rem;">マイセット '+(i+1)+'</p></div>'
+      +'</div>'
       +'<div style="display:flex;gap:.4rem;">'
       +'<button class="btn-use-menu" onclick="useMenu('+i+')">開始</button>'
       +'<button class="btn-icon" onclick="openMenuBuilder('+i+')" title="編集">✏️</button>'
@@ -2751,13 +2814,16 @@ function openSaveMenu() {
     showToast('無料プランは'+FREE_MENU_LIMIT+'件まで');
     return;
   }
+  document.getElementById('menuIconInput').value = '💪';
+  syncMenuIconBtns('menuIconInput','menuIconBtns');
   document.getElementById('saveMenuModal').classList.add('show');
 }
 
 function saveMenu() {
   var name=document.getElementById('menuName').value.trim();
   if (!name) { showToast('メニュー名を入力してください'); return; }
-  savedMenus.push({name:name, exercises:currentWorkout.exercises.map(function(e){ return {id:e.id,name:e.name,cat:e.cat,part:e.part,keyword:e.keyword||''}; })});
+  var icon=(document.getElementById('menuIconInput').value||'').trim()||'💪';
+  savedMenus.push({name:name, icon:icon, exercises:currentWorkout.exercises.map(function(e){ return {id:e.id,name:e.name,cat:e.cat,part:e.part,keyword:e.keyword||''}; })});
   localStorage.setItem('fitlyMenus',JSON.stringify(savedMenus));
   dbSave('menus', savedMenus);
   closeModal('saveMenuModal');
