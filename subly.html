@@ -90,15 +90,17 @@
     .list-section { padding:0 1.25rem; }
     .section-label { font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:.75rem; }
 
-    .sub-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:.625rem; display:flex; align-items:center; gap:.9rem; animation:slideIn .3s ease forwards; }
+    .sub-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:.625rem; display:flex; flex-direction:column; gap:.5rem; animation:slideIn .3s ease forwards; }
     @keyframes slideIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+    .sub-card-top { display:flex; align-items:center; gap:.9rem; }
+    .sub-card-bot { display:flex; align-items:center; justify-content:space-between; gap:.5rem; padding-left:calc(44px + .9rem); }
 
     .sub-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0; overflow:hidden; background:var(--surface2); }
     .sub-icon img { width:28px; height:28px; object-fit:contain; }
 
-    .sub-info { flex:1; min-width:0; }
-    .sub-name { font-size:.95rem; font-weight:500; word-break:break-word; }
-    .sub-meta { font-size:.72rem; color:var(--muted); margin-top:.2rem; display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+    .sub-name { flex:1; font-size:.95rem; font-weight:500; }
+    .sub-meta { font-size:.72rem; color:var(--muted); display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
     .payment-badge { font-size:.62rem; padding:.1rem .4rem; border-radius:6px; background:var(--surface3); color:var(--muted); }
 
     .days-badge { font-size:.65rem; font-weight:500; padding:.15rem .45rem; border-radius:20px; white-space:nowrap; }
@@ -111,7 +113,7 @@
     .sub-cycle { font-size:.68rem; color:var(--muted); font-weight:300; }
     .sub-monthly-small { font-size:.68rem; color:var(--accent); margin-top:.1rem; }
 
-    .sub-actions { display:flex; gap:.4rem; }
+    .sub-actions { display:flex; gap:.4rem; flex-shrink:0; }
     .btn-icon { width:30px; height:30px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); font-size:.75rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
 
     .empty-state { text-align:center; padding:3rem 2rem; color:var(--muted); }
@@ -802,13 +804,16 @@ function renderList() {
           + (cycleToMonths(s)!==1&&me>0&&cur==='JPY'?'<p class="sub-monthly-small">¥'+me.toLocaleString()+'/月換算</p>':'');
       var payBadge = s.payment ? '<span class="payment-badge">' + (PAYMENT_LABELS[s.payment]||s.payment) + '</span>' : '';
       return '<div class="sub-card">'
+        + '<div class="sub-card-top">'
         + iconHTML(s)
-        + '<div class="sub-info"><p class="sub-name">' + s.name + '</p>'
-        + '<div class="sub-meta"><span>次回 ' + formatDate(s.nextBillingDate) + '</span>' + daysBadge(days) + payBadge + '</div></div>'
-        + '<div class="sub-right">' + amountHTML + '</div>'
+        + '<p class="sub-name">' + s.name + '</p>'
         + '<div class="sub-actions">'
         + '<button class="btn-icon" onclick="editSub(\'' + s.id + '\')">✏️</button>'
         + '<button class="btn-icon" onclick="deleteSub(\'' + s.id + '\')">🗑</button>'
+        + '</div></div>'
+        + '<div class="sub-card-bot">'
+        + '<div class="sub-meta"><span>次回 ' + formatDate(s.nextBillingDate) + '</span>' + daysBadge(days) + payBadge + '</div>'
+        + '<div class="sub-right">' + amountHTML + '</div>'
         + '</div></div>';
     }).join('');
   }
