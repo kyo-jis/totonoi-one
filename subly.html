@@ -201,6 +201,9 @@
     .preset-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:.4rem; }
     .preset-btn { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:.6rem .3rem; cursor:pointer; font-family:var(--font); text-align:center; transition:border-color .15s; display:flex; flex-direction:column; align-items:center; gap:.3rem; }
     .preset-btn:active, .preset-btn.selected { border-color:var(--accent); }
+    .emoji-palette { display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.5rem; }
+    .emoji-btn { width:36px; height:36px; border-radius:9px; border:1px solid var(--border); background:var(--surface2); font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:border-color .15s; flex-shrink:0; }
+    .emoji-btn:active, .emoji-btn.selected { border-color:var(--accent); background:rgba(108,142,255,.12); }
     .preset-btn .p-icon { width:28px; height:28px; border-radius:7px; overflow:hidden; display:flex; align-items:center; justify-content:center; background:var(--surface3); }
     .preset-btn .p-icon img { width:20px; height:20px; object-fit:contain; }
     .preset-btn .p-name { font-size:.62rem; color:var(--text); }
@@ -443,7 +446,8 @@
     </div>
     <div class="form-group">
       <label>アイコン（絵文字）</label>
-      <input type="text" id="fIcon" placeholder="🎬" maxlength="2">
+      <input type="text" id="fIcon" placeholder="🎬" maxlength="2" oninput="syncEmojiPalette()">
+      <div class="emoji-palette" id="emojiPalette"></div>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -603,7 +607,7 @@ var PRESETS = [
   { cat:'AI・仕事', items:[
     {name:'Adobe CC',     icon:'🎨', domain:'adobe.com',      amount:6480, cycle:'monthly'},
     {name:'ChatGPT Plus', icon:'🤖', domain:'openai.com',     amount:3000, cycle:'monthly'},
-    {name:'Claude Pro',   icon:'💡', domain:'anthropic.com',  amount:3000, cycle:'monthly'},
+    {name:'Claude Pro',   icon:'✨', domain:'anthropic.com',  amount:3000, cycle:'monthly'},
     {name:'Notion',       icon:'📝', domain:'notion.so',      amount:1650, cycle:'monthly'},
     {name:'GitHub',       icon:'🐙', domain:'github.com',     amount:1000, cycle:'monthly'},
     {name:'Canva Pro',    icon:'🖌️', domain:'canva.com',      amount:1500, cycle:'monthly'},
@@ -615,6 +619,33 @@ var PRESETS = [
     {name:'Uber One',    icon:'🚗', domain:'uber.com',       amount:998,  cycle:'monthly'},
   ]},
 ];
+
+var EMOJI_PALETTE = [
+  '🎬','📺','🎵','🎶','🎧','🎮','🕹️','📚','📰','🎙️',
+  '☁️','📂','🗂️','📝','🐙','🔐','🛡️','🔒','🎨','🖌️',
+  '📹','💻','🤖','✨','🌐','⭐','🚗','🍎','▶️','📡',
+  '💳','🏠','✈️','🏋️','💊','🛒','🎓','🏆','🔔','💰',
+];
+
+function buildEmojiPalette() {
+  var el = document.getElementById('emojiPalette');
+  if (!el) return;
+  el.innerHTML = EMOJI_PALETTE.map(function(e) {
+    return '<button type="button" class="emoji-btn" onclick="pickEmoji(\'' + e + '\')">' + e + '</button>';
+  }).join('');
+}
+
+function pickEmoji(e) {
+  document.getElementById('fIcon').value = e;
+  syncEmojiPalette();
+}
+
+function syncEmojiPalette() {
+  var cur = document.getElementById('fIcon').value.trim();
+  document.querySelectorAll('.emoji-btn').forEach(function(btn) {
+    btn.classList.toggle('selected', btn.textContent === cur);
+  });
+}
 
 var subs = JSON.parse(localStorage.getItem('subs') || '[]');
 var payHistory = JSON.parse(localStorage.getItem('subHistory') || '[]');
@@ -772,7 +803,7 @@ function historyMonthTotal(year, month) {
 // ── Init ──
 function init() {
   autoRecordHistory();
-  renderList(); renderCalendar(); buildPresets();
+  renderList(); renderCalendar(); buildPresets(); buildEmojiPalette();
   document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
   updateProUI();
 }
@@ -1018,6 +1049,7 @@ function selectPreset(btn,name,icon,amount,cycle,domain) {
   document.getElementById('fAmount').value=amount;
   document.getElementById('fCycle').value=cycle;
   document.getElementById('customCycleWrap').className='custom-cycle-wrap';
+  syncEmojiPalette();
   document.getElementById('fName').scrollIntoView({behavior:'smooth', block:'center'});
 }
 
@@ -1034,6 +1066,7 @@ function openModal() {
   document.getElementById('nextBillHint').textContent='';
   document.getElementById('customCycleWrap').className='custom-cycle-wrap';
   document.querySelectorAll('.preset-btn').forEach(function(b){ b.classList.remove('selected'); });
+  syncEmojiPalette();
   document.getElementById('modalOverlay').classList.add('show');
 }
 function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); }
@@ -1059,6 +1092,7 @@ function editSub(id) {
   } else {
     document.getElementById('customCycleWrap').className='custom-cycle-wrap';
   }
+  syncEmojiPalette();
   document.getElementById('modalOverlay').classList.add('show');
 }
 
