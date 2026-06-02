@@ -1,0 +1,22 @@
+{
+  "name": "Learnly — 学習記録",
+  "short_name": "Learnly",
+  "start_url": "/learnly",
+  "display": "standalone",
+  "background_color": "#0c0c18",
+  "theme_color": "#0c0c18",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-learnly-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-learnly-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
