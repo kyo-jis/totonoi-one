@@ -980,6 +980,7 @@ var defaultRestTime = parseInt(localStorage.getItem('fitlyRestTime') || '90');
 if (isNaN(defaultRestTime) || defaultRestTime < 5) defaultRestTime = 90;
 var restTimeLeft = 0;
 var restTotalTime = defaultRestTime;
+var currentRestExId = null;
 var timerSeconds = defaultRestTime;
 var timerTotal = defaultRestTime;
 var timerInterval = null;
@@ -1842,6 +1843,7 @@ function completeSet(ei, si) {
 function startRestTimer(seconds, exerciseName, exId) {
   if (restTimerInterval) clearInterval(restTimerInterval);
   seconds = (typeof seconds === 'number' && !isNaN(seconds)) ? seconds : defaultRestTime;
+  currentRestExId = exId;
   restTimeLeft = seconds;
   restTotalTime = seconds;
   document.getElementById('restExerciseName').textContent = exerciseName + ' — 次のセット準備';
@@ -1856,8 +1858,9 @@ function startRestTimer(seconds, exerciseName, exId) {
       playSound();
       if (navigator.vibrate) navigator.vibrate([200,100,200]);
       showToast('🔔 休憩終了！次のセットへ');
-      // 休憩時間を記憶
-      if (exId && exerciseSettings[exId]) {
+      // 休憩時間を種目別に記憶
+      if (exId) {
+        if (!exerciseSettings[exId]) exerciseSettings[exId] = {};
         exerciseSettings[exId].restTime = restTotalTime;
         localStorage.setItem('exerciseSettings', JSON.stringify(exerciseSettings));
       }
@@ -1872,6 +1875,14 @@ function updateRestDisplay() {
   document.getElementById('restProgressBar').style.width = pct+'%';
 }
 
+function saveExRestTime(s) {
+  if (currentRestExId) {
+    if (!exerciseSettings[currentRestExId]) exerciseSettings[currentRestExId] = {};
+    exerciseSettings[currentRestExId].restTime = s;
+    localStorage.setItem('exerciseSettings', JSON.stringify(exerciseSettings));
+  }
+}
+
 function setRestTime(s) {
   restTimeLeft = s; restTotalTime = s;
   document.querySelectorAll('.rest-preset').forEach(function(b){ b.classList.remove('active'); });
@@ -1879,6 +1890,7 @@ function setRestTime(s) {
   updateRestDisplay();
   if (restTimerInterval) { clearInterval(restTimerInterval); }
   startRestTimerFromCurrent();
+  saveExRestTime(s);
   // タイマータブにも同期
   saveRestTimeSetting(s);
   timerSeconds = s; timerTotal = s;
@@ -1903,6 +1915,7 @@ function adjustRest(delta) {
   restTimeLeft = Math.max(0, restTimeLeft + delta);
   restTotalTime = Math.max(15, restTotalTime + delta);
   updateRestDisplay();
+  saveExRestTime(restTotalTime);
 }
 
 function skipRest() {
