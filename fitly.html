@@ -455,12 +455,12 @@
   </div>
   <div class="timer-adjust">
     <div>
-      <button class="timer-adj-btn" onclick="adjustTimer(-5)">−</button>
-      <p class="timer-adj-label" style="margin-top:.3rem;">5秒</p>
+      <button class="timer-adj-btn" onclick="adjustTimer(-5)">-5</button>
+      <p class="timer-adj-label" style="margin-top:.3rem;">秒</p>
     </div>
     <div class="timer-adj-label" id="timerSetLabel">休憩: 90秒</div>
     <div>
-      <button class="timer-adj-btn" onclick="adjustTimer(5)">＋</button>
+      <button class="timer-adj-btn" onclick="adjustTimer(5)">+5</button>
       <p class="timer-adj-label" style="margin-top:.3rem;">5秒</p>
     </div>
   </div>
@@ -477,25 +477,25 @@
       <div>
         <p class="timer-adj-label" style="margin-bottom:.35rem;text-align:center;">動作（秒）</p>
         <div style="display:flex;align-items:center;gap:.35rem;">
-          <button class="timer-adj-btn" style="width:32px;height:32px;font-size:.9rem;" onclick="adjInterval('work',-5)">−</button>
+          <button class="timer-adj-btn" style="width:32px;height:32px;font-size:.9rem;" onclick="adjInterval('work',-5)">-5</button>
           <span id="ivWorkSec" style="flex:1;text-align:center;font-size:1.1rem;font-weight:600;">30</span>
-          <button class="timer-adj-btn" style="width:32px;height:32px;font-size:.9rem;" onclick="adjInterval('work',5)">＋</button>
+          <button class="timer-adj-btn" style="width:32px;height:32px;font-size:.9rem;" onclick="adjInterval('work',5)">+5</button>
         </div>
       </div>
       <div>
         <p class="timer-adj-label" style="margin-bottom:.35rem;text-align:center;">休憩（秒）</p>
         <div style="display:flex;align-items:center;gap:.35rem;">
-          <button class="timer-adj-btn" style="width:32px;height:32px;font-size:.9rem;" onclick="adjInterval('rest',-5)">−</button>
+          <button class="timer-adj-btn" style="width:32px;height:32px;font-size:.9rem;" onclick="adjInterval('rest',-5)">-5</button>
           <span id="ivRestSec" style="flex:1;text-align:center;font-size:1.1rem;font-weight:600;">5</span>
-          <button class="timer-adj-btn" style="width:32px;height:32px;font-size:.9rem;" onclick="adjInterval('rest',5)">＋</button>
+          <button class="timer-adj-btn" style="width:32px;height:32px;font-size:.9rem;" onclick="adjInterval('rest',5)">+5</button>
         </div>
       </div>
       <div>
         <p class="timer-adj-label" style="margin-bottom:.35rem;text-align:center;">セット数</p>
         <div style="display:flex;align-items:center;gap:.35rem;">
-          <button class="timer-adj-btn" style="width:32px;height:32px;font-size:.9rem;" onclick="adjInterval('rounds',-1)">−</button>
+          <button class="timer-adj-btn" style="width:32px;height:32px;font-size:.9rem;" onclick="adjInterval('rounds',-1)">-1</button>
           <span id="ivRounds" style="flex:1;text-align:center;font-size:1.1rem;font-weight:600;">5</span>
-          <button class="timer-adj-btn" style="width:32px;height:32px;font-size:.9rem;" onclick="adjInterval('rounds',1)">＋</button>
+          <button class="timer-adj-btn" style="width:32px;height:32px;font-size:.9rem;" onclick="adjInterval('rounds',1)">+1</button>
         </div>
       </div>
     </div>
@@ -977,6 +977,7 @@ var currentWorkout = {exercises:[], startTime:null, running:false};
 var workoutTimerInterval = null;
 var restTimerInterval = null;
 var defaultRestTime = parseInt(localStorage.getItem('fitlyRestTime') || '90');
+if (isNaN(defaultRestTime) || defaultRestTime < 5) defaultRestTime = 90;
 var restTimeLeft = 0;
 var restTotalTime = defaultRestTime;
 var timerSeconds = defaultRestTime;
@@ -1158,6 +1159,10 @@ function checkAndUpdatePRs(exercises) {
 function init() {
   buildCatFilter();
   buildSoundSelector();
+  // インターバルタイマーの初期表示を復元
+  document.getElementById('ivWorkSec').textContent = ivState.work;
+  document.getElementById('ivRestSec').textContent = ivState.rest;
+  document.getElementById('ivRounds').textContent  = ivState.rounds;
   // 保存済み休憩時間をタイマーUIに反映
   timerSeconds = defaultRestTime;
   timerTotal   = defaultRestTime;
@@ -2065,15 +2070,25 @@ function selectSound(id) {
 }
 
 // ── Interval Timer ──
-var ivState = { work:30, rest:5, rounds:5, currentRound:0, phase:'work', timeLeft:0, running:false };
+// インターバルタイマー設定をlocalStorageから復元
+var _ivSaved = JSON.parse(localStorage.getItem('fitlyIvState') || '{}');
+var ivState = {
+  work:   parseInt(_ivSaved.work)   || 30,
+  rest:   parseInt(_ivSaved.rest)   !== undefined ? (parseInt(_ivSaved.rest) || 0) : 5,
+  rounds: parseInt(_ivSaved.rounds) || 5,
+  currentRound:0, phase:'work', timeLeft:0, running:false
+};
 var ivInterval = null;
 
 function adjInterval(key, delta) {
   if (key === 'rounds') ivState[key] = Math.max(1, ivState[key] + delta);
+  else if (key === 'rest') ivState[key] = Math.max(0, ivState[key] + delta);
   else ivState[key] = Math.max(5, ivState[key] + delta);
   document.getElementById('ivWorkSec').textContent  = ivState.work;
   document.getElementById('ivRestSec').textContent  = ivState.rest;
   document.getElementById('ivRounds').textContent   = ivState.rounds;
+  // 設定をlocalStorageに保存
+  localStorage.setItem('fitlyIvState', JSON.stringify({ work: ivState.work, rest: ivState.rest, rounds: ivState.rounds }));
   if (!ivState.running) resetIntervalTimer();
 }
 
