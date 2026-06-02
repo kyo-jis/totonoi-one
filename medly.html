@@ -95,6 +95,8 @@
     .item-detail span { color:var(--text); }
 
     .btn-take { background:var(--accent); color:#1a1a24; border:none; border-radius:8px; padding:.4rem .85rem; font-size:.78rem; font-weight:600; font-family:var(--font); cursor:pointer; }
+    .btn-undo { background:none; border:1px solid var(--border); border-radius:8px; padding:.3rem .6rem; font-size:.7rem; color:var(--muted); font-family:var(--font); cursor:pointer; transition:all .15s; }
+    .btn-undo:active { background:var(--surface2); color:var(--text); }
     .btn-restock { background:var(--green); color:#1a1a24; border:none; border-radius:8px; padding:.4rem .85rem; font-size:.78rem; font-weight:600; font-family:var(--font); cursor:pointer; }
 
     /* Timing badges */
@@ -934,7 +936,10 @@ function renderSchedule() {
           +'<p style="font-size:.7rem;color:var(--muted);">'+item.daily+item.unit+'</p></div>'
           +'</div>'
           +(taken
-            ? '<span style="font-size:.8rem;color:var(--green);font-weight:500;">✓ 服用済み</span>'
+            ? '<div style="display:flex;align-items:center;gap:.4rem;">'
+              +'<span style="font-size:.8rem;color:var(--green);font-weight:500;">✓ 服用済み</span>'
+              +'<button class="btn-undo" onclick="undoTake(\''+item.id+'\',\''+t.id+'\')">取り消し</button>'
+              +'</div>'
             : '<button class="btn-take" onclick="takeFromSchedule(\''+item.id+'\',\''+t.id+'\')">服用</button>')
           +'</div>';
       }).join('')
@@ -1377,6 +1382,21 @@ function takeFromSchedule(id, timing) {
   updateSummary();
   showToast(item.icon+' '+item.name+' 服用しました');
   if (daysRemaining(item) <= item.alert) showToast('⚠️ 残り少なくなっています！購入をご検討ください');
+}
+
+function undoTake(id, timing) {
+  var key = id + '_' + timing;
+  if (!dailyTaken.taken[key]) return;
+  var item = items.find(function(x){ return x.id===id; });
+  if (!item) return;
+  delete dailyTaken.taken[key];
+  item.current = item.current + item.daily;
+  save();
+  saveDailyTaken();
+  renderSchedule();
+  renderList();
+  updateSummary();
+  showToast('↩️ '+item.name+' の服用を取り消しました');
 }
 
 function formatDate(str) {
