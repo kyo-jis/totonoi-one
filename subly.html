@@ -204,6 +204,10 @@
     .emoji-palette { display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.5rem; }
     .emoji-btn { width:36px; height:36px; border-radius:9px; border:1px solid var(--border); background:var(--surface2); font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:border-color .15s; flex-shrink:0; }
     .emoji-btn:active, .emoji-btn.selected { border-color:var(--accent); background:rgba(108,142,255,.12); }
+    .icon-preview-box { display:flex; align-items:center; gap:.75rem; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:.65rem .9rem; }
+    .icon-preview-img-wrap { width:38px; height:38px; border-radius:10px; background:var(--surface3); display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0; }
+    .icon-preview-img-wrap img { width:26px; height:26px; object-fit:contain; }
+    .icon-preview-label { font-size:.82rem; color:var(--muted); flex:1; }
     .preset-btn .p-icon { width:28px; height:28px; border-radius:7px; overflow:hidden; display:flex; align-items:center; justify-content:center; background:var(--surface3); }
     .preset-btn .p-icon img { width:20px; height:20px; object-fit:contain; }
     .preset-btn .p-name { font-size:.62rem; color:var(--text); }
@@ -445,9 +449,20 @@
       <input type="text" id="fName" placeholder="例：Netflix">
     </div>
     <div class="form-group">
-      <label>アイコン（絵文字）</label>
-      <input type="text" id="fIcon" placeholder="🎬" maxlength="8" oninput="syncEmojiPalette()">
-      <div class="emoji-palette" id="emojiPalette"></div>
+      <label>アイコン</label>
+      <div id="iconPreviewWrap" style="display:none">
+        <div class="icon-preview-box">
+          <div class="icon-preview-img-wrap">
+            <img id="iconPreviewImg" src="" alt="">
+            <span id="iconPreviewFb" style="display:none;font-size:1.3rem"></span>
+          </div>
+          <p id="iconPreviewLabel" class="icon-preview-label"></p>
+        </div>
+      </div>
+      <div id="iconCustomWrap">
+        <input type="text" id="fIcon" placeholder="絵文字を入力 or 下から選択" maxlength="8" oninput="syncEmojiPalette()">
+        <div class="emoji-palette" id="emojiPalette"></div>
+      </div>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -646,6 +661,24 @@ function syncEmojiPalette() {
   document.querySelectorAll('.emoji-btn').forEach(function(btn) {
     btn.classList.toggle('selected', btn.dataset.emoji === cur);
   });
+}
+
+function showIconPreview(icon, domain, name) {
+  document.getElementById('iconCustomWrap').style.display = 'none';
+  document.getElementById('iconPreviewWrap').style.display = 'block';
+  var img = document.getElementById('iconPreviewImg');
+  var fb  = document.getElementById('iconPreviewFb');
+  img.style.display = '';
+  fb.style.display  = 'none';
+  fb.textContent = icon;
+  img.src = faviconUrl(domain);
+  img.onerror = function() { img.style.display = 'none'; fb.style.display = ''; };
+  document.getElementById('iconPreviewLabel').textContent = name + ' のアイコンを使用';
+}
+
+function showIconCustom() {
+  document.getElementById('iconPreviewWrap').style.display = 'none';
+  document.getElementById('iconCustomWrap').style.display = 'block';
 }
 
 var subs = JSON.parse(localStorage.getItem('subs') || '[]');
@@ -1050,7 +1083,8 @@ function selectPreset(btn,name,icon,amount,cycle,domain) {
   document.getElementById('fAmount').value=amount;
   document.getElementById('fCycle').value=cycle;
   document.getElementById('customCycleWrap').className='custom-cycle-wrap';
-  syncEmojiPalette();
+  if (domain) showIconPreview(icon, domain, name);
+  else { showIconCustom(); syncEmojiPalette(); }
   document.getElementById('fName').scrollIntoView({behavior:'smooth', block:'center'});
 }
 
@@ -1067,7 +1101,7 @@ function openModal() {
   document.getElementById('nextBillHint').textContent='';
   document.getElementById('customCycleWrap').className='custom-cycle-wrap';
   document.querySelectorAll('.preset-btn').forEach(function(b){ b.classList.remove('selected'); });
-  syncEmojiPalette();
+  showIconCustom(); syncEmojiPalette();
   document.getElementById('modalOverlay').classList.add('show');
 }
 function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); }
@@ -1093,7 +1127,8 @@ function editSub(id) {
   } else {
     document.getElementById('customCycleWrap').className='custom-cycle-wrap';
   }
-  syncEmojiPalette();
+  if (s.domain) showIconPreview(s.icon||'💳', s.domain, s.name);
+  else { showIconCustom(); syncEmojiPalette(); }
   document.getElementById('modalOverlay').classList.add('show');
 }
 
