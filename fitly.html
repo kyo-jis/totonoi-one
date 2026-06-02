@@ -303,6 +303,7 @@
     .wd-menu-row::-webkit-scrollbar { display:none; }
     .wd-menu-chip { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:.65rem .9rem; white-space:nowrap; cursor:pointer; font-family:var(--font); flex-shrink:0; text-align:left; min-width:120px; }
     .wd-menu-chip:active { border-color:var(--accent); }
+    .wd-menu-chip-num  { font-size:.58rem; color:var(--muted); letter-spacing:.05em; margin-bottom:.15rem; }
     .wd-menu-chip-name { font-size:.82rem; font-weight:500; color:var(--text); }
     .wd-menu-chip-meta { font-size:.65rem; color:var(--muted); margin-top:.2rem; }
     /* Hero summary card */
@@ -1539,6 +1540,7 @@ function renderWorkoutDashboard() {
       var exNames = m.exercises.slice(0,3).map(function(e){ return e.name; }).join('・');
       var more = m.exercises.length > 3 ? ' 他'+(m.exercises.length-3)+'種' : '';
       return '<button class="wd-menu-chip" onclick="startFromMenu('+i+')">'
+        +'<p class="wd-menu-chip-num">マイセット '+(i+1)+'</p>'
         +'<p class="wd-menu-chip-name">'+m.name+'</p>'
         +'<p class="wd-menu-chip-meta">'+exNames+more+'</p>'
         +'</button>';
