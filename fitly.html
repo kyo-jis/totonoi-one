@@ -348,6 +348,15 @@
     .wd-recent-vol-text { font-size:.72rem; color:var(--muted); flex-shrink:0; white-space:nowrap; }
     .btn-start-custom { width:100%; padding:.9rem; background:var(--surface); border:1px solid var(--border); color:var(--text); border-radius:14px; font-size:.9rem; font-weight:500; font-family:var(--font); cursor:pointer; transition:all .18s; }
     .btn-start-custom:active { background:var(--surface2); transform:scale(.97); }
+    /* Start / History separation */
+    .wd-start-section { background:var(--surface); border:1px solid rgba(94,207,160,.3); border-radius:20px; padding:1.1rem 1rem 1rem; margin-bottom:1.25rem; }
+    .wd-start-title { font-size:.75rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin-bottom:.85rem; }
+    .wd-see-all { width:100%; padding:.55rem; background:none; border:none; color:var(--muted); font-size:.75rem; font-family:var(--font); cursor:pointer; text-align:right; margin-top:.3rem; }
+    .wd-see-all:active { color:var(--text); }
+    .btn-start-big { width:100%; padding:1rem; background:linear-gradient(135deg,var(--accent),var(--accent-dark)); color:#0c0c18; border:none; border-radius:14px; font-size:.95rem; font-weight:700; font-family:var(--font); cursor:pointer; margin-top:.75rem; transition:all .18s var(--spring); box-shadow:0 4px 18px rgba(94,207,160,.3); }
+    .btn-start-big:active { transform:scale(.96); box-shadow:0 2px 8px rgba(94,207,160,.2); }
+    .wd-history-divider { display:flex; align-items:center; gap:.75rem; margin:0 0 1.25rem; color:var(--muted); font-size:.68rem; letter-spacing:.1em; text-transform:uppercase; }
+    .wd-history-divider::before, .wd-history-divider::after { content:''; flex:1; height:1px; background:var(--border); }
     /* PR badge */
     .pr-badge { display:inline-flex; align-items:center; gap:.25rem; font-size:.65rem; font-weight:600; color:var(--yellow); background:rgba(245,200,66,.12); border:1px solid rgba(245,200,66,.25); border-radius:20px; padding:.15rem .5rem; }
     /* Body weight */
@@ -399,6 +408,16 @@
   <!-- ダッシュボード（非ワークアウト時） -->
   <div id="workoutDashboard">
 
+    <!-- 開始セクション -->
+    <div class="wd-start-section">
+      <p class="wd-start-title">今日のワークアウト</p>
+      <div class="wd-menu-list" id="wdMenuList"></div>
+      <button class="btn-start-big" onclick="startWorkoutCustom()">＋ 種目を選んで始める</button>
+    </div>
+
+    <!-- 記録・履歴セクション -->
+    <div class="wd-history-divider"><span>記録・履歴</span></div>
+
     <!-- ヒーローサマリーカード -->
     <div class="wd-hero">
       <p class="wd-hero-label">ワークアウトサマリー</p>
@@ -415,11 +434,6 @@
       <p class="wd-recent-title">直近のワークアウト</p>
       <div id="wdRecentList"></div>
     </div>
-
-    <!-- メニューから始める -->
-    <p class="section-label" style="margin-bottom:.6rem;">メニューから始める</p>
-    <div class="wd-menu-list" id="wdMenuList"></div>
-    <button class="btn-start-custom" onclick="startWorkoutCustom()" style="margin-bottom:1.25rem;">＋ 種目を選んで始める</button>
 
     <!-- 月間カレンダー -->
     <div class="wd-cal">
@@ -1409,6 +1423,13 @@ function renderCalendar() {
     : '';
 }
 
+function goToMenuTab() {
+  var btn = Array.from(document.querySelectorAll('.tab')).find(function(b){
+    return (b.getAttribute('onclick')||'').includes("'menu'");
+  });
+  if (btn) btn.click();
+}
+
 // ── Menu Icon Picker ──
 var MENU_ICONS = ['💪','🏋️','🦵','🏃','🧘','🚴','🥊','⚡','🔥','🏆','💥','🎯','🧗','🤸','⛹️','🏊','🏸','⚽','🦾','❤️'];
 
@@ -1584,10 +1605,12 @@ function renderWorkoutDashboard() {
     prsCard.style.display = 'none';
   }
 
-  // ── メニュー一覧 ──
+  // ── メニュー一覧（最大5件） ──
   var menuEl = document.getElementById('wdMenuList');
+  var DASH_MENU_LIMIT = 5;
   if (savedMenus.length) {
-    menuEl.innerHTML = savedMenus.map(function(m, i) {
+    var showMenus = savedMenus.slice(0, DASH_MENU_LIMIT);
+    menuEl.innerHTML = showMenus.map(function(m, i) {
       var icon = m.icon || '💪';
       var exNames = m.exercises.slice(0,3).map(function(e){ return e.name; }).join('・');
       var more = m.exercises.length > 3 ? ' 他'+(m.exercises.length-3)+'種' : '';
@@ -1601,8 +1624,11 @@ function renderWorkoutDashboard() {
         +'<button class="wd-menu-item-start" onclick="startFromMenu('+i+')">▶</button>'
         +'</div>';
     }).join('');
+    if (savedMenus.length > DASH_MENU_LIMIT) {
+      menuEl.innerHTML += '<button class="wd-see-all" onclick="goToMenuTab()">すべて見る（'+savedMenus.length+'件）→</button>';
+    }
   } else {
-    menuEl.innerHTML = '<p style="font-size:.78rem;color:var(--muted);padding:.85rem 1rem;">保存済みメニューがありません。メニュータブから作成できます。</p>';
+    menuEl.innerHTML = '<p style="font-size:.78rem;color:var(--muted);padding:.85rem 1rem;">まだメニューがありません。下のボタンで始めてみましょう。</p>';
   }
 }
 
