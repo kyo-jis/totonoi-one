@@ -1809,12 +1809,23 @@ function updateSet(ei, si, field, val) {
 }
 
 function completeSet(ei, si) {
-  var set = currentWorkout.exercises[ei].sets[si];
+  var ex = currentWorkout.exercises[ei];
+  var set = ex.sets[si];
   set.done = !set.done;
+
   if (set.done) {
-    // 種目の休憩設定を保存
-    var ex = currentWorkout.exercises[ei];
-    var restTime = ex.restTime || 90;
+    // 以降の未完了セットに同じ値を自動入力（空欄のみ）
+    var layout = setLayout(ex.cat);
+    for (var ni = si + 1; ni < ex.sets.length; ni++) {
+      var next = ex.sets[ni];
+      if (next.done) continue;
+      layout.fields.forEach(function(f) {
+        if (f === 'note') return; // メモ欄はコピーしない
+        if (!next[f] && set[f]) next[f] = set[f];
+      });
+    }
+    // 休憩タイマー
+    var restTime = ex.restTime || defaultRestTime;
     if (ex.cat !== 'cardio' && ex.cat !== 'stretch' && ex.cat !== 'mindfulness') {
       startRestTimer(restTime, ex.name, ex.id);
     }
