@@ -943,10 +943,9 @@ function updateTotal() {
       if (bill.getMonth()===tm) { totals[cur]=(totals[cur]||0)+Number(s.amount); yc++; }
     }
   });
-  // サマリー表示
   var keys=Object.keys(totals);
   var el=document.getElementById('totalAmounts');
-  var fontSize=keys.length>1?'1.6rem':'2.6rem';
+  var fontSize=keys.length>1?'1.6rem':'3rem';
   el.innerHTML=keys.length===0
     ? '<p class="total-amount"><sup>¥</sup><span>0</span></p>'
     : keys.map(function(cur){
@@ -959,7 +958,6 @@ function updateTotal() {
   if (yc) parts.push('長期払い'+yc+'件');
   document.getElementById('totalSub').textContent=parts.length?parts.join(' · '):'今月の請求なし';
   document.getElementById('countText').textContent=subs.length+(isPro?'件':'/5');
-  // バー
   var monthly={};
   subs.forEach(function(s){ var me=monthlyEquiv(s); if(me>0){var cur=s.currency||'JPY'; monthly[cur]=(monthly[cur]||0)+me;} });
   var barHTML=subs.length?'<span class="total-bar-item"><span class="dot" style="background:var(--accent)"></span>'+subs.length+'サービス</span>':'';
