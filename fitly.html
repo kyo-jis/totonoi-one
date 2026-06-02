@@ -1785,7 +1785,7 @@ function addExerciseToWorkout(ex) {
   var savedSettings = exerciseSettings[ex.id] || {};
   var restTime = savedSettings.restTime
     ? savedSettings.restTime
-    : DEFAULT_REST[ex.cat] || 90;
+    : resolveRestTime(DEFAULT_REST[ex.cat]);
   currentWorkout.exercises.push({
     id: ex.id, name: ex.name, cat: ex.cat, part: ex.part,
     keyword: ex.keyword||'', sets: sets, restTime: restTime
@@ -1841,6 +1841,7 @@ function completeSet(ei, si) {
 // ── Rest Timer ──
 function startRestTimer(seconds, exerciseName, exId) {
   if (restTimerInterval) clearInterval(restTimerInterval);
+  seconds = (typeof seconds === 'number' && !isNaN(seconds)) ? seconds : defaultRestTime;
   restTimeLeft = seconds;
   restTotalTime = seconds;
   document.getElementById('restExerciseName').textContent = exerciseName + ' — 次のセット準備';
