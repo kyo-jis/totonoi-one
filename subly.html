@@ -998,8 +998,6 @@ function updateTotal() {
       }
     }
   });
-  document.getElementById('countText').textContent=subs.length+(isPro?'件':'/5');
-
   // 大きい数字: 月換算合計（固定）
   var monthly={};
   subs.forEach(function(s){ var me=monthlyEquiv(s); if(me>0){var cur=s.currency||'JPY'; monthly[cur]=(monthly[cur]||0)+me;} });
@@ -1013,25 +1011,23 @@ function updateTotal() {
         var val=cur==='JPY'?Math.round(monthly[cur]).toLocaleString():monthly[cur].toFixed(2);
         return '<p class="total-amount" style="font-size:'+fontSize+';line-height:1.15"><sup style="font-size:.55em">'+sym+'</sup><span>'+val+'</span></p>';
       }).join('');
-  document.getElementById('totalSub').textContent=subs.length ? subs.length+'サービス登録中' : '登録なし';
-
-  // 下のバー: 今月の実際の支出
-  var barHTML='';
+  // 今月の実際の支出（totalSubに表示）
   var akeys=Object.keys(totals);
   if (akeys.length) {
-    akeys.forEach(function(cur){
+    var subHTML=akeys.map(function(cur){
       var sym=CURRENCY_SYMBOLS[cur]||cur;
       var val=cur==='JPY'?Math.round(totals[cur]).toLocaleString():totals[cur].toFixed(2);
-      var parts=[];
-      if (mc) parts.push('支払済'+mc+'件');
-      if (yc) parts.push('予定'+yc+'件');
-      var label=parts.length?parts.join(' · '):'';
-      barHTML+='<span class="total-bar-item"><span class="dot" style="background:var(--accent2)"></span>今月 '+sym+val+(label?' ('+label+')':'')+'</span>';
-    });
+      return '今月の支出 <span style="color:var(--text);font-size:1rem;font-weight:500">'+sym+val+'</span>';
+    }).join(' ');
+    document.getElementById('totalSub').innerHTML=subHTML;
   } else {
-    barHTML='<span class="total-bar-item" style="color:var(--muted);font-size:.72rem">今月の請求なし</span>';
+    document.getElementById('totalSub').textContent='今月の請求なし';
   }
+
+  // 下のバー: サービス数
+  var barHTML=subs.length?'<span class="total-bar-item"><span class="dot" style="background:var(--accent)"></span>'+subs.length+'サービス登録中</span>':'';
   document.getElementById('totalBar').innerHTML=barHTML;
+  document.getElementById('countText').textContent=subs.length+(isPro?'件':'/5');
 }
 
 // ── Calendar ──
