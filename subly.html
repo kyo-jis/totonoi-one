@@ -1006,18 +1006,31 @@ function updateTotal() {
 
 // ── Calendar ──
 function getBillsOnDate(dateStr) {
-  var ty = parseLocalDate(dateStr).getFullYear();
-  var tm = parseLocalDate(dateStr).getMonth();
-  var td = parseLocalDate(dateStr).getDate();
-  return subs.filter(function(s) {
-    if (!s.nextBillingDate || s.cycle==='once') return false;
+  var target = parseLocalDate(dateStr);
+  var ty = target.getFullYear(), tm = target.getMonth(), td = target.getDate();
+  var now = new Date(); now.setHours(0,0,0,0);
+  var result = [], seen = {};
+  // 過去・本日: payHistoryから（autoRecordHistoryで記録済みの支払い）
+  if (target <= now) {
+    payHistory.forEach(function(h) {
+      var d = parseLocalDate(h.paidDate);
+      if (d.getFullYear()===ty && d.getMonth()===tm && d.getDate()===td && !seen[h.id]) {
+        result.push(subs.find(function(s){ return s.id===h.id; }) || h);
+        seen[h.id] = true;
+      }
+    });
+  }
+  // 未来・当日（未処理）: nextBillingDateパターンから
+  subs.forEach(function(s) {
+    if (!s.nextBillingDate || s.cycle==='once' || seen[s.id]) return;
     var bill = parseLocalDate(s.nextBillingDate);
     var months = cycleToMonths(s);
-    if (months <= 1) {
-      return td===bill.getDate() && new Date(ty,tm,1) >= new Date(bill.getFullYear(),bill.getMonth(),1);
-    }
-    return td===bill.getDate() && tm===bill.getMonth() && ty===bill.getFullYear();
+    var ok = months <= 1
+      ? td===bill.getDate() && new Date(ty,tm,1) >= new Date(bill.getFullYear(),bill.getMonth(),1)
+      : td===bill.getDate() && tm===bill.getMonth() && ty===bill.getFullYear();
+    if (ok) { result.push(s); seen[s.id] = true; }
   });
+  return result;
 }
 
 function renderCalendar() {
