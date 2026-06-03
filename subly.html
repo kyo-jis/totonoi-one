@@ -915,6 +915,7 @@ function switchTab(name, btn) {
   document.getElementById('view-'+name).classList.add('active');
   btn.classList.add('active');
   if (name==='analytics') renderAnalytics();
+  if (name==='calendar') renderCalendar();
 }
 
 // ── List ──
@@ -1005,31 +1006,18 @@ function updateTotal() {
 
 // ── Calendar ──
 function getBillsOnDate(dateStr) {
-  var target = parseLocalDate(dateStr);
-  var ty = target.getFullYear(), tm = target.getMonth(), td = target.getDate();
-  var now = new Date(); now.setHours(0,0,0,0);
-  var result = [], seen = {};
-  // 過去・本日: payHistoryから正確に取得
-  if (target <= now) {
-    payHistory.forEach(function(h) {
-      var d = parseLocalDate(h.paidDate);
-      if (d.getFullYear()===ty && d.getMonth()===tm && d.getDate()===td && !seen[h.id]) {
-        var sub = subs.find(function(s){ return s.id===h.id; });
-        result.push(sub || h); seen[h.id] = true;
-      }
-    });
-  }
-  // 未来・本日: nextBillingDateから（月次以下は同日繰り返し、長期は完全一致）
-  subs.forEach(function(s) {
-    if (!s.nextBillingDate || s.cycle==='once' || seen[s.id]) return;
+  var ty = parseLocalDate(dateStr).getFullYear();
+  var tm = parseLocalDate(dateStr).getMonth();
+  var td = parseLocalDate(dateStr).getDate();
+  return subs.filter(function(s) {
+    if (!s.nextBillingDate || s.cycle==='once') return false;
     var bill = parseLocalDate(s.nextBillingDate);
     var months = cycleToMonths(s);
-    var matches = months <= 1
-      ? td===bill.getDate() && new Date(ty,tm,1) >= new Date(bill.getFullYear(),bill.getMonth(),1)
-      : td===bill.getDate() && tm===bill.getMonth() && ty===bill.getFullYear();
-    if (matches) { result.push(s); seen[s.id] = true; }
+    if (months <= 1) {
+      return td===bill.getDate() && new Date(ty,tm,1) >= new Date(bill.getFullYear(),bill.getMonth(),1);
+    }
+    return td===bill.getDate() && tm===bill.getMonth() && ty===bill.getFullYear();
   });
-  return result;
 }
 
 function renderCalendar() {
@@ -1245,7 +1233,6 @@ function saveSubscription() {
   else subs.push(entry);
   localStorage.setItem('subs',JSON.stringify(subs));
   dbSave('subs', subs);
-  autoRecordHistory();
   closeModal(); renderList(); renderCalendar();
 }
 
