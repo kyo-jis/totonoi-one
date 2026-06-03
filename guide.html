@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>使い方ガイド — Totonoi One</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Playfair+Display:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="/favicon.ico">
+  <meta name="theme-color" content="#0c0c18">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#0c0c18; --surface:#14142a; --surface2:#1c1c38; --surface3:#242448;
+      --border:#2e2e50; --text:#f2f2fa; --muted:#9494b8;
+      --font:'Outfit',sans-serif; --serif:'Playfair Display',serif;
+      --shadow-sm:0 2px 10px rgba(0,0,0,.3);
+      --spring:cubic-bezier(.34,1.56,.64,1);
+    }
+    html { font-size:16px; scroll-behavior:smooth; }
+    body { background:var(--bg); color:var(--text); font-family:var(--font); font-weight:400; min-height:100vh; padding-bottom:3rem; }
+
+    /* Header */
+    .page-header { padding:3rem 1.25rem 2rem; }
+    .back-link { font-size:.75rem; color:var(--muted); text-decoration:none; letter-spacing:.1em; text-transform:uppercase; display:inline-flex; align-items:center; gap:.4rem; margin-bottom:1.5rem; }
+    .page-title { font-family:var(--serif); font-size:clamp(1.8rem,7vw,2.5rem); letter-spacing:-.02em; line-height:1.1; margin-bottom:.5rem; }
+    .page-title em { font-style:italic; color:var(--muted); }
+    .page-subtitle { font-size:.88rem; color:var(--muted); line-height:1.6; }
+
+    /* TOC */
+    .toc { margin:0 1.25rem 2rem; background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:1.25rem; }
+    .toc-title { font-size:.68rem; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-bottom:.875rem; }
+    .toc-grid { display:grid; grid-template-columns:1fr 1fr; gap:.4rem; }
+    .toc-item { display:flex; align-items:center; gap:.5rem; padding:.5rem .7rem; background:var(--surface2); border-radius:10px; text-decoration:none; color:var(--text); font-size:.8rem; transition:all .15s; }
+    .toc-item:active { background:var(--surface3); }
+    .toc-icon { font-size:1rem; flex-shrink:0; }
+
+    /* Sections */
+    .section { margin:0 1.25rem 2rem; }
+    .section-anchor { display:block; height:0; }
+    .section-header { display:flex; align-items:center; gap:.75rem; margin-bottom:1.25rem; padding-bottom:.75rem; border-bottom:1px solid var(--border); }
+    .section-app-icon { width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.5rem; flex-shrink:0; }
+    .section-name { font-size:1.1rem; font-weight:600; }
+    .section-tag { font-size:.65rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-top:.1rem; }
+
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.1rem 1.25rem; margin-bottom:.75rem; }
+    .card-title { font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:.75rem; }
+
+    /* Feature list */
+    .feature-list { display:flex; flex-direction:column; gap:.5rem; }
+    .feature-item { display:flex; gap:.75rem; align-items:flex-start; }
+    .feature-icon { font-size:1rem; flex-shrink:0; margin-top:.05rem; }
+    .feature-text { font-size:.88rem; line-height:1.55; }
+    .feature-text strong { color:var(--text); font-weight:500; }
+    .feature-text span { color:var(--muted); }
+
+    /* How to use steps */
+    .steps { display:flex; flex-direction:column; gap:.75rem; }
+    .step { display:flex; gap:.75rem; }
+    .step-num { width:26px; height:26px; border-radius:50%; background:var(--surface2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:.72rem; font-weight:600; flex-shrink:0; margin-top:.1rem; }
+    .step-body { flex:1; }
+    .step-title { font-size:.88rem; font-weight:500; margin-bottom:.2rem; }
+    .step-desc { font-size:.8rem; color:var(--muted); line-height:1.55; }
+
+    /* Pro comparison */
+    .plan-table { width:100%; border-collapse:collapse; font-size:.82rem; }
+    .plan-table th { padding:.5rem .75rem; text-align:center; font-weight:500; font-size:.72rem; letter-spacing:.05em; }
+    .plan-table td { padding:.55rem .75rem; border-top:1px solid var(--border); }
+    .plan-table td:first-child { color:var(--muted); }
+    .plan-table td:not(:first-child) { text-align:center; }
+    .plan-head-free { background:var(--surface2); border-radius:8px 0 0 8px; padding:.5rem .75rem; }
+    .plan-head-pro { background:linear-gradient(135deg,rgba(155,109,255,.2),rgba(200,154,255,.1)); border-radius:0 8px 8px 0; color:#c89aff; }
+    .check { color:#5ecfa0; font-size:.9rem; }
+    .cross { color:var(--muted); font-size:.9rem; }
+    .limit { font-size:.72rem; color:var(--muted); }
+
+    /* App colors */
+    .color-subly   { background:linear-gradient(135deg,#1e3a5f,#3d6b8e); }
+    .color-medly   { background:linear-gradient(135deg,#2d1a5e,#7c5cbf); }
+    .color-fitly   { background:linear-gradient(135deg,#1a3d2a,#4a8c5a); }
+    .color-stockly { background:linear-gradient(135deg,#2d3d1a,#7c9c3c); }
+    .color-cookly  { background:linear-gradient(135deg,#5e2d1a,#bf6c3c); }
+    .color-learnly { background:linear-gradient(135deg,#1a3d4a,#3c8cbf); }
+    .color-renewly { background:linear-gradient(135deg,#2a1a00,#bf9c3c); }
+    .color-mangaly { background:linear-gradient(135deg,#4a1a3a,#bf3c8c); }
+    .color-readly  { background:linear-gradient(135deg,#1a2a4a,#3c5cbf); }
+    .color-ownly   { background:linear-gradient(135deg,#1a1a00,#9c9c3c); }
+
+    /* Pro section */
+    .pro-card { background:linear-gradient(140deg,#1a1a2e 0%,#2a1a3e 100%); border:1px solid rgba(180,130,255,.25); border-radius:20px; padding:1.5rem 1.25rem; margin:0 1.25rem 2rem; }
+    .pro-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+    .pro-title-big { font-family:var(--serif); font-style:italic; font-size:1.4rem; color:#c89aff; }
+    .pro-price { text-align:right; }
+    .pro-price-value { font-size:1.5rem; font-weight:600; color:#c89aff; }
+    .pro-price-unit { font-size:.72rem; color:var(--muted); }
+    .pro-desc { font-size:.85rem; color:var(--muted); line-height:1.6; margin-bottom:1.25rem; }
+    .pro-features { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; margin-bottom:1.25rem; }
+    .pro-feat { background:rgba(155,109,255,.1); border:1px solid rgba(155,109,255,.2); border-radius:10px; padding:.6rem .75rem; font-size:.78rem; display:flex; align-items:center; gap:.4rem; }
+    .pro-btn { display:block; text-align:center; background:linear-gradient(135deg,#9b6dff,#c89aff); color:#fff; border:none; border-radius:12px; padding:.9rem; font-size:.95rem; font-weight:600; font-family:var(--font); text-decoration:none; }
+    .pro-btn:active { transform:scale(.97); }
+
+    /* FAQ */
+    .faq-item { border-bottom:1px solid var(--border); }
+    .faq-item:last-child { border-bottom:none; }
+    .faq-q { padding:.9rem 0; font-size:.88rem; font-weight:500; cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:.5rem; }
+    .faq-arrow { color:var(--muted); font-size:.8rem; transition:transform .2s; flex-shrink:0; }
+    .faq-item.open .faq-arrow { transform:rotate(180deg); }
+    .faq-a { display:none; padding-bottom:.875rem; font-size:.82rem; color:var(--muted); line-height:1.65; }
+    .faq-item.open .faq-a { display:block; }
+
+    /* Contact */
+    .contact-wrap { margin:0 1.25rem; }
+    .contact-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.25rem; margin-bottom:.75rem; }
+    .contact-title { font-size:.88rem; font-weight:500; margin-bottom:.4rem; }
+    .contact-desc { font-size:.8rem; color:var(--muted); line-height:1.55; margin-bottom:.875rem; }
+    .share-btn { display:block; width:100%; padding:.8rem; border:none; border-radius:12px; font-size:.88rem; font-weight:500; font-family:var(--font); cursor:pointer; text-align:center; text-decoration:none; margin-bottom:.5rem; }
+    .share-x    { background:#000; color:#fff; }
+    .share-line { background:#06c755; color:#fff; }
+    .share-copy { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+
+    .badge-new { font-size:.6rem; font-weight:600; background:rgba(94,207,160,.2); color:#5ecfa0; border-radius:20px; padding:.1rem .4rem; margin-left:.4rem; vertical-align:middle; }
+    .badge-pro { font-size:.6rem; font-weight:600; background:rgba(155,109,255,.2); color:#c89aff; border-radius:20px; padding:.1rem .4rem; margin-left:.4rem; vertical-align:middle; }
+  </style>
+</head>
+<body>
+
+<div class="page-header">
+  <a class="back-link" href="index.html">← Totonoi One</a>
+  <h1 class="page-title">使い方<em>ガイド</em></h1>
+  <p class="page-subtitle">各アプリの機能と使い方を説明します。<br>気になるアプリを選んで確認してください。</p>
+</div>
+
+<!-- TOC -->
+<nav class="toc">
+  <p class="toc-title">アプリ一覧</p>
+  <div class="toc-grid">
+    <a class="toc-item" href="#subly"><span class="toc-icon">💳</span> Subly</a>
+    <a class="toc-item" href="#medly"><span class="toc-icon">💊</span> Medly</a>
+    <a class="toc-item" href="#fitly"><span class="toc-icon">🏋️</span> Fitly</a>
+    <a class="toc-item" href="#stockly"><span class="toc-icon">📦</span> Stockly</a>
+    <a class="toc-item" href="#cookly"><span class="toc-icon">🍳</span> Cookly</a>
+    <a class="toc-item" href="#learnly"><span class="toc-icon">📚</span> Learnly</a>
+    <a class="toc-item" href="#renewly"><span class="toc-icon">🔄</span> Renewly</a>
+    <a class="toc-item" href="#mangaly"><span class="toc-icon">📖</span> Mangaly</a>
+    <a class="toc-item" href="#readly"><span class="toc-icon">📝</span> Readly</a>
+    <a class="toc-item" href="#ownly"><span class="toc-icon">🏠</span> Ownly</a>
+  </div>
+</nav>
+
+<!-- Subly -->
+<span class="section-anchor" id="subly"></span>
+<div class="section">
+  <div class="section-header">
+    <div class="section-app-icon color-subly">💳</div>
+    <div>
+      <p class="section-name">Subly</p>
+      <p class="section-tag">サブスクリプション管理</p>
+    </div>
+  </div>
+  <div class="card">
+    <p class="card-title">できること</p>
+    <div class="feature-list">
+      <div class="feature-item"><span class="feature-icon">💡</span><p class="feature-text"><strong>月額・年額コストを一目で確認</strong> <span>— Netflix、Spotify、各種クラウドサービスなど全てのサブスクを登録して月次・年次コストを自動集計します</span></p></div>
+      <div class="feature-item"><span class="feature-icon">🌍</span><p class="feature-text"><strong>多通貨対応</strong> <span>— JPY・USD・EUR・GBP・CNY に対応。ドル建てサービスも円換算で表示します</span></p></div>
+      <div class="feature-item"><span class="feature-icon">📊</span><p class="feature-text"><strong>カテゴリ分析</strong><span class="badge-pro">Pro</span> <span>— エンタメ・ビジネス・ライフスタイルなどカテゴリ別にコストを把握できます</span></p></div>
+    </div>
+  </div>
+  <div class="card">
+    <p class="card-title">使い方</p>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-body"><p class="step-title">＋ボタンで追加</p><p class="step-desc">サービス名・料金・通貨・請求サイクル（月次/年次）を入力します。よく使うサービスはプリセットから選べます。</p></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><p class="step-title">月額換算を確認</p><p class="step-desc">年払いのサービスも月額に換算して合計コストを表示。今月いくら払っているかが一目でわかります。</p></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><p class="step-title">不要なものを見つける</p><p class="step-desc">使っていないサービスに気づいたら削除して節約。コスト削減チャレンジ機能で目標を設定できます。</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Medly -->
+<span class="section-anchor" id="medly"></span>
+<div class="section">
+  <div class="section-header">
+    <div class="section-app-icon color-medly">💊</div>
+    <div><p class="section-name">Medly</p><p class="section-tag">サプリ・薬管理</p></div>
+  </div>
+  <div class="card">
+    <p class="card-title">できること</p>
+    <div class="feature-list">
+      <div class="feature-item"><span class="feature-icon">⏰</span><p class="feature-text"><strong>服用スケジュール管理</strong> <span>— 朝・昼・夕・夜・就寝前など飲むタイミングを登録して、今日飲むべきものをリスト表示します</span></p></div>
+      <div class="feature-item"><span class="feature-icon">📉</span><p class="feature-text"><strong>残量・補充アラート</strong> <span>— 残日数を自動計算して、なくなりそうなときにアラートを表示します</span></p></div>
+      <div class="feature-item"><span class="feature-icon">💰</span><p class="feature-text"><strong>購入履歴・コスト管理</strong> <span>— 購入価格から1日あたりのコストを計算します。月間・年間コストも表示</span></p></div>
+      <div class="feature-item"><span class="feature-icon">📋</span><p class="feature-text"><strong>服用履歴ログ</strong> <span>— 何時に何を飲んだかを記録。購入履歴→服用履歴タブで確認できます</span></p></div>
+      <div class="feature-item"><span class="feature-icon">📚</span><p class="feature-text"><strong>サプリ辞典</strong> <span>— 主要サプリの効果・飲み合わせガイドを内蔵しています</span></p></div>
+    </div>
+  </div>
+  <div class="card">
+    <p class="card-title">使い方</p>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-body"><p class="step-title">アイテムを登録</p><p class="step-desc">サプリ・薬をプリセットまたは手動で追加。1回の服用量・現在残量・1日服用回数・アラート日数を設定します。</p></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><p class="step-title">服用タブでチェック</p><p class="step-desc">「服用」タブを開くと今日のスケジュールが表示されます。飲んだらチェック → 残量が自動で減ります。</p></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><p class="step-title">補充したら記録</p><p class="step-desc">購入時は「補充」ボタンから数量と価格を入力。購入履歴が自動で作られ、コスト計算に反映されます。</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Fitly -->
+<span class="section-anchor" id="fitly"></span>
+<div class="section">
+  <div class="section-header">
+    <div class="section-app-icon color-fitly">🏋️</div>
+    <div><p class="section-name">Fitly</p><p class="section-tag">ワークアウト記録</p></div>
+  </div>
+  <div class="card">
+    <p class="card-title">できること</p>
+    <div class="feature-list">
+      <div class="feature-item"><span class="feature-icon">💪</span><p class="feature-text"><strong>200種以上の種目DB</strong> <span>— 筋トレ・有酸素・ストレッチ・マインドフルネスを網羅。部位・カテゴリで検索できます</span></p></div>
+      <div class="feature-item"><span class="feature-icon">⏱</span><p class="feature-text"><strong>休憩タイマー自動起動</strong> <span>— セットを完了するたびに休憩タイマーが自動でスタート。アプリを離れても完了通知が届きます</span></p></div>
+      <div class="feature-item"><span class="feature-icon">🏆</span><p class="feature-text"><strong>自己ベスト（PR）を自動検出</strong> <span>— 重量×回数から推定1RM（最大筋力）を計算し、更新したときに通知します</span></p></div>
+      <div class="feature-item"><span class="feature-icon">💬</span><p class="feature-text"><strong>種目メモ</strong> <span>— 各種目にメモを残せます。次回セッションで同じ種目を追加したときに「前回メモ」として表示されます</span></p></div>
+      <div class="feature-item"><span class="feature-icon">📊</span><p class="feature-text"><strong>分析ダッシュボード</strong><span class="badge-pro">Pro</span> <span>— 連続記録・部位別ボリューム・週次トレンドをチャートで確認できます</span></p></div>
+    </div>
+  </div>
+  <div class="card">
+    <p class="card-title">使い方</p>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-body"><p class="step-title">ワークアウトを開始</p><p class="step-desc">「開始」ボタンを押してタイマーをスタート。「＋種目を追加」から今日やる種目を選びます。</p></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><p class="step-title">重量・回数を入力してチェック</p><p class="step-desc">各セットに重量（kg）と回数を入力し、✓ボタンを押すと完了。次セットの値は自動コピーされます。</p></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><p class="step-title">保存して記録を積み上げる</p><p class="step-desc">「保存」で今日のワークアウトが履歴に追加されます。前回の記録は次回セッションで「前回」として自動表示されます。</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Stockly -->
+<span class="section-anchor" id="stockly"></span>
+<div class="section">
+  <div class="section-header">
+    <div class="section-app-icon color-stockly">📦</div>
+    <div><p class="section-name">Stockly</p><p class="section-tag">備蓄・在庫管理</p></div>
+  </div>
+  <div class="card">
+    <p class="card-title">できること</p>
+    <div class="feature-list">
+      <div class="feature-item"><span class="feature-icon">📊</span><p class="feature-text"><strong>在庫バーで残量を視覚化</strong> <span>— 各アイテムの在庫量をバーで表示。在庫切れ・残少を色で判断できます</span></p></div>
+      <div class="feature-item"><span class="feature-icon">⚠️</span><p class="feature-text"><strong>アラートタブ</strong> <span>— 補充が必要なアイテムを自動で一覧表示します</span></p></div>
+      <div class="feature-item"><span class="feature-icon">🛒</span><p class="feature-text"><strong>買い物リスト</strong> <span>— 在庫が0になると自動でリストに追加。アラートから手動追加も可能。チェックすると在庫が自動補充されます</span></p></div>
+    </div>
+  </div>
+  <div class="card">
+    <p class="card-title">使い方</p>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-body"><p class="step-title">アイテムを登録</p><p class="step-desc">プリセット（トイレットペーパー・缶詰など）から選ぶか、手動で追加。現在の数量と最低在庫数（警告ライン）を設定します。</p></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><p class="step-title">±ボタンで数量を更新</p><p class="step-desc">使った分だけ−、補充したら+。在庫が最低ラインを下回ると自動的に「アラート」タブに表示されます。</p></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><p class="step-title">買い物リストで買い物</p><p class="step-desc">「買い物」タブに不足品が集まります。買ったらチェック → 在庫が自動で最大量まで補充されます。</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Cookly -->
+<span class="section-anchor" id="cookly"></span>
+<div class="section">
+  <div class="section-header">
+    <div class="section-app-icon color-cookly">🍳</div>
+    <div><p class="section-name">Cookly</p><p class="section-tag">レシピ管理</p></div>
+  </div>
+  <div class="card">
+    <p class="card-title">できること</p>
+    <div class="feature-list">
+      <div class="feature-item"><span class="feature-icon">📝</span><p class="feature-text"><strong>材料・手順を登録</strong> <span>— 料理名・材料リスト・作り方の手順をステップで登録。調理時間・人数も管理できます</span></p></div>
+      <div class="feature-item"><span class="feature-icon">⭐</span><p class="feature-text"><strong>お気に入り管理</strong> <span>— よく作るレシピに⭐をつけてすぐ見つけられます</span></p></div>
+      <div class="feature-item"><span class="feature-icon">🔍</span><p class="feature-text"><strong>テキスト検索</strong> <span>— 料理名やメモのキーワードで素早く検索できます</span></p></div>
+    </div>
+  </div>
+  <div class="card">
+    <p class="card-title">使い方</p>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-body"><p class="step-title">＋でレシピを追加</p><p class="step-desc">料理名・カテゴリ・調理時間を入力。材料は「名前」と「量（例: 2個）」をペアで追加します。</p></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><p class="step-title">手順をステップで入力</p><p class="step-desc">「＋手順を追加」で調理工程を順番に入力。コツや隠し味はメモ欄に書きます。</p></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><p class="step-title">料理するときは詳細ビューで確認</p><p class="step-desc">レシピをタップすると材料リストと手順が大きく表示されます。スマホを見ながら調理できます。</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Learnly -->
+<span class="section-anchor" id="learnly"></span>
+<div class="section">
+  <div class="section-header">
+    <div class="section-app-icon color-learnly">📚</div>
+    <div><p class="section-name">Learnly</p><p class="section-tag">学習記録</p></div>
+  </div>
+  <div class="card">
+    <p class="card-title">できること</p>
+    <div class="feature-list">
+      <div class="feature-item"><span class="feature-icon">📈</span><p class="feature-text"><strong>学習進捗を管理</strong> <span>— 本・動画・講座・音声・記事などのコンテンツを登録して、進捗を0〜100%で管理します</span></p></div>
+      <div class="feature-item"><span class="feature-icon">🎯</span><p class="feature-text"><strong>ステータス別管理</strong> <span>— 未開始・学習中・完了の3段階で整理。「進行中」タブで今やっていることを確認できます</span></p></div>
+      <div class="feature-item"><span class="feature-icon">💬</span><p class="feature-text"><strong>気づきメモ</strong> <span>— 各アイテムにメモを書いておくと、次回学習時に表示されます</span></p></div>
+    </div>
+  </div>
+  <div class="card">
+    <p class="card-title">使い方</p>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-body"><p class="step-title">学習したいコンテンツを追加</p><p class="step-desc">本・動画・講座などをプリセットまたは手動で追加。進捗の初期値を設定します（未着手なら0%）。</p></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><p class="step-title">±ボタンで進捗を更新</p><p class="step-desc">学習したら＋ボタンで10%ずつ進捗を上げます。100%になると完了としてコンフェッティが出ます 🎉</p></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><p class="step-title">気づきをメモする</p><p class="step-desc">学習中に感じたことや次回の取り組み方をメモしておくと、次回セッションで表示されます。</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Renewly -->
+<span class="section-anchor" id="renewly"></span>
+<div class="section">
+  <div class="section-header">
+    <div class="section-app-icon color-renewly">🔄</div>
+    <div><p class="section-name">Renewly</p><p class="section-tag">更新期限管理</p></div>
+  </div>
+  <div class="card">
+    <p class="card-title">できること</p>
+    <div class="feature-list">
+      <div class="feature-item"><span class="feature-icon">📅</span><p class="feature-text"><strong>各種期限を一元管理</strong> <span>— 自動車保険・運転免許・パスポート・車検・クレジットカード・携帯契約などを登録します</span></p></div>
+      <div class="feature-item"><span class="feature-icon">⚠️</span><p class="feature-text"><strong>期限切れ・まもなく期限を自動検出</strong> <span>— 設定した日数前（7日〜90日）から「まもなく」として警告表示します</span></p></div>
+      <div class="feature-item"><span class="feature-icon">🔄</span><p class="feature-text"><strong>更新ボタンで簡単更新</strong> <span>— 更新後は「更新」ボタンから新しい期限日を入力するだけです</span></p></div>
+    </div>
+  </div>
+  <div class="card">
+    <p class="card-title">使い方</p>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-body"><p class="step-title">期限を登録</p><p class="step-desc">保険・免許・パスポートなどをプリセットから選ぶか手動で追加。期限日と警告タイミング（何日前から通知するか）を設定します。</p></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><p class="step-title">「まもなく」タブで確認</p><p class="step-desc">期限切れ・まもなくのものが自動でリストアップされます。バッジの数字で件数を確認できます。</p></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><p class="step-title">更新したら「更新」ボタン</p><p class="step-desc">更新手続き後は「更新」ボタンから新しい期限日を入力。履歴は残りません（シンプルに保ちます）。</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Mangaly -->
+<span class="section-anchor" id="mangaly"></span>
+<div class="section">
+  <div class="section-header">
+    <div class="section-app-icon color-mangaly">📖</div>
+    <div><p class="section-name">Mangaly</p><p class="section-tag">漫画・読書管理</p></div>
+  </div>
+  <div class="card">
+    <p class="card-title">できること</p>
+    <div class="feature-list">
+      <div class="feature-item"><span class="feature-icon">📚</span><p class="feature-text"><strong>作品コレクションを管理</strong> <span>— 漫画・ラノベ・小説などを登録。ジャンル別に整理できます</span></p></div>
+      <div class="feature-item"><span class="feature-icon">📈</span><p class="feature-text"><strong>読了巻数をトラッキング</strong> <span>— ±ボタンで読了巻数を更新。全巻数を設定すると進捗バーが表示されます</span></p></div>
+      <div class="feature-item"><span class="feature-icon">📌</span><p class="feature-text"><strong>積読・読中・読了で管理</strong> <span>— 「積読」タブで読んでいない作品を把握。全巻読み終わると自動で「読了」になります</span></p></div>
+    </div>
+  </div>
+  <div class="card">
+    <p class="card-title">使い方</p>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-body"><p class="step-title">作品を登録</p><p class="step-desc">タイトル・ジャンル・全巻数（連載中なら0）・現在の読了巻数を入力。ステータスは「積読」「読中」「読了」から選びます。</p></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><p class="step-title">読んだら巻数を更新</p><p class="step-desc">カードの＋ボタンを押すと読了巻数が1増えます。全巻読み終わるとコンフェッティと「読了」バッジが表示されます 🎉</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Readly -->
+<span class="section-anchor" id="readly"></span>
+<div class="section">
+  <div class="section-header">
+    <div class="section-app-icon color-readly">📝</div>
+    <div><p class="section-name">Readly</p><p class="section-tag">メモ・日記</p></div>
+  </div>
+  <div class="card">
+    <p class="card-title">できること</p>
+    <div class="feature-list">
+      <div class="feature-item"><span class="feature-icon">✍️</span><p class="feature-text"><strong>メモ・日記・アイデアを記録</strong> <span>— 4種類のカテゴリ（メモ/日記/アイデア/TODO）で整理します</span></p></div>
+      <div class="feature-item"><span class="feature-icon">🔍</span><p class="feature-text"><strong>全文検索</strong> <span>— タイトル・本文をリアルタイム検索。大量のメモからすぐ見つけられます</span></p></div>
+      <div class="feature-item"><span class="feature-icon">📱</span><p class="feature-text"><strong>シンプルエディタ</strong> <span>— 「書く」タブで新規作成。タイトルは任意なので素早く書き始められます</span></p></div>
+    </div>
+  </div>
+  <div class="card">
+    <p class="card-title">使い方</p>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-body"><p class="step-title">✏️ボタンまたは「書く」タブで新規作成</p><p class="step-desc">カテゴリを選んで本文を入力。タイトルは空欄でもOKです。</p></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><p class="step-title">一覧でメモを管理</p><p class="step-desc">更新日順に表示されます。カテゴリフィルタや検索で目当てのメモをすぐ見つけられます。</p></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><p class="step-title">タップして編集</p><p class="step-desc">メモをタップすると編集モードになります。保存すると更新日が自動更新されます。</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Ownly -->
+<span class="section-anchor" id="ownly"></span>
+<div class="section">
+  <div class="section-header">
+    <div class="section-app-icon color-ownly">🏠</div>
+    <div><p class="section-name">Ownly</p><p class="section-tag">持ち物・資産管理</p></div>
+  </div>
+  <div class="card">
+    <p class="card-title">できること</p>
+    <div class="feature-list">
+      <div class="feature-item"><span class="feature-icon">💼</span><p class="feature-text"><strong>所有物をカタログ化</strong> <span>— 家電・家具・ガジェット・衣類・乗り物などを登録して一覧管理できます</span></p></div>
+      <div class="feature-item"><span class="feature-icon">💰</span><p class="feature-text"><strong>総資産額を自動集計</strong> <span>— 購入価格の合計を自動計算します。自分が何にいくら使っているか把握できます</span></p></div>
+      <div class="feature-item"><span class="feature-icon">🛡</span><p class="feature-text"><strong>保証期限管理</strong> <span>— 家電の保証期限を登録しておくと、期限が近づいたらバッジで通知します</span></p></div>
+    </div>
+  </div>
+  <div class="card">
+    <p class="card-title">使い方</p>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-body"><p class="step-title">アイテムを登録</p><p class="step-desc">名前・カテゴリ・購入価格・購入日を入力します。保証書がある場合は保証期限も登録しておきましょう。</p></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><p class="step-title">「保証」タブで期限を確認</p><p class="step-desc">保証期限が登録されたアイテムが一覧で表示されます。90日以内に期限が来ると「まもなく」バッジが付きます。</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Pro Plan -->
+<div class="pro-card">
+  <div class="pro-header">
+    <p class="pro-title-big">Totonoi Pro</p>
+    <div class="pro-price"><p class="pro-price-value">¥980</p><p class="pro-price-unit">/ 月</p></div>
+  </div>
+  <p class="pro-desc">全アプリの制限を解除して、Totonoiを最大限に活用できます。広告も非表示になります。</p>
+  <div style="margin-bottom:1.25rem;">
+    <table class="plan-table">
+      <thead>
+        <tr>
+          <th style="text-align:left;color:var(--muted);">機能</th>
+          <th><span class="plan-head-free">無料</span></th>
+          <th><span class="plan-head-pro">Pro</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Subly 登録数</td><td class="limit">10件</td><td class="check">無制限</td></tr>
+        <tr><td>Medly 登録数</td><td class="limit">5件</td><td class="check">無制限</td></tr>
+        <tr><td>Fitly 分析ダッシュボード</td><td class="cross">×</td><td class="check">✓</td></tr>
+        <tr><td>Stockly 登録数</td><td class="limit">10件</td><td class="check">無制限</td></tr>
+        <tr><td>Cookly 登録数</td><td class="limit">20件</td><td class="check">無制限</td></tr>
+        <tr><td>Learnly 登録数</td><td class="limit">10件</td><td class="check">無制限</td></tr>
+        <tr><td>Readly 登録数</td><td class="limit">30件</td><td class="check">無制限</td></tr>
+        <tr><td>Renewly 登録数</td><td class="limit">10件</td><td class="check">無制限</td></tr>
+        <tr><td>Mangaly 登録数</td><td class="limit">10件</td><td class="check">無制限</td></tr>
+        <tr><td>Ownly 登録数</td><td class="limit">20件</td><td class="check">無制限</td></tr>
+        <tr><td>データエクスポート</td><td class="cross">×</td><td class="check">JSON/CSV</td></tr>
+        <tr><td>購入履歴（全期間）</td><td class="limit">30日分</td><td class="check">無制限</td></tr>
+        <tr><td>広告</td><td class="cross">あり</td><td class="check">なし</td></tr>
+        <tr><td>クラウド同期</td><td class="check">✓</td><td class="check">✓</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <a href="index.html" class="pro-btn">ダッシュボードでProに切り替える →</a>
+</div>
+
+<!-- FAQ -->
+<div class="section">
+  <div class="card">
+    <p class="card-title">よくある質問</p>
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q">データはどこに保存されていますか？<span class="faq-arrow">▼</span></div>
+      <div class="faq-a">ログインしていない場合はお使いの端末（ブラウザのlocalStorage）に保存されます。Googleアカウントまたはメールアドレスでログインすると、クラウド（Supabase）にも自動で同期され、複数の端末から同じデータを使えます。</div>
+    </div>
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q">ブラウザを変えるとデータが消えますか？<span class="faq-arrow">▼</span></div>
+      <div class="faq-a">ログインしている場合はクラウドに保存されているため、別ブラウザでも同じアカウントでログインすれば引き継げます。ログインしていない場合は端末ローカルの保存のため、ブラウザが変わるとデータにアクセスできません。ログインを強くおすすめします。</div>
+    </div>
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q">ホーム画面に追加するとどうなりますか？<span class="faq-arrow">▼</span></div>
+      <div class="faq-a">各アプリはPWA（Progressive Web App）に対応しています。ホーム画面に追加すると、ネイティブアプリのように全画面で起動できます。また、データがブラウザキャッシュに保存されるため、オフライン時でも閲覧できます。iOSはSafariの「共有→ホーム画面に追加」、Androidはブラウザの「ホーム画面に追加」から追加できます。</div>
+    </div>
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q">Proプランはいつでもキャンセルできますか？<span class="faq-arrow">▼</span></div>
+      <div class="faq-a">はい、いつでもキャンセルできます。キャンセル後は月末まで引き続きProの機能を使えます。登録したデータは無料プランに戻っても削除されません（表示件数の制限は適用されます）。</div>
+    </div>
+    <div class="faq-item" onclick="toggleFaq(this)">
+      <div class="faq-q">不具合・要望はどこに伝えればいいですか？<span class="faq-arrow">▼</span></div>
+      <div class="faq-a">各アプリの「設定」タブ → 「開発者へ連絡」から送信できます。または下記のSNSからもお気軽にどうぞ。いただいたご意見は今後の開発に活かします。</div>
+    </div>
+  </div>
+</div>
+
+<!-- Contact -->
+<div class="contact-wrap">
+  <div class="contact-card">
+    <p class="contact-title">このアプリが役に立ったら...</p>
+    <p class="contact-desc">シェアしていただけると開発の励みになります 🙏<br>フォローや口コミも大歓迎です。</p>
+    <a onclick="shareX()" class="share-btn share-x" style="cursor:pointer;">𝕏 でシェアする</a>
+    <a onclick="shareLine()" class="share-btn share-line" style="cursor:pointer;">🟢 LINEで送る</a>
+    <a onclick="shareCopy()" class="share-btn share-copy" id="copyBtn" style="cursor:pointer;">🔗 リンクをコピー</a>
+  </div>
+</div>
+
+<script>
+function toggleFaq(item) {
+  item.classList.toggle('open');
+}
+var SHARE_URL = 'https://totonoi-one.vercel.app/';
+var SHARE_TEXT = '暮らしを整えるライフダッシュボード「Totonoi One」— サブスク・サプリ・筋トレ・在庫・レシピなど10アプリが無料で使えます！ #TotonoiOne';
+function shareX(){ window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(SHARE_TEXT)+'&url='+encodeURIComponent(SHARE_URL),'_blank'); }
+function shareLine(){ window.open('https://social-plugins.line.me/lineit/share?url='+encodeURIComponent(SHARE_URL),'_blank'); }
+function shareCopy(){
+  navigator.clipboard.writeText(SHARE_URL).then(function(){
+    var b = document.getElementById('copyBtn'); b.textContent = '✅ コピーしました';
+    setTimeout(function(){ b.textContent = '🔗 リンクをコピー'; }, 2000);
+  });
+}
+</script>
+</body>
+</html>
