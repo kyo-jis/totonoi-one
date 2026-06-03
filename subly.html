@@ -963,13 +963,13 @@ function updateTotal() {
       mc++;
     }
   });
-  // 今月のnextBillingDateから予定分（重複除外）
-  var paidIds = {};
-  payHistory.forEach(function(h) { var d=parseLocalDate(h.paidDate); if(d.getFullYear()===ty&&d.getMonth()===tm) paidIds[h.id]=true; });
+  // 今月のnextBillingDateから予定分（同一サブスク・同一日付の二重計上を除外）
+  var countedKeys = {};
+  payHistory.forEach(function(h) { var d=parseLocalDate(h.paidDate); if(d.getFullYear()===ty&&d.getMonth()===tm) countedKeys[h.id+':'+h.paidDate]=true; });
   subs.forEach(function(s) {
-    if (!s.nextBillingDate || s.cycle==='once' || paidIds[s.id]) return;
+    if (!s.nextBillingDate || s.cycle==='once') return;
     var bill = parseLocalDate(s.nextBillingDate);
-    if (bill.getFullYear()===ty && bill.getMonth()===tm) {
+    if (bill.getFullYear()===ty && bill.getMonth()===tm && !countedKeys[s.id+':'+s.nextBillingDate]) {
       var cur = s.currency||'JPY';
       totals[cur] = (totals[cur]||0) + Number(s.amount);
       yc++;
@@ -1243,6 +1243,7 @@ function saveSubscription() {
   else subs.push(entry);
   localStorage.setItem('subs',JSON.stringify(subs));
   dbSave('subs', subs);
+  autoRecordHistory();
   closeModal(); renderList(); renderCalendar();
 }
 
