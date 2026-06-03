@@ -18,7 +18,7 @@ self.addEventListener('activate', function(e) {
 });
 
 self.addEventListener('fetch', function(e) {
-  if (e.request.url.includes('fonts.googleapis') || e.request.url.includes('google.com/s2/favicons')) return;
+  if (e.request.url.includes('fonts.googleapis') || e.request.url.includes('google.com/s2/favicons') || e.request.url.includes('googleapis.com/books') || e.request.url.includes('supabase')) return;
   e.respondWith(
     fetch(e.request).then(function(res) {
       var clone = res.clone();

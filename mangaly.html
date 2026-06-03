@@ -518,7 +518,6 @@ var editId = null;
 var currentCat = 'all';
 
 function init() {
-  buildPresets();
   renderList();
   renderReadingList();
   renderBacklogList();
@@ -722,12 +721,7 @@ function renderAll() {
   renderList(); renderReadingList(); renderBacklogList(); updateSummary(); updateTabBadges();
 }
 
-function buildPresets() {
-  document.getElementById('presetArea').innerHTML = PRESETS.map(function(p) {
-    return '<button class="preset-btn" onclick="selectPreset(this,\'' + p.name + '\',\'' + p.icon + '\',\'' + p.category + '\')">'
-      + '<span class="p-icon">' + p.icon + '</span><span class="p-name">' + p.name + '</span></button>';
-  }).join('');
-}
+function buildPresets() { /* presetArea removed from new modal */ }
 
 function selectPreset(btn, name, icon, category) {
   document.querySelectorAll('.preset-btn').forEach(function(b){ b.classList.remove('selected'); });
@@ -760,6 +754,7 @@ function openModal() {
   document.getElementById('fMemo').value = '';
   document.getElementById('searchQuery').value = '';
   document.getElementById('searchResults').innerHTML = '';
+  document.querySelectorAll('.preset-btn').forEach(function(b){ b.classList.remove('selected'); });
   // 新規追加は検索タブから
   switchModalTab('search', document.querySelectorAll('.modal-tab')[0]);
   document.getElementById('modalTabBar').style.display = 'flex';
@@ -856,43 +851,62 @@ function onSearchInput() {
   _modalSearchTimer = setTimeout(function(){ searchBooks(q); }, 500);
 }
 
+var _searchCache = {};
+
 function searchBooks(q) {
-  var url = 'https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent(q) + '&maxResults=8&langRestrict=ja&orderBy=relevance';
-  fetch(url).then(function(r){ return r.json(); }).then(function(data) {
-    if (!data.items || !data.items.length) {
-      document.getElementById('searchResults').innerHTML = '<p style="text-align:center;color:var(--muted);font-size:.82rem;padding:1rem;">見つかりませんでした</p>';
-      return;
-    }
-    document.getElementById('searchResults').innerHTML = data.items.map(function(item) {
-      var vi = item.volumeInfo || {};
-      var title  = vi.title || '不明';
-      var author = (vi.authors || []).join(', ');
-      var thumb  = vi.imageLinks && vi.imageLinks.thumbnail ? vi.imageLinks.thumbnail.replace('http:','https:') : '';
-      var pub    = vi.publishedDate ? vi.publishedDate.slice(0,4) : '';
-      var safeTitle  = title.replace(/'/g,"\\'");
-      var safeAuthor = author.replace(/'/g,"\\'");
-      var safeThumb  = thumb.replace(/'/g,"\\'");
-      return '<div class="search-result" onclick="applySearchResult(\'' + safeTitle + '\',\'' + safeAuthor + '\',\'' + safeThumb + '\')">'
-        + '<div class="search-result-cover">'
-          + (thumb ? '<img src="' + thumb + '" alt="">' : '📖')
-        + '</div>'
-        + '<div class="search-result-info">'
-          + '<p class="search-result-title">' + title + '</p>'
-          + '<p class="search-result-meta">' + (author||'著者不明') + (pub?' · '+pub:'') + '</p>'
-        + '</div>'
-        + '</div>';
-    }).join('');
-  }).catch(function() {
-    document.getElementById('searchResults').innerHTML = '<p style="text-align:center;color:var(--muted);font-size:.82rem;padding:1rem;">検索に失敗しました。手動入力をお試しください。</p>';
+  if (_searchCache[q]) { renderSearchResults(_searchCache[q]); return; }
+  var url = 'https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent(q) + '&maxResults=8&orderBy=relevance';
+  fetch(url, {cache:'no-store'}).then(function(r){
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }).then(function(data) {
+    _searchCache[q] = data;
+    renderSearchResults(data);
+  }).catch(function(err) {
+    console.error('Books API error:', err);
+    document.getElementById('searchResults').innerHTML = '<p style="text-align:center;color:var(--muted);font-size:.82rem;padding:1rem;">検索に失敗しました（' + (err.message||'不明') + '）<br>手動入力タブをお使いください</p>';
   });
+}
+
+var _searchResultsData = [];
+
+function renderSearchResults(data) {
+  if (!data.items || !data.items.length) {
+    document.getElementById('searchResults').innerHTML = '<p style="text-align:center;color:var(--muted);font-size:.82rem;padding:1rem;">見つかりませんでした</p>';
+    return;
+  }
+  _searchResultsData = data.items;
+  document.getElementById('searchResults').innerHTML = data.items.map(function(item, idx) {
+    var vi = item.volumeInfo || {};
+    var title  = (vi.title || '不明').replace(/</g,'&lt;');
+    var author = ((vi.authors || []).join(', ')).replace(/</g,'&lt;');
+    var thumb  = vi.imageLinks && vi.imageLinks.thumbnail ? vi.imageLinks.thumbnail.replace('http:','https:') : '';
+    var pub    = vi.publishedDate ? vi.publishedDate.slice(0,4) : '';
+    return '<div class="search-result" onclick="applySearchResultByIdx(' + idx + ')">'
+      + '<div class="search-result-cover">'
+        + (thumb ? '<img src="' + thumb + '" loading="lazy" alt="">' : '📖')
+      + '</div>'
+      + '<div class="search-result-info">'
+        + '<p class="search-result-title">' + title + '</p>'
+        + '<p class="search-result-meta">' + (author||'著者不明') + (pub?' · '+pub:'') + '</p>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function applySearchResultByIdx(idx) {
+  var item = _searchResultsData[idx]; if (!item) return;
+  var vi = item.volumeInfo || {};
+  var title  = vi.title || '';
+  var author = (vi.authors || []).join(', ');
+  var thumb  = vi.imageLinks && vi.imageLinks.thumbnail ? vi.imageLinks.thumbnail.replace('http:','https:') : '';
+  applySearchResult(title, author, thumb);
 }
 
 function applySearchResult(title, author, coverUrl) {
   document.getElementById('fName').value = title;
   document.getElementById('fAuthor').value = author;
-  // coverUrlをtemporaryに保存
-  applySearchResult._cover = coverUrl;
-  // 手動入力タブに切り替え
+  applySearchResult._cover = coverUrl || '';
   switchModalTab('manual', document.querySelectorAll('.modal-tab')[1]);
   showToast('✅ ' + title + ' を選択しました');
 }
