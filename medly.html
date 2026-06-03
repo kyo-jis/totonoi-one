@@ -1562,9 +1562,10 @@ async function syncFromCloud() {
   var res = await _sb.from('user_data').select('key,data').eq('user_id', currentUser.id).eq('app', _APP);
   if (res.data) {
     res.data.forEach(function(row) {
-      if (row.key === 'items')    { items = row.data; localStorage.setItem('medlyItems', JSON.stringify(items)); }
-      if (row.key === 'purchase') { purchaseHistory = row.data; localStorage.setItem('medlyPurchase', JSON.stringify(purchaseHistory)); }
-      if (row.key === 'logs')     { effectLogs = row.data; localStorage.setItem('medlyEffectLogs', JSON.stringify(effectLogs)); }
+      if (row.key === 'items')     { items = row.data; localStorage.setItem('medlyItems', JSON.stringify(items)); }
+      if (row.key === 'purchase')  { purchaseHistory = row.data; localStorage.setItem('medlyPurchase', JSON.stringify(purchaseHistory)); }
+      if (row.key === 'logs')      { effectLogs = row.data; localStorage.setItem('medlyEffectLogs', JSON.stringify(effectLogs)); }
+      if (row.key === 'dosageLog') { dosageLog = row.data; localStorage.setItem('medlyDosageLog', JSON.stringify(dosageLog)); }
     });
   }
   var p = await _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle();

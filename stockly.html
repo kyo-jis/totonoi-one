@@ -983,7 +983,7 @@ async function syncFromCloud() {
   });
   var p = await _sb.from('profiles').select('is_pro').eq('id',currentUser.id).maybeSingle();
   if (p.data) { isPro = p.data.is_pro; localStorage.setItem('isPro', String(isPro)); }
-  renderList(); renderAlert(); updateSummary(); updateProUI();
+  renderList(); renderAlert(); updateSummary(); updateProUI(); updateShopBadge();
   showToast('☁️ データを同期しました');
 }
 

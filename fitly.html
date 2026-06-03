@@ -1280,7 +1280,7 @@ function init() {
   var savedCW = JSON.parse(localStorage.getItem('fitlyCurrentWorkout') || 'null');
   if (savedCW && savedCW.running && savedCW.exercises && savedCW.exercises.length) {
     currentWorkout = savedCW;
-    document.getElementById('workoutActiveHeader').style.display = 'flex';
+    document.getElementById('workoutActiveHeader').style.display = 'block';
     document.getElementById('workoutDashboard').style.display = 'none';
     document.getElementById('btnAddExercise').style.display = 'block';
     document.getElementById('btnSave').style.display = 'block';
