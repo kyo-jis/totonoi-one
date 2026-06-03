@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Bookly — 本・読書管理</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+  <link rel="manifest" href="/manifest-bookly.json">
+  <link rel="icon" type="image/png" href="/favicon.ico">
+  <meta name="theme-color" content="#0c0c18">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Bookly">
+  <link rel="apple-touch-icon" href="/apple-touch-icon-bookly.png">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#0c0c18; --surface:#14142a; --surface2:#1c1c38; --surface3:#242448;
+      --border:#2e2e50; --text:#f2f2fa; --muted:#9494b8;
+      --accent:#8b5cf6; --accent-dark:#7c3aed; --accent2:#ff7c6e;
+      --green:#5ecfa0; --yellow:#f5c842; --orange:#ffb347; --blue:#6c8eff;
+      --font:'Outfit',sans-serif;
+      --shadow-sm:0 2px 10px rgba(0,0,0,.3); --shadow-md:0 4px 24px rgba(0,0,0,.4);
+      --spring:cubic-bezier(.34,1.56,.64,1);
+    }
+    html { font-size:16px; }
+    body { background:var(--bg); color:var(--text); font-family:var(--font); font-weight:400; min-height:100vh; padding-bottom:130px; }
+
+    .app-header { padding:3rem 1.25rem 1.25rem; }
+    .back-link { font-size:.75rem; color:var(--muted); text-decoration:none; letter-spacing:.1em; text-transform:uppercase; display:inline-flex; align-items:center; gap:.4rem; }
+    .app-title { font-size:1.6rem; font-weight:500; letter-spacing:-.02em; }
+    .app-title span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
+    .auth-chip { background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); transition:all .2s; white-space:nowrap; }
+    .auth-chip.logged-in { border-color:var(--accent); color:var(--accent); }
+    .header-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; }
+
+    .summary-card { margin:0 1.25rem 1.25rem; background:linear-gradient(145deg,#18103a 0%,#0e0920 100%); border:1px solid rgba(139,92,246,.38); border-radius:24px; padding:1.5rem; position:relative; overflow:hidden; box-shadow:0 0 60px rgba(139,92,246,.1),inset 0 1px 0 rgba(255,255,255,.07),0 8px 40px rgba(0,0,0,.5); }
+    .summary-card::before { content:''; position:absolute; top:-80px; right:-80px; width:280px; height:280px; background:radial-gradient(circle,rgba(139,92,246,.5) 0%,transparent 60%); border-radius:50%; }
+    .summary-label { font-size:.72rem; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-bottom:.5rem; }
+    .summary-stats { display:flex; gap:1.5rem; margin-top:.5rem; }
+    .summary-stat-value { font-size:2.2rem; font-weight:600; letter-spacing:-.03em; }
+    .summary-stat-label { font-size:.7rem; color:var(--muted); margin-top:.1rem; }
+    .card-deco { position:absolute; right:1rem; bottom:-.75rem; font-size:8.5rem; font-weight:700; line-height:1; color:rgba(255,255,255,.04); pointer-events:none; user-select:none; letter-spacing:-.05em; }
+    .summary-bar { display:flex; gap:.75rem; margin-top:1rem; flex-wrap:wrap; }
+    .summary-bar-item { display:flex; align-items:center; gap:.4rem; font-size:.75rem; color:var(--muted); }
+    .dot { width:8px; height:8px; border-radius:50%; }
+
+    .free-banner { margin:0 1.25rem 1.25rem; background:rgba(245,200,66,.1); border:1px solid rgba(245,200,66,.25); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+    .free-banner-text { font-size:.8rem; color:var(--yellow); }
+    .upgrade-btn { font-size:.72rem; font-weight:500; color:#1a1a24; background:var(--yellow); border:none; border-radius:8px; padding:.4rem .75rem; cursor:pointer; white-space:nowrap; font-family:var(--font); }
+
+    .tabs { display:flex; gap:0; margin:0 1.25rem 1.25rem; background:var(--surface); border-radius:14px; padding:4px; border:1px solid var(--border); box-shadow:var(--shadow-sm); overflow-x:auto; scrollbar-width:none; }
+    .tabs::-webkit-scrollbar { display:none; }
+    .tab { flex:1; padding:.58rem .2rem; font-size:.72rem; font-weight:400; color:var(--muted); background:none; border:none; border-radius:10px; cursor:pointer; font-family:var(--font); transition:all .2s var(--spring); white-space:nowrap; min-width:48px; position:relative; }
+    .tab.active { background:var(--surface2); color:var(--text); font-weight:600; box-shadow:var(--shadow-sm); }
+    .tab:active { transform:scale(.93); }
+    .tab-badge { position:absolute; top:3px; right:3px; background:var(--accent2); color:#fff; border-radius:10px; font-size:.5rem; font-weight:600; padding:.1rem .3rem; min-width:14px; text-align:center; line-height:1.4; }
+
+    .view { display:none; }
+    .view.active { display:block; }
+    .cat-filter { display:flex; gap:.4rem; padding:0 1.25rem 1rem; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+    .cat-filter::-webkit-scrollbar { display:none; }
+    .cat-chip { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:.3rem .8rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); white-space:nowrap; transition:all .2s; flex-shrink:0; }
+    .cat-chip.active { background:var(--surface2); border-color:var(--accent); color:var(--accent); }
+    .list-section { padding:0 1.25rem; }
+    .section-label { font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:.75rem; }
+
+    .book-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:.625rem; animation:slideIn .3s ease; }
+    .book-card.reading { border-color:rgba(139,92,246,.35); }
+    .book-card.completed { border-color:rgba(94,207,160,.3); }
+    @keyframes slideIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+    .book-top { display:flex; align-items:flex-start; gap:.9rem; }
+    .book-cover { width:44px; height:58px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:1.4rem; flex-shrink:0; background:var(--surface2); position:relative; overflow:hidden; }
+    .book-cover img { width:100%; height:100%; object-fit:cover; border-radius:6px; }
+    .book-cover::after { content:''; position:absolute; top:0; right:0; bottom:0; width:3px; background:rgba(0,0,0,.25); }
+    .book-info { flex:1; min-width:0; }
+    .book-name { font-size:.95rem; font-weight:500; line-height:1.3; }
+    .book-author { font-size:.7rem; color:var(--muted); margin-top:.1rem; }
+    .book-meta { font-size:.68rem; color:var(--muted); margin-top:.3rem; display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; }
+    .book-right { display:flex; flex-direction:column; align-items:flex-end; gap:.25rem; flex-shrink:0; }
+    .book-progress-text { font-size:1rem; font-weight:600; letter-spacing:-.02em; white-space:nowrap; }
+    .book-progress-sub { font-size:.65rem; color:var(--muted); }
+
+    .status-badge { font-size:.62rem; font-weight:500; padding:.12rem .4rem; border-radius:20px; white-space:nowrap; }
+    .status-badge.backlog   { background:rgba(148,148,184,.2); color:var(--muted); }
+    .status-badge.reading   { background:rgba(139,92,246,.2); color:var(--accent); }
+    .status-badge.completed { background:rgba(94,207,160,.2); color:var(--green); }
+
+    .format-badge { font-size:.6rem; padding:.1rem .38rem; border-radius:6px; font-weight:500; }
+    .fmt-physical { background:rgba(94,207,160,.15); color:var(--green); }
+    .fmt-digital  { background:rgba(108,142,255,.15); color:var(--blue); }
+    .fmt-scanned  { background:rgba(245,200,66,.15); color:var(--yellow); }
+
+    .stars-display { display:flex; gap:1px; }
+    .star-filled { color:var(--yellow); font-size:.8rem; }
+    .star-empty  { color:var(--surface3); font-size:.8rem; }
+
+    .progress-bar-bg { height:5px; background:var(--surface2); border-radius:3px; overflow:hidden; margin-top:.6rem; }
+    .progress-bar-fill { height:100%; border-radius:3px; transition:width .5s var(--spring); background:linear-gradient(90deg,var(--accent),#a78bfa); }
+    .progress-bar-fill.done { background:linear-gradient(90deg,var(--green),#a0f0c0); }
+
+    .book-actions { display:flex; align-items:center; justify-content:space-between; margin-top:.65rem; }
+    .progress-controls { display:flex; align-items:center; gap:.35rem; }
+    .vol-btn { width:28px; height:28px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--text); font-size:.9rem; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:var(--font); transition:all .15s; }
+    .vol-btn:active { transform:scale(.85); }
+    .vol-btn.minus:active { background:rgba(255,107,107,.2); }
+    .vol-btn.plus:active  { background:rgba(139,92,246,.2); }
+    .vol-label { font-size:.72rem; color:var(--muted); min-width:3.5rem; text-align:center; cursor:pointer; }
+    .btn-icon { width:30px; height:30px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); font-size:.75rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .item-btn-row { display:flex; gap:.4rem; }
+    .book-memo { font-size:.75rem; color:var(--muted); margin-top:.55rem; padding-top:.55rem; border-top:1px solid var(--border); line-height:1.5; white-space:pre-wrap; }
+    .completed-date { font-size:.65rem; color:var(--green); margin-top:.15rem; }
+
+    .quick-vol-input { width:52px; background:var(--surface3); border:1px solid var(--accent); border-radius:8px; padding:.3rem .4rem; font-size:.95rem; font-weight:600; color:var(--text); font-family:var(--font); text-align:center; outline:none; }
+    .quick-vol-confirm { background:var(--accent); color:#fff; border:none; border-radius:7px; width:26px; height:26px; font-size:.75rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+
+    /* Camera overlay */
+    .camera-overlay { position:fixed; inset:0; background:#000; z-index:300; display:none; flex-direction:column; align-items:center; justify-content:center; }
+    .camera-overlay.show { display:flex; }
+    #scanVideo { width:100%; max-width:480px; height:auto; }
+    .scan-frame { position:absolute; width:260px; height:180px; border:2px solid var(--accent); border-radius:8px; box-shadow:0 0 0 2000px rgba(0,0,0,.55); }
+    .scan-label { color:#fff; font-size:.85rem; margin-top:1.5rem; text-align:center; opacity:.8; }
+    .scan-close { position:absolute; top:2rem; right:1.5rem; background:rgba(255,255,255,.15); border:none; border-radius:12px; padding:.65rem 1rem; font-size:.88rem; color:#fff; cursor:pointer; font-family:var(--font); }
+
+    /* Modal */
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); backdrop-filter:blur(6px); z-index:100; display:none; align-items:flex-end; }
+    .modal-overlay.show { display:flex; }
+    .modal { background:var(--surface); border:1px solid var(--border); border-radius:24px 24px 0 0; padding:1.5rem 1.25rem 2rem; width:100%; max-height:92vh; overflow-y:auto; animation:slideUp .3s ease; }
+    @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+    .modal-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 1.25rem; }
+    .modal-title { font-size:1.1rem; font-weight:500; margin-bottom:1rem; }
+
+    .modal-tabs { display:flex; gap:3px; background:var(--surface2); border-radius:10px; padding:3px; margin-bottom:1.25rem; border:1px solid var(--border); overflow-x:auto; scrollbar-width:none; }
+    .modal-tabs::-webkit-scrollbar { display:none; }
+    .modal-tab { flex:1; padding:.48rem .2rem; border:none; border-radius:8px; font-family:var(--font); font-size:.72rem; cursor:pointer; transition:all .2s; background:none; color:var(--muted); white-space:nowrap; min-width:52px; }
+    .modal-tab.active { background:var(--surface3); color:var(--text); font-weight:500; }
+
+    /* Book type toggle */
+    .type-toggle { display:flex; gap:.5rem; margin-bottom:.75rem; }
+    .type-btn { flex:1; padding:.65rem .5rem; border:1px solid var(--border); border-radius:10px; background:var(--surface2); color:var(--muted); font-size:.8rem; cursor:pointer; font-family:var(--font); transition:all .2s; text-align:center; }
+    .type-btn.active { border-color:var(--accent); background:rgba(139,92,246,.12); color:var(--accent); font-weight:500; }
+
+    /* Star rating input */
+    .star-input { display:flex; gap:.25rem; margin-top:.25rem; }
+    .star-input-btn { font-size:1.4rem; background:none; border:none; cursor:pointer; padding:.1rem; transition:transform .1s; color:var(--surface3); line-height:1; }
+    .star-input-btn.on { color:var(--yellow); }
+    .star-input-btn:active { transform:scale(.85); }
+
+    /* ISBN */
+    .isbn-row { display:flex; gap:.5rem; align-items:flex-end; }
+    .isbn-row input { flex:1; }
+    .isbn-lookup-btn { background:var(--accent); color:#fff; border:none; border-radius:10px; padding:.75rem 1rem; font-size:.82rem; font-weight:500; cursor:pointer; font-family:var(--font); white-space:nowrap; }
+    .isbn-lookup-btn:active { transform:scale(.95); }
+    .isbn-status { font-size:.75rem; margin-top:.4rem; min-height:1rem; }
+    .isbn-status.ok   { color:var(--green); }
+    .isbn-status.err  { color:var(--accent2); }
+    .isbn-status.wait { color:var(--muted); }
+
+    /* Search results */
+    .search-result { display:flex; align-items:center; gap:.75rem; padding:.65rem 0; border-bottom:1px solid var(--border); cursor:pointer; }
+    .search-result:last-child { border-bottom:none; }
+    .search-result:active { opacity:.7; }
+    .search-result-cover { width:38px; height:50px; border-radius:5px; object-fit:cover; background:var(--surface2); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:1.2rem; overflow:hidden; }
+    .search-result-cover img { width:100%; height:100%; object-fit:cover; }
+    .search-result-info { flex:1; min-width:0; }
+    .search-result-title { font-size:.88rem; font-weight:500; line-height:1.3; }
+    .search-result-meta { font-size:.7rem; color:var(--muted); margin-top:.15rem; }
+    .search-loading { text-align:center; padding:1.5rem; color:var(--muted); font-size:.85rem; }
+
+    /* CSV */
+    .csv-drop { border:2px dashed var(--border); border-radius:12px; padding:1.5rem; text-align:center; color:var(--muted); font-size:.82rem; cursor:pointer; transition:border-color .15s; }
+    .csv-drop:active { border-color:var(--accent); color:var(--accent); }
+
+    /* Form */
+    .form-group { margin-bottom:.875rem; }
+    label { display:block; font-size:.72rem; color:var(--muted); letter-spacing:.05em; text-transform:uppercase; margin-bottom:.4rem; }
+    input, select, textarea { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:.75rem 1rem; font-size:.95rem; color:var(--text); font-family:var(--font); outline:none; transition:border-color .15s; }
+    input:focus, select:focus, textarea:focus { border-color:var(--accent); }
+    select option { background:var(--surface2); }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; }
+    .btn-primary { width:100%; padding:.9rem; background:var(--accent); color:#fff; border:none; border-radius:12px; font-size:.95rem; font-weight:500; font-family:var(--font); cursor:pointer; margin-top:.5rem; }
+    .btn-primary:active { transform:scale(.97); }
+    .btn-cancel { width:100%; padding:.75rem; background:none; color:var(--muted); border:none; font-size:.88rem; font-family:var(--font); cursor:pointer; margin-top:.25rem; }
+
+    /* Stats */
+    .analytics-wrap { padding:0 1.25rem; }
+    .analytics-section { margin-bottom:1.5rem; }
+    .analytics-title { font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:.75rem; }
+    .bar-chart { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.25rem 1rem; }
+    .analysis-grid { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; margin-bottom:.75rem; }
+    .analysis-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1rem; }
+    .analysis-card-label { font-size:.65rem; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:.4rem; }
+    .analysis-card-value { font-size:1.3rem; font-weight:600; letter-spacing:-.02em; }
+    .analysis-card-sub { font-size:.68rem; color:var(--muted); margin-top:.2rem; }
+    .cat-row { display:flex; align-items:center; justify-content:space-between; padding:.65rem 0; border-bottom:1px solid var(--border); }
+    .cat-row:last-child { border-bottom:none; }
+    .cat-row-left { display:flex; align-items:center; gap:.65rem; font-size:.88rem; }
+    .cat-row-right { display:flex; align-items:center; gap:.75rem; }
+    .cat-row-count { font-size:.75rem; color:var(--muted); min-width:2.5rem; text-align:right; }
+    .cat-row-bar { width:72px; height:6px; background:var(--surface3); border-radius:3px; overflow:hidden; }
+    .cat-row-bar-fill { height:100%; border-radius:3px; background:var(--accent); }
+
+    .empty-state { text-align:center; padding:3rem 2rem; color:var(--muted); }
+    .empty-state .empty-icon { font-size:2.5rem; margin-bottom:.75rem; }
+    .empty-state p { font-size:.88rem; line-height:1.6; }
+
+    .fab { position:fixed; bottom:calc(72px + env(safe-area-inset-bottom)); right:1.25rem; width:56px; height:56px; border-radius:18px; background:var(--accent); color:#fff; border:none; font-size:1.5rem; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 24px rgba(139,92,246,.45); z-index:50; transition:transform .15s; }
+    .fab:active { transform:scale(.92); }
+    .ad-banner { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--border); padding:.6rem 1rem; display:flex; align-items:center; justify-content:center; gap:.5rem; z-index:40; padding-bottom:calc(.6rem + env(safe-area-inset-bottom)); }
+    .ad-label { font-size:.6rem; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; }
+    .ad-content { font-size:.78rem; color:var(--muted); flex:1; text-align:center; }
+    .share-btn { width:100%; padding:.8rem; border:none; border-radius:12px; font-size:.88rem; font-weight:500; font-family:var(--font); cursor:pointer; }
+    .share-x { background:#000; color:#fff; }
+    .share-line { background:#06c755; color:#fff; }
+    .share-copy { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+    .data-btn { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:.55rem .9rem; font-size:.8rem; color:var(--text); cursor:pointer; font-family:var(--font); }
+  </style>
+</head>
+<body>
+
+<!-- Camera Overlay -->
+<div class="camera-overlay" id="cameraOverlay">
+  <video id="scanVideo" autoplay playsinline muted></video>
+  <div class="scan-frame"></div>
+  <p class="scan-label">📷 バーコードをフレームに合わせてください</p>
+  <button class="scan-close" onclick="stopBarcodeScanner()">✕ キャンセル</button>
+</div>
+
+<div class="app-header">
+  <div class="header-top">
+    <a class="back-link" href="index.html"> Totonoi One</a>
+    <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
+  </div>
+  <h1 class="app-title">Book<span>ly</span></h1>
+</div>
+
+<div class="summary-card">
+  <p class="summary-label">読書状況</p>
+  <div class="summary-stats">
+    <div class="summary-stat"><p class="summary-stat-value" id="summaryTotal">0</p><p class="summary-stat-label">登録</p></div>
+    <div class="summary-stat"><p class="summary-stat-value" style="color:var(--accent)" id="summaryReading">0</p><p class="summary-stat-label">読中</p></div>
+    <div class="summary-stat"><p class="summary-stat-value" style="color:var(--green)" id="summaryCompleted">0</p><p class="summary-stat-label">読了</p></div>
+  </div>
+  <div class="summary-bar" id="summaryBar"></div>
+  <span class="card-deco" aria-hidden="true">本</span>
+</div>
+
+<div class="free-banner" id="freeBanner">
+  <p class="free-banner-text"><strong id="countText">0/20</strong> 件登録中（無料プラン）</p>
+  <a href="index.html" class="upgrade-btn">アップグレード</a>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('list',this)">一覧</button>
+  <button class="tab" onclick="switchTab('reading',this)" id="tabReading">読中</button>
+  <button class="tab" onclick="switchTab('backlog',this)" id="tabBacklog">積読</button>
+  <button class="tab" onclick="switchTab('done',this)">読了</button>
+  <button class="tab" onclick="switchTab('settings',this)">設定</button>
+</div>
+
+<div class="view active" id="view-list">
+  <div class="cat-filter">
+    <button class="cat-chip active" onclick="filterCat('all',this)">すべて</button>
+    <button class="cat-chip" onclick="filterCat('manga',this)">📚 漫画</button>
+    <button class="cat-chip" onclick="filterCat('light_novel',this)">✨ ラノベ</button>
+    <button class="cat-chip" onclick="filterCat('novel',this)">📝 小説</button>
+    <button class="cat-chip" onclick="filterCat('reference',this)">📖 参考書</button>
+    <button class="cat-chip" onclick="filterCat('other',this)">📦 その他</button>
+  </div>
+  <div class="list-section"><div id="itemList"></div></div>
+</div>
+
+<div class="view" id="view-reading">
+  <div class="list-section" style="padding-top:.25rem;">
+    <p class="section-label" style="margin-bottom:.75rem;">読んでいる本</p>
+    <div id="readingList"></div>
+  </div>
+</div>
+
+<div class="view" id="view-backlog">
+  <div class="list-section" style="padding-top:.25rem;">
+    <p class="section-label" style="margin-bottom:.75rem;">積読リスト</p>
+    <div id="backlogList"></div>
+  </div>
+</div>
+
+<div class="view" id="view-done">
+  <div class="list-section" style="padding-top:.25rem;">
+    <p class="section-label" style="margin-bottom:.75rem;">読了した本</p>
+    <div id="doneList"></div>
+  </div>
+</div>
+
+<div class="view" id="view-settings">
+  <div class="analytics-wrap">
+    <div class="analytics-section">
+      <p class="analytics-title">統計</p>
+      <div class="analysis-grid" id="statsGrid"></div>
+      <div class="bar-chart" style="margin-top:.75rem;" id="catBreakdown"></div>
+    </div>
+    <div class="analytics-section">
+      <p class="analytics-title">データ管理</p>
+      <div class="bar-chart" style="padding:.9rem 1.1rem;">
+        <p style="font-size:.8rem;font-weight:500;margin-bottom:.5rem;">エクスポート <span style="font-size:.65rem;color:var(--yellow);background:rgba(245,200,66,.12);padding:.1rem .4rem;border-radius:8px;margin-left:.3rem;">有料</span></p>
+        <div style="display:flex;gap:.5rem;margin-top:.5rem;">
+          <button onclick="exportData('json')" class="data-btn">JSON</button>
+          <button onclick="exportData('csv')" class="data-btn">CSV</button>
+        </div>
+      </div>
+    </div>
+    <div class="analytics-section">
+      <p class="analytics-title">プラン</p>
+      <div class="bar-chart" style="padding:1rem 1.1rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div><p style="font-size:.95rem;font-weight:500;" id="planLabel">無料プラン</p><p style="font-size:.75rem;color:var(--muted);margin-top:.2rem;" id="planDesc">登録20件・広告あり</p></div>
+          <span style="font-size:.7rem;padding:.25rem .6rem;border-radius:20px;background:rgba(139,92,246,.15);color:var(--accent);" id="planBadge">現在</span>
+        </div>
+        <a href="index.html" style="display:block;margin-top:.9rem;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:.75rem;font-size:.85rem;color:var(--accent);text-decoration:none;">ダッシュボードでプランを管理 →</a>
+      </div>
+    </div>
+    <div class="analytics-section">
+      <p class="analytics-title">使い方ガイド</p>
+      <div class="bar-chart" style="padding:1rem 1.1rem;">
+        <a href="guide.html" style="display:block;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:.75rem;font-size:.85rem;color:var(--accent);text-decoration:none;">📖 使い方ガイドを見る →</a>
+      </div>
+    </div>
+    <div class="analytics-section">
+      <p class="analytics-title">口コミ・シェア</p>
+      <div class="bar-chart" style="padding:1rem 1.1rem;">
+        <div style="display:flex;flex-direction:column;gap:.5rem;">
+          <button onclick="shareX()" class="share-btn share-x">𝕏 でシェアする</button>
+          <button onclick="shareLine()" class="share-btn share-line">🟢 LINEで送る</button>
+          <button onclick="shareCopy()" class="share-btn share-copy" id="copyBtn">🔗 リンクをコピー</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="fab" onclick="openModal()">＋</button>
+<div class="ad-banner" id="adBanner"><span class="ad-label">広告</span><p class="ad-content">Google AdSense 広告エリア</p></div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <p class="modal-title" id="modalTitle">本を追加</p>
+    <div class="modal-tabs" id="modalTabBar">
+      <button class="modal-tab active" onclick="switchModalTab('scan',this)">📷 スキャン</button>
+      <button class="modal-tab" onclick="switchModalTab('isbn',this)">🔢 ISBN</button>
+      <button class="modal-tab" onclick="switchModalTab('search',this)">🔍 検索</button>
+      <button class="modal-tab" onclick="switchModalTab('manual',this)">✏️ 手動</button>
+      <button class="modal-tab" onclick="switchModalTab('csv',this)">📂 CSV</button>
+    </div>
+
+    <!-- スキャンタブ -->
+    <div id="pane-scan">
+      <div style="text-align:center;padding:1.5rem 1rem;">
+        <div style="font-size:3rem;margin-bottom:.75rem;">📷</div>
+        <p style="font-size:.88rem;color:var(--muted);margin-bottom:1.25rem;line-height:1.6;">本の裏表紙のバーコード（ISBN）をカメラで読み取ります</p>
+        <button onclick="startBarcodeScanner()" class="btn-primary" style="margin-top:0;">カメラを起動</button>
+        <p style="font-size:.72rem;color:var(--muted);margin-top:.75rem;">対応ブラウザ: Chrome/Edge (Android・PC)</p>
+      </div>
+    </div>
+
+    <!-- ISBNタブ -->
+    <div id="pane-isbn" style="display:none;">
+      <div class="form-group">
+        <label>ISBN（13桁または10桁）</label>
+        <div class="isbn-row">
+          <input type="number" id="isbnInput" placeholder="9784XXXXXXXxx">
+          <button class="isbn-lookup-btn" onclick="lookupISBN()">検索</button>
+        </div>
+        <p class="isbn-status wait" id="isbnStatus">ISBNを入力して検索してください</p>
+      </div>
+      <div id="isbnPreview" style="display:none;" class="bar-chart" style="padding:.875rem;">
+        <div style="display:flex;gap:.75rem;align-items:center;">
+          <div id="isbnCoverWrap" style="width:52px;height:68px;border-radius:6px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;overflow:hidden;"></div>
+          <div><p id="isbnTitle" style="font-size:.92rem;font-weight:500;"></p><p id="isbnAuthor" style="font-size:.75rem;color:var(--muted);margin-top:.2rem;"></p></div>
+        </div>
+        <button onclick="confirmISBN()" class="btn-primary" style="margin-top:.875rem;">この本を登録</button>
+      </div>
+    </div>
+
+    <!-- 検索タブ -->
+    <div id="pane-search" style="display:none;">
+      <div class="form-group">
+        <input type="text" id="searchQuery" placeholder="タイトルや著者名で検索..." oninput="onSearchInput()" style="width:100%;">
+      </div>
+      <div id="searchResults"></div>
+    </div>
+
+    <!-- 手動入力タブ -->
+    <div id="pane-manual" style="display:none;">
+      <div class="form-group">
+        <label>タイプ</label>
+        <div class="type-toggle">
+          <button id="typeSeriesBtn" class="type-btn active" onclick="setBookType('series',this)">📚 シリーズ（漫画・ラノベ）</button>
+          <button id="typeSingleBtn" class="type-btn" onclick="setBookType('single',this)">📖 単巻（小説・参考書）</button>
+        </div>
+      </div>
+      <div class="form-group"><label>タイトル</label><input type="text" id="fName" placeholder="例：鬼滅の刃" style="width:100%;"></div>
+      <div class="form-group"><label>著者名</label><input type="text" id="fAuthor" placeholder="例：吾峠呼世晴" style="width:100%;"></div>
+      <div class="form-row">
+        <div class="form-group"><label>カテゴリ</label>
+          <select id="fCategory" style="width:100%;">
+            <option value="manga">📚 漫画</option>
+            <option value="light_novel">✨ ラノベ</option>
+            <option value="novel">📝 小説</option>
+            <option value="reference">📖 参考書</option>
+            <option value="other">📦 その他</option>
+          </select>
+        </div>
+        <div class="form-group"><label>形態</label>
+          <select id="fFormat" style="width:100%;">
+            <option value="">未設定</option>
+            <option value="physical">📚 物理本</option>
+            <option value="digital">📱 電子書籍</option>
+            <option value="scanned">🗂 自炊</option>
+          </select>
+        </div>
+      </div>
+      <!-- シリーズ用フィールド -->
+      <div id="seriesFields">
+        <div class="form-row">
+          <div class="form-group"><label>読了巻数</label><input type="number" id="fReadVols" placeholder="0" min="0" step="1" style="width:100%;"></div>
+          <div class="form-group"><label>全巻数（0=連載中）</label><input type="number" id="fTotalVols" placeholder="0" min="0" step="1" style="width:100%;"></div>
+        </div>
+      </div>
+      <!-- 単巻用フィールド -->
+      <div id="singleFields" style="display:none;">
+        <div class="form-row">
+          <div class="form-group"><label>読了ページ</label><input type="number" id="fReadPages" placeholder="0" min="0" step="1" style="width:100%;"></div>
+          <div class="form-group"><label>総ページ数</label><input type="number" id="fTotalPages" placeholder="300" min="0" step="1" style="width:100%;"></div>
+        </div>
+      </div>
+      <div class="form-group"><label>ステータス</label>
+        <select id="fStatus" style="width:100%;">
+          <option value="backlog">積読</option>
+          <option value="reading">読中</option>
+          <option value="completed">読了</option>
+        </select>
+      </div>
+      <div class="form-group" id="ratingGroup">
+        <label>評価</label>
+        <div class="star-input" id="starInput">
+          <button class="star-input-btn" onclick="setRating(1)">★</button>
+          <button class="star-input-btn" onclick="setRating(2)">★</button>
+          <button class="star-input-btn" onclick="setRating(3)">★</button>
+          <button class="star-input-btn" onclick="setRating(4)">★</button>
+          <button class="star-input-btn" onclick="setRating(5)">★</button>
+        </div>
+      </div>
+      <div class="form-group" id="completedDateGroup" style="display:none;">
+        <label>読了日</label>
+        <input type="date" id="fCompletedDate" style="width:100%;">
+      </div>
+      <div class="form-group"><label>コメント・メモ</label><textarea id="fMemo" rows="2" placeholder="感想や次巻のメモなど..." style="width:100%;resize:none;"></textarea></div>
+      <button class="btn-primary" id="saveBtn" onclick="saveItem()">追加する</button>
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+    </div>
+
+    <!-- CSVタブ -->
+    <div id="pane-csv" style="display:none;">
+      <div class="csv-drop" onclick="document.getElementById('csvFile').click()">
+        <p style="font-size:1.5rem;margin-bottom:.5rem;">📂</p>
+        <p>CSVファイルを選択</p>
+        <p style="font-size:.7rem;margin-top:.3rem;">タップしてファイルを選択</p>
+      </div>
+      <input type="file" id="csvFile" accept=".csv" style="display:none;" onchange="importCSV(this)">
+      <div style="margin-top:1rem;background:var(--surface2);border-radius:10px;padding:.875rem;font-size:.75rem;color:var(--muted);line-height:1.7;">
+        <p style="font-weight:500;color:var(--text);margin-bottom:.3rem;">CSV形式（1行目ヘッダーはスキップ）</p>
+        <p>タイトル, 著者, カテゴリ, タイプ(series/single), 読了巻/ページ, 全巻/ページ, ステータス, 形態, 評価(1-5), 読了日, メモ</p>
+        <button onclick="downloadCsvTemplate()" style="margin-top:.6rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.4rem .75rem;font-size:.72rem;color:var(--accent);cursor:pointer;font-family:var(--font);">📥 テンプレートをダウンロード</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var FREE_LIMIT = 20;
+var isPro = localStorage.getItem('isPro') === 'true';
+
+var CAT_LABELS = { all:'すべて', manga:'📚 漫画', light_novel:'✨ ラノベ', novel:'📝 小説', reference:'📖 参考書', other:'📦 その他' };
+var CAT_NAMES  = { manga:'漫画', light_novel:'ラノベ', novel:'小説', reference:'参考書', other:'その他' };
+var CAT_ICONS  = { manga:'📚', light_novel:'✨', novel:'📝', reference:'📖', other:'📦' };
+var FORMAT_LABELS = { physical:'📚 物理本', digital:'📱 電子書籍', scanned:'🗂 自炊' };
+var FORMAT_CLS    = { physical:'fmt-physical', digital:'fmt-digital', scanned:'fmt-scanned' };
+
+var items = JSON.parse(localStorage.getItem('bookly_items') || '[]');
+var editId = null;
+var currentCat = 'all';
+var currentRating = 0;
+var currentBookType = 'series';
+var _searchTimer = null;
+var _searchCache = {};
+var _searchData = [];
+var _isbnBookInfo = null;
+var _scanStream = null;
+var _scanInterval = null;
+
+function init() {
+  renderList(); renderReadingList(); renderBacklogList(); renderDoneList();
+  updateSummary(); updateTabBadges(); updateProUI();
+}
+
+// ── Filter ──
+function filterCat(cat, btn) {
+  currentCat = cat;
+  document.querySelectorAll('.cat-chip').forEach(function(c){ c.classList.remove('active'); });
+  btn.classList.add('active');
+  renderList();
+}
+
+// ── Render Card ──
+function starsHTML(rating) {
+  var s = '';
+  for (var i=1;i<=5;i++) s += '<span class="' + (i<=rating?'star-filled':'star-empty') + '">★</span>';
+  return '<div class="stars-display">' + s + '</div>';
+}
+
+function progressHTML(item) {
+  if (item.type === 'single') {
+    var rp = item.readPages || 0, tp = item.totalPages || 0;
+    var pct = tp > 0 ? Math.min(100, Math.round(rp/tp*100)) : 0;
+    return { text: tp > 0 ? rp + 'P / ' + tp + 'P' : rp + 'P', sub: tp > 0 ? pct + '%' : '', pct: pct };
+  }
+  var rv = item.readVols || 0, tv = item.totalVols || 0;
+  var pct2 = tv > 0 ? Math.min(100, Math.round(rv/tv*100)) : -1;
+  return { text: rv + '巻', sub: tv > 0 ? '全' + tv + '巻' : '連載中', pct: pct2 };
+}
+
+function renderCard(item) {
+  var p = progressHTML(item);
+  var coverHtml = item.coverUrl
+    ? '<img src="' + item.coverUrl + '" loading="lazy" alt="">'
+    : (item.icon || CAT_ICONS[item.category] || '📖');
+  var statusBadge = '<span class="status-badge ' + item.status + '">' + {backlog:'積読',reading:'読中',completed:'読了'}[item.status] + '</span>';
+  var formatBadge = item.format && FORMAT_CLS[item.format] ? ' <span class="format-badge ' + FORMAT_CLS[item.format] + '">' + FORMAT_LABELS[item.format] + '</span>' : '';
+  var progressBar = p.pct >= 0 ? '<div class="progress-bar-bg"><div class="progress-bar-fill' + (item.status==='completed'?' done':'') + '" style="width:' + p.pct + '%"></div></div>' : '';
+  var volLabel = item.type === 'single'
+    ? (p.pct >= 0 ? (item.readPages||0) + '/' + (item.totalPages||0) + 'P' : (item.readPages||0) + 'P')
+    : ((item.readVols||0) + (item.totalVols > 0 ? '/' + item.totalVols + '巻' : '巻'));
+  var ratingHtml = item.rating > 0 ? starsHTML(item.rating) : '';
+  var memoLine = item.memo ? '<p class="book-memo">' + item.memo.replace(/</g,'&lt;') + '</p>' : '';
+  var dateLine = item.completedDate ? '<p class="completed-date">📅 読了日: ' + item.completedDate + '</p>' : '';
+
+  return '<div class="book-card ' + item.status + '">'
+    + '<div class="book-top">'
+      + '<div class="book-cover">' + coverHtml + '</div>'
+      + '<div class="book-info">'
+        + '<p class="book-name">' + item.name + '</p>'
+        + (item.author ? '<p class="book-author">' + item.author + '</p>' : '')
+        + '<div class="book-meta">' + (CAT_LABELS[item.category]||'') + ' ' + statusBadge + formatBadge + '</div>'
+        + (ratingHtml ? '<div style="margin-top:.3rem;">' + ratingHtml + '</div>' : '')
+        + dateLine
+      + '</div>'
+      + '<div class="book-right">'
+        + '<p class="book-progress-text" id="vol-display-' + item.id + '" style="cursor:pointer;" onclick="startQuickEdit(\'' + item.id + '\')">' + (item.type==='single' ? (item.readPages||0)+'P' : (item.readVols||0)+'巻') + '</p>'
+        + '<p class="book-progress-sub">' + p.sub + '</p>'
+      + '</div>'
+    + '</div>'
+    + (progressBar ? '<div style="margin-top:.6rem;">' + progressBar + '</div>' : '')
+    + '<div class="book-actions">'
+      + '<div class="progress-controls">'
+        + '<button class="vol-btn minus" onclick="updateProgress(\'' + item.id + '\',-1)">−</button>'
+        + '<span class="vol-label" onclick="startQuickEdit(\'' + item.id + '\')">' + volLabel + '</span>'
+        + '<button class="vol-btn plus" onclick="updateProgress(\'' + item.id + '\',1)">＋</button>'
+      + '</div>'
+      + '<div class="item-btn-row">'
+        + '<button class="btn-icon" onclick="editItem(\'' + item.id + '\')">✏️</button>'
+        + '<button class="btn-icon" onclick="deleteItem(\'' + item.id + '\')">🗑</button>'
+      + '</div>'
+    + '</div>'
+    + memoLine
+    + '</div>';
+}
+
+function renderList() {
+  var el = document.getElementById('itemList');
+  var list = currentCat === 'all' ? items : items.filter(function(i){ return i.category === currentCat; });
+  if (!list.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">📚</div><p>' + (currentCat==='all'?'まだ登録がありません。<br>＋ボタンで追加してください。':'このカテゴリに本がありません') + '</p></div>'; return; }
+  var order = {reading:0,backlog:1,completed:2};
+  list = list.slice().sort(function(a,b){ return order[a.status]-order[b.status]; });
+  el.innerHTML = list.map(renderCard).join('');
+}
+function renderReadingList() {
+  var el = document.getElementById('readingList');
+  var list = items.filter(function(i){ return i.status==='reading'; });
+  el.innerHTML = list.length ? list.map(renderCard).join('') : '<div class="empty-state"><div class="empty-icon">📖</div><p>読中の本はありません</p></div>';
+}
+function renderBacklogList() {
+  var el = document.getElementById('backlogList');
+  var list = items.filter(function(i){ return i.status==='backlog'; });
+  el.innerHTML = list.length ? list.map(renderCard).join('') : '<div class="empty-state"><div class="empty-icon">📚</div><p>積読リストは空です</p></div>';
+}
+function renderDoneList() {
+  var el = document.getElementById('doneList');
+  var list = items.filter(function(i){ return i.status==='completed'; }).sort(function(a,b){ return (b.completedDate||'').localeCompare(a.completedDate||''); });
+  el.innerHTML = list.length ? list.map(renderCard).join('') : '<div class="empty-state"><div class="empty-icon">🏆</div><p>読了した本はありません</p></div>';
+}
+function renderAll() { renderList(); renderReadingList(); renderBacklogList(); renderDoneList(); updateSummary(); updateTabBadges(); }
+
+function updateTabBadges() {
+  var rc = items.filter(function(i){ return i.status==='reading'; }).length;
+  var bc = items.filter(function(i){ return i.status==='backlog'; }).length;
+  ['tabReading','tabBacklog'].forEach(function(id, idx){
+    var tab = document.getElementById(id); if (!tab) return;
+    var cnt = idx===0 ? rc : bc;
+    var ex = tab.querySelector('.tab-badge');
+    if (cnt) { if(!ex){var b=document.createElement('span');b.className='tab-badge';tab.appendChild(b);} tab.querySelector('.tab-badge').textContent=cnt; }
+    else { if(ex)ex.remove(); }
+  });
+}
+
+function updateSummary() {
+  var total=items.length, reading=items.filter(function(i){return i.status==='reading';}).length, completed=items.filter(function(i){return i.status==='completed';}).length, backlog=total-reading-completed;
+  document.getElementById('summaryTotal').textContent=total;
+  document.getElementById('summaryReading').textContent=reading;
+  document.getElementById('summaryCompleted').textContent=completed;
+  var bar='';
+  if(reading)   bar+='<span class="summary-bar-item"><span class="dot" style="background:var(--accent)"></span>読中 '+reading+'</span>';
+  if(backlog)   bar+='<span class="summary-bar-item"><span class="dot" style="background:var(--muted)"></span>積読 '+backlog+'</span>';
+  if(completed) bar+='<span class="summary-bar-item"><span class="dot" style="background:var(--green)"></span>読了 '+completed+'</span>';
+  document.getElementById('summaryBar').innerHTML=bar;
+  document.getElementById('countText').textContent=total+(isPro?'件':'/20');
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  document.getElementById('view-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='settings') renderStats();
+}
+
+function renderStats() {
+  var total=items.length, completed=items.filter(function(i){return i.status==='completed';}).length, reading=items.filter(function(i){return i.status==='reading';}).length;
+  var avgRating=0; var rated=items.filter(function(i){return i.rating>0;}); if(rated.length) avgRating=Math.round(rated.reduce(function(s,i){return s+i.rating;},0)/rated.length*10)/10;
+  document.getElementById('statsGrid').innerHTML=
+    '<div class="analysis-card"><p class="analysis-card-label">登録数</p><p class="analysis-card-value">'+total+'</p><p class="analysis-card-sub">冊</p></div>'
+    +'<div class="analysis-card"><p class="analysis-card-label">読了数</p><p class="analysis-card-value" style="color:var(--green)">'+completed+'</p><p class="analysis-card-sub">冊</p></div>'
+    +'<div class="analysis-card"><p class="analysis-card-label">読中</p><p class="analysis-card-value" style="color:var(--accent)">'+reading+'</p><p class="analysis-card-sub">冊</p></div>'
+    +'<div class="analysis-card"><p class="analysis-card-label">平均評価</p><p class="analysis-card-value" style="color:var(--yellow)">'+avgRating+'</p><p class="analysis-card-sub">/ 5</p></div>';
+  var cats=['manga','light_novel','novel','reference','other'];
+  var counts=cats.map(function(c){return items.filter(function(i){return i.category===c;}).length;});
+  var maxC=Math.max(1,Math.max.apply(null,counts));
+  var catHTML=cats.map(function(cat,idx){var n=counts[idx];if(!n)return '';return '<div class="cat-row"><div class="cat-row-left"><span>'+CAT_ICONS[cat]+'</span><span>'+CAT_NAMES[cat]+'</span></div><div class="cat-row-right"><span class="cat-row-count">'+n+'冊</span><div class="cat-row-bar"><div class="cat-row-bar-fill" style="width:'+Math.round(n/maxC*100)+'%"></div></div></div></div>';}).filter(Boolean).join('');
+  document.getElementById('catBreakdown').innerHTML=catHTML||'<p style="font-size:.82rem;color:var(--muted)">登録なし</p>';
+}
+
+// ── Progress update ──
+function updateProgress(id, delta) {
+  var item=items.find(function(x){return x.id===id;}); if(!item) return;
+  var wasCompleted = item.status==='completed';
+  if (item.type==='single') {
+    item.readPages=Math.max(0,(item.readPages||0)+delta*(item.totalPages>0?Math.max(1,Math.round(item.totalPages/10)):10));
+    if (item.totalPages>0 && item.readPages>=item.totalPages) { item.readPages=item.totalPages; completedAction(item); }
+    else if (item.readPages>0 && item.status==='backlog') item.status='reading';
+  } else {
+    item.readVols=Math.max(0,(item.readVols||0)+delta);
+    if (item.totalVols>0 && item.readVols>=item.totalVols) { item.readVols=item.totalVols; completedAction(item); }
+    else if (item.readVols>0 && item.status==='backlog') item.status='reading';
+  }
+  persist(); renderAll();
+}
+
+function completedAction(item) {
+  if (item.status==='completed') return;
+  item.status='completed';
+  if (!item.completedDate) item.completedDate=new Date().toISOString().split('T')[0];
+  confetti({particleCount:80,spread:70,origin:{y:.6},colors:['#8b5cf6','#5ecfa0','#f5c842']});
+  showToast('🎉 ' + item.name + ' を読了しました！');
+}
+
+// ── Quick edit ──
+function startQuickEdit(id) {
+  var item=items.find(function(x){return x.id===id;}); if(!item) return;
+  var wrap=document.getElementById('vol-display-'+id); if(!wrap) return;
+  var val=item.type==='single'?(item.readPages||0):(item.readVols||0);
+  var unit=item.type==='single'?'P':'巻';
+  wrap.outerHTML='<div style="display:flex;align-items:center;gap:.3rem;" id="qe-'+id+'">'
+    +'<input class="quick-vol-input" id="qv-'+id+'" type="number" min="0" value="'+val+'" onkeydown="if(event.key===\'Enter\')confirmQE(\''+id+'\')">'
+    +'<button class="quick-vol-confirm" onclick="confirmQE(\''+id+'\')">✓</button>'
+    +'</div>';
+  var inp=document.getElementById('qv-'+id); if(inp){inp.focus();inp.select();}
+}
+
+function confirmQE(id) {
+  var inp=document.getElementById('qv-'+id); if(!inp) return;
+  var val=Math.max(0,parseInt(inp.value)||0);
+  var item=items.find(function(x){return x.id===id;}); if(!item) return;
+  if (item.type==='single') {
+    item.readPages=val;
+    if (item.totalPages>0&&val>=item.totalPages) { item.readPages=item.totalPages; completedAction(item); }
+    else if (val>0&&item.status==='backlog') item.status='reading';
+  } else {
+    item.readVols=val;
+    if (item.totalVols>0&&val>=item.totalVols) { item.readVols=item.totalVols; completedAction(item); }
+    else if (val>0&&item.status==='backlog') item.status='reading';
+    else if (val===0&&item.status==='reading') item.status='backlog';
+  }
+  persist(); renderAll();
+}
+
+// ── Star rating ──
+function setRating(n) {
+  currentRating=n;
+  document.querySelectorAll('.star-input-btn').forEach(function(b,i){ b.classList.toggle('on',i<n); });
+}
+
+// ── Book type ──
+function setBookType(type, btn) {
+  currentBookType=type;
+  document.querySelectorAll('.type-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  document.getElementById('seriesFields').style.display=type==='series'?'':'none';
+  document.getElementById('singleFields').style.display=type==='single'?'':'none';
+}
+
+// ── Modal ──
+function switchModalTab(tab, btn) {
+  ['scan','isbn','search','manual','csv'].forEach(function(t){ document.getElementById('pane-'+t).style.display=t===tab?'':'none'; });
+  document.querySelectorAll('.modal-tab').forEach(function(b){b.classList.remove('active');}); btn.classList.add('active');
+}
+
+function openModal() {
+  editId=null; currentRating=0; currentBookType='series';
+  document.getElementById('modalTitle').textContent='本を追加';
+  document.getElementById('saveBtn').textContent='追加する';
+  ['fName','fAuthor','fMemo'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('fCategory').value='manga';
+  document.getElementById('fFormat').value='';
+  document.getElementById('fReadVols').value='0'; document.getElementById('fTotalVols').value='0';
+  document.getElementById('fReadPages').value='0'; document.getElementById('fTotalPages').value='';
+  document.getElementById('fStatus').value='backlog';
+  document.getElementById('fCompletedDate').value='';
+  document.getElementById('completedDateGroup').style.display='none';
+  document.getElementById('seriesFields').style.display='';
+  document.getElementById('singleFields').style.display='none';
+  document.querySelectorAll('.type-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('typeSeriesBtn').classList.add('active');
+  document.querySelectorAll('.star-input-btn').forEach(function(b){b.classList.remove('on');});
+  document.getElementById('searchQuery').value=''; document.getElementById('searchResults').innerHTML='';
+  document.getElementById('isbnInput').value=''; document.getElementById('isbnStatus').textContent='ISBNを入力して検索してください'; document.getElementById('isbnStatus').className='isbn-status wait'; document.getElementById('isbnPreview').style.display='none';
+  _isbnBookInfo=null;
+  switchModalTab('scan', document.querySelectorAll('.modal-tab')[0]);
+  document.getElementById('modalTabBar').style.display='flex';
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function closeModal() {
+  stopBarcodeScanner();
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+function closeModalOutside(e) { if(e.target===document.getElementById('modalOverlay')) closeModal(); }
+
+document.getElementById('fStatus').addEventListener('change', function() {
+  document.getElementById('completedDateGroup').style.display = this.value==='completed'?'':'none';
+  if (this.value==='completed' && !document.getElementById('fCompletedDate').value) {
+    document.getElementById('fCompletedDate').value=new Date().toISOString().split('T')[0];
+  }
+});
+
+function editItem(id) {
+  var item=items.find(function(x){return x.id===id;}); if(!item) return;
+  editId=id; currentRating=item.rating||0; currentBookType=item.type||'series';
+  document.getElementById('modalTitle').textContent='編集';
+  document.getElementById('saveBtn').textContent='保存する';
+  document.getElementById('fName').value=item.name;
+  document.getElementById('fAuthor').value=item.author||'';
+  document.getElementById('fCategory').value=item.category||'manga';
+  document.getElementById('fFormat').value=item.format||'';
+  document.getElementById('fStatus').value=item.status||'backlog';
+  document.getElementById('fMemo').value=item.memo||'';
+  document.getElementById('fCompletedDate').value=item.completedDate||'';
+  document.getElementById('completedDateGroup').style.display=item.status==='completed'?'':'none';
+  if (currentBookType==='single') {
+    document.getElementById('fReadPages').value=item.readPages||0;
+    document.getElementById('fTotalPages').value=item.totalPages||'';
+    document.getElementById('seriesFields').style.display='none';
+    document.getElementById('singleFields').style.display='';
+    document.getElementById('typeSingleBtn').classList.add('active');
+    document.getElementById('typeSeriesBtn').classList.remove('active');
+  } else {
+    document.getElementById('fReadVols').value=item.readVols||0;
+    document.getElementById('fTotalVols').value=item.totalVols||0;
+    document.getElementById('seriesFields').style.display='';
+    document.getElementById('singleFields').style.display='none';
+    document.getElementById('typeSeriesBtn').classList.add('active');
+    document.getElementById('typeSingleBtn').classList.remove('active');
+  }
+  document.querySelectorAll('.star-input-btn').forEach(function(b,i){b.classList.toggle('on',i<currentRating);});
+  switchModalTab('manual', document.querySelectorAll('.modal-tab')[3]);
+  document.getElementById('modalTabBar').style.display='flex';
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function saveItem() {
+  var name=document.getElementById('fName').value.trim();
+  if (!name) { showToast('タイトルを入力してください'); return; }
+  if (!editId && items.length>=FREE_LIMIT && !isPro) { showToast('無料プランは'+FREE_LIMIT+'件まで'); return; }
+  var status=document.getElementById('fStatus').value;
+  var prev=editId?items.find(function(x){return x.id===editId;})||{}:{};
+  var readVols=Math.max(0,parseInt(document.getElementById('fReadVols').value)||0);
+  var totalVols=Math.max(0,parseInt(document.getElementById('fTotalVols').value)||0);
+  var readPages=Math.max(0,parseInt(document.getElementById('fReadPages').value)||0);
+  var totalPages=Math.max(0,parseInt(document.getElementById('fTotalPages').value)||0);
+  if (currentBookType==='series' && totalVols>0 && readVols>=totalVols) { status='completed'; readVols=totalVols; }
+  if (currentBookType==='single' && totalPages>0 && readPages>=totalPages) { status='completed'; readPages=totalPages; }
+  var completedDate=document.getElementById('fCompletedDate').value;
+  if (status==='completed' && !completedDate) completedDate=new Date().toISOString().split('T')[0];
+  var entry={
+    id:editId||Date.now().toString(), name:name,
+    author:document.getElementById('fAuthor').value.trim(),
+    category:document.getElementById('fCategory').value,
+    format:document.getElementById('fFormat').value,
+    type:currentBookType, icon:prev.icon||CAT_ICONS[document.getElementById('fCategory').value],
+    coverUrl:prev.coverUrl||applySearchResult._cover||'',
+    readVols:readVols, totalVols:totalVols,
+    readPages:readPages, totalPages:totalPages,
+    status:status, rating:currentRating,
+    completedDate:completedDate,
+    memo:document.getElementById('fMemo').value.trim(),
+    addedDate:prev.addedDate||new Date().toISOString().split('T')[0]
+  };
+  applySearchResult._cover='';
+  if (editId) { var idx=items.findIndex(function(x){return x.id===editId;}); items[idx]=entry; }
+  else items.push(entry);
+  persist(); closeModal(); renderAll();
+  if (!editId) showToast('✅ 登録しました: ' + name);
+}
+
+function deleteItem(id) {
+  if(!confirm('削除しますか？'))return;
+  items=items.filter(function(x){return x.id!==id;});
+  persist(); renderAll();
+}
+
+function persist() { localStorage.setItem('bookly_items',JSON.stringify(items)); dbSave('items',items); }
+
+// ── Barcode Scanner ──
+function startBarcodeScanner() {
+  if (!('BarcodeDetector' in window)) {
+    showToast('このブラウザはスキャン非対応です。ISBNタブをご利用ください');
+    switchModalTab('isbn', document.querySelectorAll('.modal-tab')[1]);
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}}).then(function(stream) {
+    _scanStream=stream;
+    var video=document.getElementById('scanVideo');
+    video.srcObject=stream; video.play();
+    document.getElementById('cameraOverlay').classList.add('show');
+    document.getElementById('modalOverlay').classList.remove('show');
+    var detector=new BarcodeDetector({formats:['ean_13','ean_8','code_128']});
+    _scanInterval=setInterval(function(){
+      if (video.readyState<2) return;
+      detector.detect(video).then(function(barcodes){
+        if (!barcodes.length) return;
+        var isbn=barcodes[0].rawValue.replace(/[^0-9X]/gi,'');
+        stopBarcodeScanner();
+        document.getElementById('modalOverlay').classList.add('show');
+        switchModalTab('isbn', document.querySelectorAll('.modal-tab')[1]);
+        document.getElementById('isbnInput').value=isbn;
+        lookupISBN();
+      }).catch(function(){});
+    }, 400);
+  }).catch(function() {
+    showToast('カメラへのアクセスが許可されていません');
+  });
+}
+
+function stopBarcodeScanner() {
+  clearInterval(_scanInterval); _scanInterval=null;
+  if (_scanStream) { _scanStream.getTracks().forEach(function(t){t.stop();}); _scanStream=null; }
+  document.getElementById('cameraOverlay').classList.remove('show');
+}
+
+// ── ISBN Lookup ──
+function lookupISBN() {
+  var isbn=document.getElementById('isbnInput').value.replace(/[^0-9X]/gi,'');
+  if (isbn.length<10) { showToast('ISBNを正しく入力してください'); return; }
+  var statusEl=document.getElementById('isbnStatus');
+  statusEl.textContent='検索中...'; statusEl.className='isbn-status wait';
+  document.getElementById('isbnPreview').style.display='none';
+  fetch('https://www.googleapis.com/books/v1/volumes?q=isbn:'+isbn+'&maxResults=1',{cache:'no-store'})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      if (!data.items||!data.items.length) { statusEl.textContent='見つかりませんでした'; statusEl.className='isbn-status err'; return; }
+      var vi=data.items[0].volumeInfo||{};
+      _isbnBookInfo={
+        title:vi.title||'', author:(vi.authors||[]).join(', '),
+        coverUrl:vi.imageLinks&&vi.imageLinks.thumbnail?vi.imageLinks.thumbnail.replace('http:','https:'):'',
+        category:guessCategory(vi), type: guessType(vi)
+      };
+      statusEl.textContent='✅ ' + _isbnBookInfo.title; statusEl.className='isbn-status ok';
+      var coverWrap=document.getElementById('isbnCoverWrap');
+      coverWrap.innerHTML=_isbnBookInfo.coverUrl?'<img src="'+_isbnBookInfo.coverUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:5px;" alt="">':'📖';
+      document.getElementById('isbnTitle').textContent=_isbnBookInfo.title;
+      document.getElementById('isbnAuthor').textContent=_isbnBookInfo.author;
+      document.getElementById('isbnPreview').style.display='';
+    })
+    .catch(function(){ statusEl.textContent='エラーが発生しました'; statusEl.className='isbn-status err'; });
+}
+
+function confirmISBN() {
+  if (!_isbnBookInfo) return;
+  applyBookInfo(_isbnBookInfo); switchModalTab('manual', document.querySelectorAll('.modal-tab')[3]);
+}
+
+function guessCategory(vi) {
+  var cats=(vi.categories||[]).join(' ').toLowerCase()+(vi.title||'').toLowerCase();
+  if (cats.includes('comic')||cats.includes('manga')||cats.includes('漫画')) return 'manga';
+  if (cats.includes('light novel')||cats.includes('ライトノベル')) return 'light_novel';
+  if (cats.includes('novel')||cats.includes('小説')||cats.includes('fiction')) return 'novel';
+  return 'other';
+}
+function guessType(vi) {
+  var cats=(vi.categories||[]).join(' ').toLowerCase()+(vi.title||'').toLowerCase();
+  return (cats.includes('comic')||cats.includes('manga')||cats.includes('volume')||cats.includes('light novel')) ? 'series' : 'single';
+}
+
+// ── Title Search ──
+function onSearchInput() {
+  clearTimeout(_searchTimer);
+  var q=document.getElementById('searchQuery').value.trim();
+  if (!q) { document.getElementById('searchResults').innerHTML=''; return; }
+  document.getElementById('searchResults').innerHTML='<div class="search-loading">検索中...</div>';
+  _searchTimer=setTimeout(function(){searchBooks(q);},500);
+}
+
+function searchBooks(q) {
+  if (_searchCache[q]) { renderSearchResults(_searchCache[q]); return; }
+  fetch('https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent(q)+'&maxResults=8&orderBy=relevance',{cache:'no-store'})
+    .then(function(r){return r.json();})
+    .then(function(data){ _searchCache[q]=data; renderSearchResults(data); })
+    .catch(function(){ document.getElementById('searchResults').innerHTML='<p style="text-align:center;color:var(--muted);font-size:.82rem;padding:1rem;">検索に失敗しました。手動入力をご利用ください。</p>'; });
+}
+
+function renderSearchResults(data) {
+  if (!data.items||!data.items.length) { document.getElementById('searchResults').innerHTML='<p style="text-align:center;color:var(--muted);font-size:.82rem;padding:1rem;">見つかりませんでした</p>'; return; }
+  _searchData=data.items;
+  document.getElementById('searchResults').innerHTML=data.items.map(function(item,idx){
+    var vi=item.volumeInfo||{};
+    var title=(vi.title||'不明').replace(/</g,'&lt;');
+    var author=((vi.authors||[]).join(', ')).replace(/</g,'&lt;');
+    var thumb=vi.imageLinks&&vi.imageLinks.thumbnail?vi.imageLinks.thumbnail.replace('http:','https:'):'';
+    var pub=vi.publishedDate?vi.publishedDate.slice(0,4):'';
+    return '<div class="search-result" onclick="applySearchByIdx('+idx+')">'
+      +'<div class="search-result-cover">'+(thumb?'<img src="'+thumb+'" loading="lazy" alt="">':'📖')+'</div>'
+      +'<div class="search-result-info"><p class="search-result-title">'+title+'</p><p class="search-result-meta">'+(author||'著者不明')+(pub?' · '+pub:'')+'</p></div>'
+      +'</div>';
+  }).join('');
+}
+
+function applySearchByIdx(idx) {
+  var item=_searchData[idx]; if(!item) return;
+  var vi=item.volumeInfo||{};
+  applyBookInfo({
+    title:vi.title||'', author:(vi.authors||[]).join(', '),
+    coverUrl:vi.imageLinks&&vi.imageLinks.thumbnail?vi.imageLinks.thumbnail.replace('http:','https:'):'',
+    category:guessCategory(vi), type:guessType(vi)
+  });
+  switchModalTab('manual', document.querySelectorAll('.modal-tab')[3]);
+}
+
+var applySearchResult = {_cover:''};
+function applyBookInfo(info) {
+  document.getElementById('fName').value=info.title||'';
+  document.getElementById('fAuthor').value=info.author||'';
+  applySearchResult._cover=info.coverUrl||'';
+  var cat=info.category||'other';
+  document.getElementById('fCategory').value=cat;
+  var type=info.type||'single';
+  var typeBtn=document.getElementById(type==='series'?'typeSeriesBtn':'typeSingleBtn');
+  setBookType(type, typeBtn);
+  showToast('✅ ' + (info.title||'') + ' を選択しました');
+}
+
+// ── CSV ──
+function importCSV(input) {
+  var file=input.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var lines=e.target.result.split(/\r?\n/).filter(function(l){return l.trim();});
+    if(lines.length<=1){showToast('データが見つかりません');return;}
+    var imported=0;
+    lines.slice(1).forEach(function(line){
+      var c=line.split(',').map(function(s){return s.replace(/^"|"$/g,'').trim();});
+      var name=c[0]; if(!name)return;
+      if(items.some(function(i){return i.name===name;}))return;
+      var status=c[6]||'backlog', type=c[3]||'series';
+      var rv=parseInt(c[4])||0, tv=parseInt(c[5])||0;
+      if(type==='series'&&tv>0&&rv>=tv)status='completed';
+      if(type==='single'&&tv>0&&rv>=tv)status='completed';
+      items.push({id:Date.now().toString()+Math.random().toString(36).slice(2,5),name:name,author:c[1]||'',category:c[2]||'other',type:type,readVols:type==='series'?rv:0,totalVols:type==='series'?tv:0,readPages:type==='single'?rv:0,totalPages:type==='single'?tv:0,status:status,format:c[7]||'',rating:parseInt(c[8])||0,completedDate:c[9]||'',memo:c[10]||'',icon:CAT_ICONS[c[2]]||'📖',coverUrl:'',addedDate:new Date().toISOString().split('T')[0]});
+      imported++;
+    });
+    if(!isPro&&items.length>FREE_LIMIT)items=items.slice(0,FREE_LIMIT);
+    persist();renderAll();closeModal();
+    showToast('✅ '+imported+'件インポートしました');
+  };
+  reader.readAsText(file,'UTF-8');
+  input.value='';
+}
+
+function downloadCsvTemplate() {
+  var h='タイトル,著者,カテゴリ,タイプ,読了巻/P,全巻/P,ステータス,形態,評価,読了日,メモ';
+  var s='"鬼滅の刃","吾峠呼世晴",manga,series,23,23,completed,physical,5,2020-12-04,全23巻。名作。"';
+  var blob=new Blob(['﻿'+h+'\n'+s],{type:'text/csv'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bookly_template.csv';a.click();
+}
+
+// ── Export ──
+function exportData(fmt) {
+  if(!isPro){showToast('エクスポートは有料プランの機能です');return;}
+  if(fmt==='json'){var blob=new Blob([JSON.stringify({items:items},null,2)],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bookly_'+new Date().toISOString().split('T')[0]+'.json';a.click();}
+  else{var rows=[['タイトル','著者','カテゴリ','タイプ','読了巻/P','全巻/P','ステータス','形態','評価','読了日','メモ'].join(',')];items.forEach(function(i){var r=i.type==='series'?i.readVols:i.readPages,t=i.type==='series'?i.totalVols:i.totalPages;rows.push(['"'+i.name+'"','"'+(i.author||'')+'"',i.category,i.type||'series',r,t,i.status,i.format||'',i.rating||0,i.completedDate||'','"'+(i.memo||'')+'"'].join(','));});var blob=new Blob(['﻿'+rows.join('\n')],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bookly_'+new Date().toISOString().split('T')[0]+'.csv';a.click();}
+}
+
+// ── Misc ──
+function updateProUI(){var ad=document.getElementById('adBanner');if(ad)ad.style.display=isPro?'none':'flex';var fab=document.querySelector('.fab');if(fab)fab.style.bottom=isPro?'1.25rem':'calc(72px + env(safe-area-inset-bottom))';document.body.style.paddingBottom=isPro?'80px':'130px';var fb=document.getElementById('freeBanner');if(fb)fb.style.display=isPro?'none':'flex';FREE_LIMIT=isPro?999:20;document.getElementById('countText').textContent=items.length+(isPro?'件':'/20');var pl=document.getElementById('planLabel'),pd=document.getElementById('planDesc'),pb=document.getElementById('planBadge');if(pl)pl.textContent=isPro?'Proプラン':'無料プラン';if(pd)pd.textContent=isPro?'全機能が利用できます':'登録20件・広告あり';if(pb){pb.textContent=isPro?'✅ 有効中':'現在';pb.style.background=isPro?'rgba(94,207,160,.15)':'rgba(139,92,246,.15)';pb.style.color=isPro?'var(--green)':'var(--accent)';}}
+
+function showToast(msg){var t=document.createElement('div');t.style.cssText='position:fixed;top:1.5rem;left:50%;transform:translateX(-50%);background:#22222e;border:1px solid #35354a;border-radius:12px;padding:.75rem 1.25rem;font-size:.85rem;font-weight:500;z-index:400;color:#f0eee8;white-space:nowrap;font-family:Outfit,sans-serif;';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove();},2500);}
+
+var SHARE_URL='https://totonoi-one.vercel.app/bookly';
+var SHARE_TEXT='Booklyで読書記録をつけています📚 Totonoiの無料ツールです！ #Totonoi #Bookly #読書';
+function shareX(){window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(SHARE_TEXT)+'&url='+encodeURIComponent(SHARE_URL),'_blank');}
+function shareLine(){window.open('https://social-plugins.line.me/lineit/share?url='+encodeURIComponent(SHARE_URL),'_blank');}
+function shareCopy(){navigator.clipboard.writeText(SHARE_URL).then(function(){var b=document.getElementById('copyBtn');b.textContent='✅ コピーしました';setTimeout(function(){b.textContent='🔗 リンクをコピー';},2000);});}
+
+init();
+if('serviceWorker'in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw-bookly.js').catch(function(){});});}
+
+// ── Supabase ──
+var _sb=window.supabase.createClient('https://foknpmvpgbkwgpmlgzrn.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZva25wbXZwZ2Jrd2dwbWxnenJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyODc4NTksImV4cCI6MjA5NTg2Mzg1OX0.6KP9_m4Q6x0hs7IsinNhZsODmZCjrvAL1CxtbQ32-80');
+var currentUser=null;var _APP='bookly';
+function dbSave(key,data){if(!currentUser)return;_sb.from('user_data').upsert({user_id:currentUser.id,app:_APP,key:key,data:data,updated_at:new Date().toISOString()},{onConflict:'user_id,app,key'});}
+async function syncFromCloud(){var res=await _sb.from('user_data').select('key,data').eq('user_id',currentUser.id).eq('app',_APP);if(res.data)res.data.forEach(function(row){if(row.key==='items'){items=row.data;localStorage.setItem('bookly_items',JSON.stringify(items));}});var p=await _sb.from('profiles').select('is_pro').eq('id',currentUser.id).maybeSingle();if(p.data){isPro=p.data.is_pro;localStorage.setItem('isPro',String(isPro));}renderAll();updateProUI();showToast('☁️ データを同期しました');}
+var _authMode='login';
+function setAuthMode(mode){_authMode=mode;var tl=document.getElementById('tabLogin'),ts=document.getElementById('tabSignup'),sb=document.getElementById('authSubmitBtn');if(mode==='login'){tl.style.cssText+=';background:var(--surface3);color:var(--text);font-weight:500;';ts.style.cssText+=';background:none;color:var(--muted);font-weight:300;';sb.textContent='ログイン';}else{ts.style.cssText+=';background:var(--surface3);color:var(--text);font-weight:500;';tl.style.cssText+=';background:none;color:var(--muted);font-weight:300;';sb.textContent='アカウントを作成';}}
+function openAuthModal(){if(currentUser){if(confirm(currentUser.email+'\nログアウトしますか？'))_sb.auth.signOut();return;}setAuthMode('login');document.getElementById('authModal').classList.add('show');}
+async function handleAuth(){var email=document.getElementById('authEmail').value.trim(),pass=document.getElementById('authPassword').value;if(!email||!pass){showToast('メールとパスワードを入力してください');return;}var result=_authMode==='login'?await _sb.auth.signInWithPassword({email,password:pass}):await _sb.auth.signUp({email,password:pass});if(result.error){showToast('⚠️ '+result.error.message);return;}document.getElementById('authModal').classList.remove('show');showToast(_authMode==='signup'?'✅ 登録完了！ようこそ':'✅ ログインしました');}
+async function handleGoogleAuth(){await _sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.href}});}
+function updateAuthUI(){var btn=document.getElementById('authBtn');if(!btn)return;if(currentUser){btn.textContent=currentUser.email.split('@')[0];btn.classList.add('logged-in');}else{btn.textContent='ログイン';btn.classList.remove('logged-in');}}
+_sb.auth.onAuthStateChange(function(event,session){currentUser=session?session.user:null;updateAuthUI();if(currentUser&&event==='SIGNED_IN')syncFromCloud();if(!currentUser)updateProUI();});
+_sb.auth.getSession().then(function(res){currentUser=res.data.session?res.data.session.user:null;updateAuthUI();if(currentUser)syncFromCloud();});
+(function(){var tabNames=['list','reading','backlog','done','settings'],ci=0,sx=0,sy=0;document.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});document.addEventListener('touchend',function(e){if(document.querySelector('.modal-overlay.show')||document.getElementById('cameraOverlay').classList.contains('show'))return;var dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.abs(dx)<50||Math.abs(dx)<Math.abs(dy)*1.5)return;var ni=Math.max(0,Math.min(tabNames.length-1,ci+(dx<0?1:-1)));if(ni===ci)return;ci=ni;var btn=document.querySelectorAll('.tab')[ci];if(btn)btn.click();if(navigator.vibrate)navigator.vibrate(15);},{passive:true});var orig=window.switchTab;if(orig)window.switchTab=function(name,btn){var i=tabNames.indexOf(name);if(i>=0)ci=i;orig(name,btn);};})();
+(function(){if(!window.IntersectionObserver)return;var s=document.createElement('style');s.textContent='.fi{opacity:0;transform:translateY(14px);transition:opacity .4s ease,transform .4s ease}.fi.vis{opacity:1;transform:translateY(0)}';document.head.appendChild(s);var obs=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('vis');obs.unobserve(e.target);}});},{threshold:.08});new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType!==1)return;var cs=n.classList&&n.classList.contains('book-card')?[n]:Array.from(n.querySelectorAll('.book-card'));cs.forEach(function(c){c.classList.add('fi');obs.observe(c);});});});}).observe(document.body,{childList:true,subtree:true});})();
+</script>
+
+<!-- Auth Modal -->
+<div class="modal-overlay" id="authModal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;background:var(--surface2);border-radius:10px;padding:3px;margin-bottom:1.25rem;border:1px solid var(--border);">
+      <button id="tabLogin" onclick="setAuthMode('login')" style="flex:1;padding:.55rem;border:none;border-radius:8px;font-family:var(--font);font-size:.82rem;cursor:pointer;background:var(--surface3);color:var(--text);font-weight:500;">ログイン</button>
+      <button id="tabSignup" onclick="setAuthMode('signup')" style="flex:1;padding:.55rem;border:none;border-radius:8px;font-family:var(--font);font-size:.82rem;cursor:pointer;background:none;color:var(--muted);font-weight:300;">新規登録</button>
+    </div>
+    <div style="margin-bottom:1rem;"><span style="display:block;font-size:.75rem;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:.4rem;">メールアドレス</span><input type="email" id="authEmail" placeholder="your@email.com" style="width:100%;"></div>
+    <div style="margin-bottom:1rem;"><span style="display:block;font-size:.75rem;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:.4rem;">パスワード</span><input type="password" id="authPassword" placeholder="••••••••" style="width:100%;"></div>
+    <button onclick="handleGoogleAuth()" style="width:100%;padding:.85rem;background:#fff;color:#1a1a24;border:none;border-radius:12px;font-size:.95rem;font-weight:500;font-family:var(--font);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.6rem;margin-bottom:.75rem;"><svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>Google でログイン</button>
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;color:var(--muted);font-size:.75rem;"><div style="flex:1;height:1px;background:var(--border);"></div>または<div style="flex:1;height:1px;background:var(--border);"></div></div>
+    <button class="btn-primary" id="authSubmitBtn" onclick="handleAuth()">ログイン</button>
+    <button class="btn-cancel" onclick="document.getElementById('authModal').classList.remove('show')">キャンセル</button>
+  </div>
+</div>
+</body>
+</html>

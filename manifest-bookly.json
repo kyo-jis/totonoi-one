@@ -1,0 +1,13 @@
+{
+  "name": "Bookly — 本・読書管理",
+  "short_name": "Bookly",
+  "start_url": "/bookly",
+  "display": "standalone",
+  "background_color": "#0c0c18",
+  "theme_color": "#0c0c18",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icon-bookly-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-bookly-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
