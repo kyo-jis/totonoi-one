@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -545,6 +545,7 @@
 
     var _authMode = 'login';
     function setAuthMode(mode) {
+  var tl = document.getElementById('tabLogin'); if (!tl) return;
       _authMode = mode;
       document.getElementById('tabLogin').style.cssText += mode==='login' ? ';background:#2a2a38;color:#f0eee8;font-weight:500;' : ';background:none;color:var(--muted);font-weight:300;';
       document.getElementById('tabSignup').style.cssText += mode==='signup' ? ';background:#2a2a38;color:#f0eee8;font-weight:500;' : ';background:none;color:var(--muted);font-weight:300;';
@@ -563,11 +564,7 @@
       await _sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } });
     }
 
-    async function handleAuth() {
-      var email = document.getElementById('authEmail').value.trim();
-      var pass  = document.getElementById('authPassword').value;
-      if (!email || !pass) { showToast('メールとパスワードを入力してください'); return; }
-      var result = _authMode === 'login'
+          var result = _authMode === 'login'
         ? await _sb.auth.signInWithPassword({ email, password: pass })
         : await _sb.auth.signUp({ email, password: pass });
       if (result.error) { showToast('⚠️ ' + result.error.message); return; }
