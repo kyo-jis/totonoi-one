@@ -1020,13 +1020,15 @@ function getBillsOnDate(dateStr) {
       }
     });
   }
-  // 未来・当日（未処理）: nextBillingDateパターンから
+  // nextBillingDateパターンから（startDateがあればそこを起点に）
   subs.forEach(function(s) {
     if (!s.nextBillingDate || s.cycle==='once' || seen[s.id]) return;
     var bill = parseLocalDate(s.nextBillingDate);
     var months = cycleToMonths(s);
+    // 表示開始月: startDateがあればその月、なければnextBillingDateの月
+    var origin = s.startDate ? parseLocalDate(s.startDate) : bill;
     var ok = months <= 1
-      ? td===bill.getDate() && new Date(ty,tm,1) >= new Date(bill.getFullYear(),bill.getMonth(),1)
+      ? td===bill.getDate() && new Date(ty,tm,1) >= new Date(origin.getFullYear(),origin.getMonth(),1)
       : td===bill.getDate() && tm===bill.getMonth() && ty===bill.getFullYear();
     if (ok) { result.push(s); seen[s.id] = true; }
   });
