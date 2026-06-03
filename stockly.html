@@ -232,6 +232,7 @@
 <div class="tabs">
   <button class="tab active" onclick="switchTab('list',this)">一覧</button>
   <button class="tab" onclick="switchTab('alert',this)" id="tabAlert">アラート</button>
+  <button class="tab" onclick="switchTab('shop',this)" id="tabShop">買い物</button>
   <button class="tab" onclick="switchTab('analytics',this)">分析</button>
   <button class="tab" onclick="switchTab('settings',this)">設定</button>
 </div>
@@ -256,6 +257,24 @@
   <div class="alert-section">
     <p class="section-label" style="padding:0 0 .75rem">要補充リスト</p>
     <div id="alertList"></div>
+  </div>
+
+<!-- Shopping List -->
+</div>
+<div class="view" id="view-shop">
+  <div class="list-section">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;">
+      <p class="section-label" style="margin-bottom:0;">買い物リスト</p>
+      <button onclick="clearCheckedShop()" style="font-size:.72rem;color:var(--muted);background:none;border:none;cursor:pointer;font-family:var(--font);">完了済みを削除</button>
+    </div>
+    <div id="shopList"></div>
+    <div style="margin-top:1.25rem;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.9rem 1.1rem;">
+      <p style="font-size:.78rem;font-weight:500;margin-bottom:.65rem;">手動で追加</p>
+      <div style="display:flex;gap:.5rem;">
+        <input type="text" id="shopAddName" placeholder="アイテム名" style="flex:1;">
+        <button onclick="addShopManual()" style="background:var(--accent);color:#fff;border:none;border-radius:10px;padding:.75rem 1rem;font-size:.82rem;font-weight:500;cursor:pointer;font-family:var(--font);white-space:nowrap;">追加</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -449,6 +468,7 @@ var PRESETS = [
 ];
 
 var items = JSON.parse(localStorage.getItem('stockly_items') || '[]');
+var shopList = JSON.parse(localStorage.getItem('stockly_shop') || '[]');
 var editId = null;
 var currentCat = 'all';
 
@@ -458,6 +478,7 @@ function init() {
   renderAlert();
   updateSummary();
   updateProUI();
+  updateShopBadge();
 }
 
 // ── Category filter ──
@@ -547,10 +568,14 @@ function renderAlert() {
   el.innerHTML = alerts.map(function(item) {
     var lv = stockLevel(item);
     var desc = lv === 'critical' ? '在庫切れ' : '残り' + item.quantity + item.unit + '（最低' + item.minStock + item.unit + '）';
+    var inShop = shopList.some(function(s){ return s.itemId === item.id && !s.checked; });
     return '<div class="alert-card ' + lv + '">'
       + '<div class="alert-icon">' + (item.icon || '📦') + '</div>'
       + '<div class="alert-info"><p class="alert-name">' + item.name + '</p><p class="alert-desc">' + desc + '</p></div>'
-      + '<button class="restock-btn" onclick="restockItem(\'' + item.id + '\')">補充</button>'
+      + '<div style="display:flex;flex-direction:column;gap:.3rem;align-items:flex-end;">'
+        + '<button class="restock-btn" onclick="restockItem(\'' + item.id + '\')">補充</button>'
+        + (!inShop ? '<button onclick="addToShopList(\'' + item.id + '\')" style="font-size:.65rem;padding:.2rem .5rem;background:rgba(125,186,69,.1);border:1px solid rgba(125,186,69,.3);color:var(--accent);border-radius:6px;cursor:pointer;font-family:var(--font);white-space:nowrap;">🛒 リストへ</button>' : '<span style="font-size:.62rem;color:var(--accent);">🛒 リスト済み</span>')
+      + '</div>'
       + '</div>';
   }).join('');
 }
@@ -564,6 +589,15 @@ function updateQty(id, delta) {
   if (item.quantity === prev) return;
   if (prev <= item.minStock && item.quantity > item.minStock && delta > 0) {
     confetti({ particleCount:60, spread:60, origin:{y:.6}, colors:['#7dba45','#5ecfa0','#f5c842'] });
+  }
+  // 在庫0になったら自動的に買い物リストへ追加
+  if (item.quantity === 0 && prev > 0 && delta < 0) {
+    var alreadyInShop = shopList.some(function(s){ return s.itemId === item.id && !s.checked; });
+    if (!alreadyInShop) {
+      shopList.push({ id: Date.now().toString(), itemId: item.id, name: item.name, icon: item.icon || '📦', unit: item.unit, category: item.category, checked: false });
+      persistShop(); updateShopBadge();
+      showToast('🛒 ' + item.name + ' が在庫切れ → 買い物リストに追加しました');
+    }
   }
   persist(); renderList(); renderAlert(); updateSummary();
 }
@@ -607,6 +641,107 @@ function switchTab(name, btn) {
   document.getElementById('view-' + name).classList.add('active');
   btn.classList.add('active');
   if (name === 'analytics') renderAnalytics();
+  if (name === 'shop') renderShopList();
+}
+
+// ── Shopping List ──
+function persistShop() {
+  localStorage.setItem('stockly_shop', JSON.stringify(shopList));
+  dbSave('shop', shopList);
+}
+
+function addToShopList(itemId) {
+  var item = items.find(function(x){ return x.id === itemId; });
+  if (!item) return;
+  if (shopList.some(function(s){ return s.itemId === itemId && !s.checked; })) {
+    showToast('すでにリストにあります'); return;
+  }
+  shopList.push({ id: Date.now().toString(), itemId: itemId, name: item.name, icon: item.icon || '📦', unit: item.unit, category: item.category, checked: false });
+  persistShop(); renderAlert(); renderShopList(); updateShopBadge();
+  showToast('🛒 ' + item.name + ' を買い物リストに追加しました');
+}
+
+function addShopManual() {
+  var name = document.getElementById('shopAddName').value.trim();
+  if (!name) return;
+  shopList.push({ id: Date.now().toString(), itemId: null, name: name, icon: '🛒', unit: '個', category: 'other', checked: false });
+  document.getElementById('shopAddName').value = '';
+  persistShop(); renderShopList(); updateShopBadge();
+}
+
+function toggleShopCheck(id) {
+  var s = shopList.find(function(x){ return x.id === id; });
+  if (!s) return;
+  s.checked = !s.checked;
+  persistShop(); renderShopList(); updateShopBadge();
+  if (s.checked && s.itemId) {
+    var item = items.find(function(x){ return x.id === s.itemId; });
+    if (item) {
+      var max = item.maxStock || item.minStock * 3 || 10;
+      item.quantity = max;
+      persist(); renderList(); renderAlert(); updateSummary();
+      showToast('✅ ' + item.name + ' を補充済みにしました（' + max + item.unit + '）');
+      if (typeof confetti === 'function') confetti({ particleCount:40, spread:50, origin:{y:.6}, colors:['#7dba45','#5ecfa0'] });
+    }
+  }
+}
+
+function clearCheckedShop() {
+  shopList = shopList.filter(function(s){ return !s.checked; });
+  persistShop(); renderShopList(); updateShopBadge();
+}
+
+function removeShopItem(id) {
+  shopList = shopList.filter(function(s){ return s.id !== id; });
+  persistShop(); renderShopList(); updateShopBadge();
+}
+
+function renderShopList() {
+  var el = document.getElementById('shopList');
+  if (!el) return;
+  var unchecked = shopList.filter(function(s){ return !s.checked; });
+  var checked   = shopList.filter(function(s){ return s.checked; });
+  if (!shopList.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🛒</div><p>買い物リストは空です。<br>アラートタブから追加してください。</p></div>';
+    return;
+  }
+  var html = '';
+  if (unchecked.length) {
+    html += unchecked.map(function(s) {
+      return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.85rem 1rem;margin-bottom:.5rem;display:flex;align-items:center;gap:.75rem;">'
+        + '<button onclick="toggleShopCheck(\'' + s.id + '\')" style="width:28px;height:28px;border-radius:8px;border:2px solid var(--border);background:none;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.9rem;"></button>'
+        + '<span style="font-size:1.2rem;flex-shrink:0;">' + s.icon + '</span>'
+        + '<div style="flex:1;min-width:0;">'
+          + '<p style="font-size:.9rem;font-weight:500;">' + s.name + '</p>'
+          + '<p style="font-size:.7rem;color:var(--muted);margin-top:.1rem;">' + CAT_LABELS[s.category] + '</p>'
+        + '</div>'
+        + '<button onclick="removeShopItem(\'' + s.id + '\')" style="font-size:.75rem;padding:.25rem .45rem;border-radius:7px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);cursor:pointer;font-family:var(--font);">×</button>'
+        + '</div>';
+    }).join('');
+  }
+  if (checked.length) {
+    html += '<p style="font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:.75rem 0 .5rem;">購入済み</p>';
+    html += checked.map(function(s) {
+      return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.85rem 1rem;margin-bottom:.5rem;display:flex;align-items:center;gap:.75rem;opacity:.55;">'
+        + '<button onclick="toggleShopCheck(\'' + s.id + '\')" style="width:28px;height:28px;border-radius:8px;border:2px solid var(--accent);background:var(--accent);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.9rem;">✓</button>'
+        + '<span style="font-size:1.2rem;flex-shrink:0;">' + s.icon + '</span>'
+        + '<div style="flex:1;min-width:0;"><p style="font-size:.9rem;font-weight:500;text-decoration:line-through;">' + s.name + '</p></div>'
+        + '<button onclick="removeShopItem(\'' + s.id + '\')" style="font-size:.75rem;padding:.25rem .45rem;border-radius:7px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);cursor:pointer;font-family:var(--font);">×</button>'
+        + '</div>';
+    }).join('');
+  }
+  el.innerHTML = html;
+}
+
+function updateShopBadge() {
+  var tabEl = document.getElementById('tabShop');
+  if (!tabEl) return;
+  var count = shopList.filter(function(s){ return !s.checked; }).length;
+  var ex = tabEl.querySelector('.tab-badge');
+  if (count) {
+    if (!ex) { var b = document.createElement('span'); b.className = 'tab-badge'; b.style.background = 'var(--accent)'; tabEl.appendChild(b); }
+    tabEl.querySelector('.tab-badge').textContent = count;
+  } else { if (ex) ex.remove(); }
 }
 
 // ── Analytics ──
@@ -844,6 +979,7 @@ async function syncFromCloud() {
   var res = await _sb.from('user_data').select('key,data').eq('user_id',currentUser.id).eq('app',_APP);
   if (res.data) res.data.forEach(function(row) {
     if (row.key === 'items') { items = row.data; localStorage.setItem('stockly_items', JSON.stringify(items)); }
+    if (row.key === 'shop')  { shopList = row.data; localStorage.setItem('stockly_shop', JSON.stringify(shopList)); }
   });
   var p = await _sb.from('profiles').select('is_pro').eq('id',currentUser.id).maybeSingle();
   if (p.data) { isPro = p.data.is_pro; localStorage.setItem('isPro', String(isPro)); }
@@ -893,7 +1029,7 @@ _sb.auth.getSession().then(function(res) {
 
 // ── スワイプタブ切替 ──
 (function() {
-  var tabNames=['list','alert','analytics','settings'], currentIdx=0, sx=0, sy=0;
+  var tabNames=['list','alert','shop','analytics','settings'], currentIdx=0, sx=0, sy=0;
   document.addEventListener('touchstart',function(e){ sx=e.touches[0].clientX; sy=e.touches[0].clientY; },{passive:true});
   document.addEventListener('touchend',function(e){
     if (document.querySelector('.modal-overlay.show')) return;

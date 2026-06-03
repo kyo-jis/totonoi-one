@@ -293,10 +293,14 @@
   <div id="scheduleList"></div>
 </div>
 
-<!-- 購入履歴 -->
+<!-- 購入・服用履歴 -->
 <div class="view" id="view-history">
-  <p class="section-label">購入履歴</p>
+  <div style="display:flex;background:var(--surface);border-radius:12px;padding:3px;margin:0 1.25rem 1rem;border:1px solid var(--border);">
+    <button id="histTabPurchase" onclick="switchHistTab('purchase',this)" style="flex:1;padding:.5rem;border:none;border-radius:9px;font-family:var(--font);font-size:.78rem;cursor:pointer;transition:all .2s;background:var(--surface2);color:var(--text);font-weight:500;">🛒 購入履歴</button>
+    <button id="histTabDosage" onclick="switchHistTab('dosage',this)" style="flex:1;padding:.5rem;border:none;border-radius:9px;font-family:var(--font);font-size:.78rem;cursor:pointer;transition:all .2s;background:none;color:var(--muted);font-weight:400;">💊 服用履歴</button>
+  </div>
   <div id="historyList"></div>
+  <div id="dosageList" style="display:none;padding:0 1.25rem;"></div>
 </div>
 
 <!-- サプリ辞典 -->
@@ -506,6 +510,7 @@ var memoItemId = null;
 var memoRatings = {condition:0, sleep:0};
 var purchaseHistory = JSON.parse(localStorage.getItem('medlyPurchase') || '[]');
 var effectLogs = JSON.parse(localStorage.getItem('medlyEffectLogs') || '[]');
+var dosageLog = JSON.parse(localStorage.getItem('medlyDosageLog') || '[]');
 
 var TYPE_LABELS = {supplement:'サプリメント', medicine:'市販薬', prescription:'処方薬', other:'その他'};
 var TYPE_ICONS = {supplement:'💊', medicine:'💉', prescription:'🏥', other:'📦'};
@@ -1139,6 +1144,85 @@ function confirmRestock() {
 }
 
 // ── Purchase History ──
+function switchHistTab(tab, btn) {
+  document.getElementById('historyList').style.display = tab === 'purchase' ? '' : 'none';
+  document.getElementById('dosageList').style.display = tab === 'dosage' ? '' : 'none';
+  ['histTabPurchase','histTabDosage'].forEach(function(id){
+    var el = document.getElementById(id);
+    var isPurchase = id === 'histTabPurchase';
+    el.style.background = (tab === 'purchase') === isPurchase ? 'var(--surface2)' : 'none';
+    el.style.color = (tab === 'purchase') === isPurchase ? 'var(--text)' : 'var(--muted)';
+    el.style.fontWeight = (tab === 'purchase') === isPurchase ? '500' : '400';
+  });
+  if (tab === 'dosage') renderDosageLog();
+}
+
+function renderDosageLog() {
+  var el = document.getElementById('dosageList');
+  if (!dosageLog.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">💊</div><p>服用記録がありません。<br>スケジュールから服用チェックをすると記録されます。</p></div>';
+    return;
+  }
+  var today = new Date().toISOString().split('T')[0];
+  var yesterday = new Date(Date.now()-86400000).toISOString().split('T')[0];
+  var grouped = {};
+  dosageLog.forEach(function(e) {
+    var label = e.date === today ? '今日' : e.date === yesterday ? '昨日' : e.date.replace(/(\d{4})-(\d{2})-(\d{2})/,'$2月$3日');
+    if (!grouped[e.date]) grouped[e.date] = {label:label, entries:[]};
+    grouped[e.date].entries.push(e);
+  });
+  el.innerHTML = Object.keys(grouped).sort(function(a,b){ return b.localeCompare(a); }).map(function(date) {
+    var g = grouped[date];
+    return '<p class="section-label" style="margin-bottom:.5rem;">' + g.label + '</p>'
+      + g.entries.map(function(e) {
+        return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.75rem 1rem;margin-bottom:.4rem;display:flex;align-items:center;gap:.75rem;">'
+          + '<span style="font-size:1.2rem;flex-shrink:0;">' + e.icon + '</span>'
+          + '<div style="flex:1;min-width:0;">'
+            + '<p style="font-size:.88rem;font-weight:500;">' + e.itemName + '</p>'
+            + '<p style="font-size:.7rem;color:var(--muted);margin-top:.1rem;">' + e.timing + ' · ' + e.daily + e.unit + '</p>'
+          + '</div>'
+          + '<p style="font-size:.75rem;color:var(--muted);flex-shrink:0;">' + e.time + '</p>'
+          + '</div>';
+      }).join('');
+  }).join('');
+}
+
+var editPurchaseId = null;
+
+function openEditPurchase(id) {
+  var h = purchaseHistory.find(function(x){ return x.id===id; });
+  if (!h) return;
+  editPurchaseId = id;
+  document.getElementById('epDate').value = h.date || '';
+  document.getElementById('epPrice').value = h.price || '';
+  document.getElementById('epQty').value = h.qty || '';
+  document.getElementById('epNote').value = h.note || '';
+  document.getElementById('editPurchaseModal').classList.add('show');
+}
+
+function saveEditPurchase() {
+  var h = purchaseHistory.find(function(x){ return x.id===editPurchaseId; });
+  if (!h) return;
+  h.date  = document.getElementById('epDate').value;
+  h.price = parseInt(document.getElementById('epPrice').value) || 0;
+  h.qty   = parseInt(document.getElementById('epQty').value) || 1;
+  h.note  = document.getElementById('epNote').value.trim();
+  localStorage.setItem('medlyPurchase', JSON.stringify(purchaseHistory));
+  dbSave('purchase', purchaseHistory);
+  document.getElementById('editPurchaseModal').classList.remove('show');
+  renderPurchaseHistory();
+  showToast('✅ 購入履歴を更新しました');
+}
+
+function deletePurchase(id) {
+  if (!confirm('この購入履歴を削除しますか？')) return;
+  purchaseHistory = purchaseHistory.filter(function(x){ return x.id!==id; });
+  localStorage.setItem('medlyPurchase', JSON.stringify(purchaseHistory));
+  dbSave('purchase', purchaseHistory);
+  renderPurchaseHistory();
+  showToast('🗑 削除しました');
+}
+
 function renderPurchaseHistory() {
   var el = document.getElementById('historyList');
   if (!purchaseHistory.length) {
@@ -1155,6 +1239,7 @@ function renderPurchaseHistory() {
     +'</div>'
     +(hidden>0?'<div class="pro-gate-small"><p>📅 '+hidden+'件の古い履歴はProプランで表示できます</p><a href="index.html" class="upgrade-btn">アップグレード</a></div>':'')
     +visible.map(function(h){
+      if (!h.id) h.id = Date.now().toString() + Math.random().toString(36).slice(2);
       var d = new Date(h.date);
       var dateStr = (d.getMonth()+1)+'月'+d.getDate()+'日';
       return '<div class="history-item">'
@@ -1166,6 +1251,10 @@ function renderPurchaseHistory() {
         +'<div class="history-right">'
         +(h.price?'<p class="history-price">¥'+h.price.toLocaleString()+'</p>':'<p class="history-price" style="color:var(--muted)">—</p>')
         +'<p class="history-qty">'+h.qty+h.unit+'補充</p>'
+        +'<div style="display:flex;gap:.3rem;margin-top:.3rem;justify-content:flex-end;">'
+          +'<button onclick="openEditPurchase(\''+h.id+'\')" style="font-size:.6rem;padding:.2rem .4rem;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);cursor:pointer;font-family:var(--font);">✏️</button>'
+          +'<button onclick="deletePurchase(\''+h.id+'\')" style="font-size:.6rem;padding:.2rem .4rem;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);cursor:pointer;font-family:var(--font);">🗑</button>'
+        +'</div>'
         +'</div>'
         +'</div>';
     }).join('');
@@ -1389,6 +1478,16 @@ function takeFromSchedule(id, timing) {
   save();
   dailyTaken.taken[key] = true;
   saveDailyTaken();
+  var now = new Date();
+  dosageLog.unshift({
+    id: Date.now().toString(), date: now.toISOString().split('T')[0],
+    time: now.toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'}),
+    itemId: item.id, itemName: item.name, icon: item.icon,
+    timing: TIMING_LABELS[timing] || timing, daily: item.daily, unit: item.unit
+  });
+  if (dosageLog.length > 500) dosageLog = dosageLog.slice(0, 500);
+  localStorage.setItem('medlyDosageLog', JSON.stringify(dosageLog));
+  dbSave('dosageLog', dosageLog);
   renderSchedule();
   renderList();
   updateSummary();
@@ -1597,6 +1696,34 @@ _sb.auth.getSession().then(function(res) {
     <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;color:var(--muted);font-size:.75rem;"><div style="flex:1;height:1px;background:var(--border);"></div>または<div style="flex:1;height:1px;background:var(--border);"></div></div>
     <button class="btn-primary" id="authSubmitBtn" onclick="handleAuth()">ログイン</button>
     <button class="btn-cancel" onclick="closeModal('authModal')">キャンセル</button>
+  </div>
+</div>
+
+<!-- 購入履歴編集モーダル -->
+<div class="modal-overlay" id="editPurchaseModal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <p class="modal-title">購入履歴を編集</p>
+    <div class="form-group">
+      <label>購入日</label>
+      <input type="date" id="epDate" style="width:100%">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+      <div class="form-group">
+        <label>金額（円）</label>
+        <input type="number" id="epPrice" placeholder="0" style="width:100%">
+      </div>
+      <div class="form-group">
+        <label>補充数量</label>
+        <input type="number" id="epQty" placeholder="1" style="width:100%">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>メモ（ブランド名など）</label>
+      <input type="text" id="epNote" placeholder="例：DHC" style="width:100%">
+    </div>
+    <button class="btn-primary" onclick="saveEditPurchase()">保存する</button>
+    <button class="btn-cancel" onclick="document.getElementById('editPurchaseModal').classList.remove('show')">キャンセル</button>
   </div>
 </div>
 </body>

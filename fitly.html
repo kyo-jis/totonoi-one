@@ -1057,6 +1057,10 @@ var EXERCISE_DB = [
 // State
 var currentWorkout = {exercises:[], startTime:null, running:false};
 var workoutTimerInterval = null;
+
+function persistCurrentWorkout() {
+  localStorage.setItem('fitlyCurrentWorkout', JSON.stringify(currentWorkout));
+}
 var restTimerInterval = null;
 var defaultRestTime = parseInt(localStorage.getItem('fitlyRestTime') || '90');
 if (isNaN(defaultRestTime) || defaultRestTime < 5) defaultRestTime = 90;
@@ -1272,6 +1276,20 @@ function init() {
   renderBodyWeightTab();
   renderAnalysis();
   updateProUI();
+  // 未保存ワークアウトの復元
+  var savedCW = JSON.parse(localStorage.getItem('fitlyCurrentWorkout') || 'null');
+  if (savedCW && savedCW.running && savedCW.exercises && savedCW.exercises.length) {
+    currentWorkout = savedCW;
+    document.getElementById('workoutActiveHeader').style.display = 'flex';
+    document.getElementById('workoutDashboard').style.display = 'none';
+    document.getElementById('btnAddExercise').style.display = 'block';
+    document.getElementById('btnSave').style.display = 'block';
+    if (currentWorkout.startTime) {
+      workoutTimerInterval = setInterval(updateWorkoutTimer, 1000);
+    }
+    renderExerciseCards();
+    showToast('📋 前回のワークアウトを復元しました');
+  }
 }
 
 // ── Tab ──
@@ -1868,6 +1886,7 @@ function saveWorkout() {
   localStorage.setItem('exerciseSettings', JSON.stringify(exerciseSettings));
   dbSave('exSettings', exerciseSettings);
 
+  localStorage.removeItem('fitlyCurrentWorkout');
   clearInterval(workoutTimerInterval);
   workoutTimerInterval = null;
   currentWorkout = {exercises:[], startTime:null, running:false};
@@ -1952,6 +1971,12 @@ function renderExerciseCards() {
     var headerCells = layout.headers.map(function(h){ return '<span class="set-header-label">'+h+'</span>'; }).join('');
     var headerHTML = '<div class="set-header '+layout.cls+'"><span></span>'+headerCells+'<span></span></div>';
 
+    var savedComment = (exerciseSettings[ex.id] && exerciseSettings[ex.id].comment) || '';
+    var commentHTML = '<div style="margin-top:.65rem;border-top:1px solid var(--border);padding-top:.6rem;">'
+      +'<textarea class="set-input set-input-text" rows="2" style="font-size:.78rem;resize:none;color:var(--muted);line-height:1.5;" '
+      +'placeholder="次回へのメモ（前回の気づきが次のセッションで表示されます）" '
+      +'onblur="saveExComment(\''+ex.id+'\',this.value)">'+savedComment+'</textarea>'
+      +'</div>';
     return '<div class="exercise-card">'
       +'<div class="exercise-header">'
       +'<div><p class="exercise-name">'+ex.name+'</p>'
@@ -1960,12 +1985,21 @@ function renderExerciseCards() {
       +'<a href="'+ytURL+'" target="_blank" class="btn-yt">▶ 動画</a>'
       +'<button class="btn-icon" onclick="removeExercise('+ei+')">🗑</button>'
       +'</div></div>'
+      +(savedComment ? '<div class="prev-record" style="border-left:2px solid var(--accent);background:rgba(94,207,160,.06);">💬 前回メモ: <span>'+savedComment+'</span></div>' : '')
       +prevHTML
       +headerHTML
       +setsHTML
       +'<button class="btn-add-set" onclick="addSet('+ei+')">＋ セットを追加</button>'
+      +commentHTML
       +'</div>';
   }).join('');
+}
+
+function saveExComment(exId, comment) {
+  if (!exerciseSettings[exId]) exerciseSettings[exId] = {};
+  exerciseSettings[exId].comment = comment.trim();
+  localStorage.setItem('exerciseSettings', JSON.stringify(exerciseSettings));
+  dbSave('exSettings', exerciseSettings);
 }
 
 function getLastRecord(exId) {
@@ -2017,12 +2051,14 @@ function addExerciseToWorkout(ex) {
     id: ex.id, name: ex.name, cat: ex.cat, part: ex.part,
     keyword: ex.keyword||'', sets: sets, restTime: restTime
   });
+  persistCurrentWorkout();
   renderExerciseCards();
   closeModal('addExerciseModal');
 }
 
 function removeExercise(ei) {
   currentWorkout.exercises.splice(ei, 1);
+  persistCurrentWorkout();
   renderExerciseCards();
 }
 
@@ -2033,11 +2069,13 @@ function addSet(ei) {
   var newSet = {done: false};
   layout.fields.forEach(function(f){ newSet[f] = last[f] || ''; });
   ex.sets.push(newSet);
+  persistCurrentWorkout();
   renderExerciseCards();
 }
 
 function updateSet(ei, si, field, val) {
   currentWorkout.exercises[ei].sets[si][field] = val;
+  persistCurrentWorkout();
 }
 
 function completeSet(ei, si) {
@@ -2062,6 +2100,7 @@ function completeSet(ei, si) {
       startRestTimer(restTime, ex.name, ex.id);
     }
   }
+  persistCurrentWorkout();
   renderExerciseCards();
 }
 
