@@ -831,10 +831,20 @@ function onStartDateChange() {
   }
 }
 
+// ── Date helpers (ローカル日付を正しく扱う) ──
+function parseLocalDate(str) {
+  if (!str) return null;
+  var p = str.split('-');
+  return new Date(+p[0], +p[1]-1, +p[2]);
+}
+function localDateStr(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
 // ── Days ──
 function daysUntilNext(s) {
   if (!s.nextBillingDate || s.cycle === 'once') return null;
-  var bill = new Date(s.nextBillingDate);
+  var bill = parseLocalDate(s.nextBillingDate);
   var now = new Date(); now.setHours(0,0,0,0);
   return Math.ceil((bill - now) / 86400000);
 }
@@ -849,7 +859,7 @@ function daysBadge(days) {
 
 function formatDate(str) {
   if (!str) return '未設定';
-  var d = new Date(str);
+  var d = parseLocalDate(str);
   return (d.getMonth()+1) + '/' + d.getDate();
 }
 
@@ -859,17 +869,22 @@ function autoRecordHistory() {
   var updated = false;
   subs.forEach(function(s) {
     if (!s.nextBillingDate || s.cycle === 'once') return;
-    var bill = new Date(s.nextBillingDate); bill.setHours(0,0,0,0);
-    while (bill <= now) {
-      var pd = bill.toISOString().split('T')[0];
+    var bill = parseLocalDate(s.nextBillingDate);
+    var max = 2000;
+    while (bill <= now && --max > 0) {
+      var pd = localDateStr(bill);
       var already = payHistory.some(function(h){ return h.id===s.id && h.paidDate===pd; });
       if (!already) payHistory.push({id:s.id, name:s.name, icon:s.icon, domain:s.domain||'', amount:s.amount, currency:s.currency||'JPY', cycle:s.cycle, paidDate:pd, payment:s.payment||''});
-      var m = cycleToMonths(s);
-      if (m >= 1) bill.setMonth(bill.getMonth() + Math.round(m));
-      else bill.setDate(bill.getDate() + Math.round(m * 30));
+      if (s.cycle === 'weekly') {
+        bill.setDate(bill.getDate() + 7);
+      } else {
+        var m = cycleToMonths(s);
+        if (m >= 1) bill.setMonth(bill.getMonth() + Math.round(m));
+        else bill.setDate(bill.getDate() + Math.round(m * 30));
+      }
       updated = true;
     }
-    s.nextBillingDate = bill.toISOString().split('T')[0];
+    s.nextBillingDate = localDateStr(bill);
   });
   if (updated) {
     localStorage.setItem('subs', JSON.stringify(subs));
@@ -880,7 +895,7 @@ function autoRecordHistory() {
 
 function historyMonthTotal(year, month) {
   return payHistory.filter(function(h){
-    var d = new Date(h.paidDate);
+    var d = parseLocalDate(h.paidDate);
     return d.getFullYear()===year && d.getMonth()===month;
   }).reduce(function(sum,h){ return sum+Number(h.amount); }, 0);
 }
@@ -889,7 +904,7 @@ function historyMonthTotal(year, month) {
 function init() {
   autoRecordHistory();
   renderList(); renderCalendar(); buildPresets(); buildEmojiPalette();
-  document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('fDate').value = localDateStr(new Date());
   updateProUI();
 }
 
@@ -941,17 +956,19 @@ function updateTotal() {
   var totals={}, mc=0, yc=0;
   // 今月のpayHistoryから既払い分
   payHistory.forEach(function(h) {
-    var d = new Date(h.paidDate);
+    var d = parseLocalDate(h.paidDate);
     if (d.getFullYear()===ty && d.getMonth()===tm) {
       var cur = h.currency||'JPY';
       totals[cur] = (totals[cur]||0) + Number(h.amount);
       mc++;
     }
   });
-  // 今月のnextBillingDateから予定分
+  // 今月のnextBillingDateから予定分（重複除外）
+  var paidIds = {};
+  payHistory.forEach(function(h) { var d=parseLocalDate(h.paidDate); if(d.getFullYear()===ty&&d.getMonth()===tm) paidIds[h.id]=true; });
   subs.forEach(function(s) {
-    if (!s.nextBillingDate || s.cycle==='once') return;
-    var bill = new Date(s.nextBillingDate);
+    if (!s.nextBillingDate || s.cycle==='once' || paidIds[s.id]) return;
+    var bill = parseLocalDate(s.nextBillingDate);
     if (bill.getFullYear()===ty && bill.getMonth()===tm) {
       var cur = s.currency||'JPY';
       totals[cur] = (totals[cur]||0) + Number(s.amount);
@@ -986,14 +1003,31 @@ function updateTotal() {
 
 // ── Calendar ──
 function getBillsOnDate(dateStr) {
-  var target=new Date(dateStr), ty=target.getFullYear(), tm=target.getMonth(), td=target.getDate();
-  return subs.filter(function(s) {
-    if (!s.nextBillingDate||s.cycle==='once') return false;
-    var bill=new Date(s.nextBillingDate);
-    var months=cycleToMonths(s);
-    if (months<=1) return td===bill.getDate()&&new Date(ty,tm,1)>=new Date(bill.getFullYear(),bill.getMonth(),1);
-    return td===bill.getDate()&&tm===bill.getMonth();
+  var target = parseLocalDate(dateStr);
+  var ty = target.getFullYear(), tm = target.getMonth(), td = target.getDate();
+  var now = new Date(); now.setHours(0,0,0,0);
+  var result = [], seen = {};
+  // 過去・本日: payHistoryから正確に取得
+  if (target <= now) {
+    payHistory.forEach(function(h) {
+      var d = parseLocalDate(h.paidDate);
+      if (d.getFullYear()===ty && d.getMonth()===tm && d.getDate()===td && !seen[h.id]) {
+        var sub = subs.find(function(s){ return s.id===h.id; });
+        result.push(sub || h); seen[h.id] = true;
+      }
+    });
+  }
+  // 未来・本日: nextBillingDateから（月次以下は同日繰り返し、長期は完全一致）
+  subs.forEach(function(s) {
+    if (!s.nextBillingDate || s.cycle==='once' || seen[s.id]) return;
+    var bill = parseLocalDate(s.nextBillingDate);
+    var months = cycleToMonths(s);
+    var matches = months <= 1
+      ? td===bill.getDate() && new Date(ty,tm,1) >= new Date(bill.getFullYear(),bill.getMonth(),1)
+      : td===bill.getDate() && tm===bill.getMonth() && ty===bill.getFullYear();
+    if (matches) { result.push(s); seen[s.id] = true; }
   });
+  return result;
 }
 
 function renderCalendar() {
