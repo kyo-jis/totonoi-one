@@ -797,7 +797,8 @@ function calcNextBillingDate(startStr, cycle, customNum, customUnit) {
   var next = new Date(+p[0], +p[1]-1, +p[2]); // ローカル時刻で解釈
   var now = new Date(); now.setHours(0,0,0,0);
   var max = 1000;
-  do {
+  // 厳密な「より小さい」で判定: startDate当日はそのまま返す（翌月に進めない）
+  while (next < now && --max > 0) {
     if (cycle === 'weekly')       next.setDate(next.getDate() + 7);
     else if (cycle === 'monthly') next.setMonth(next.getMonth() + 1);
     else if (cycle === '3months') next.setMonth(next.getMonth() + 3);
@@ -810,7 +811,7 @@ function calcNextBillingDate(startStr, cycle, customNum, customUnit) {
       if (customUnit === 'years') next.setFullYear(next.getFullYear() + n);
       else next.setMonth(next.getMonth() + n);
     } else break;
-  } while (next <= now && --max > 0);
+  }
   var y = next.getFullYear();
   var m = String(next.getMonth()+1).padStart(2,'0');
   var d = String(next.getDate()).padStart(2,'0');
@@ -954,26 +955,47 @@ function renderList() {
 
 function updateTotal() {
   var now = new Date(); var ty=now.getFullYear(), tm=now.getMonth();
+  var today = new Date(); today.setHours(0,0,0,0);
   var totals={}, mc=0, yc=0;
-  // 今月のpayHistoryから既払い分
+
+  // ① payHistoryから今月の既払い分
+  var paidDates = {}; // id+':'+date → true（二重計上防止）
+  var paidSubIds = {}; // id → true（今月払い済みのサブスク）
   payHistory.forEach(function(h) {
     var d = parseLocalDate(h.paidDate);
     if (d.getFullYear()===ty && d.getMonth()===tm) {
       var cur = h.currency||'JPY';
       totals[cur] = (totals[cur]||0) + Number(h.amount);
       mc++;
+      paidDates[h.id+':'+h.paidDate] = true;
+      paidSubIds[h.id] = true;
     }
   });
-  // 今月のnextBillingDateから予定分（同一サブスク・同一日付の二重計上を除外）
-  var countedKeys = {};
-  payHistory.forEach(function(h) { var d=parseLocalDate(h.paidDate); if(d.getFullYear()===ty&&d.getMonth()===tm) countedKeys[h.id+':'+h.paidDate]=true; });
+
+  // ② nextBillingDateが今月のサブスク（同一日付の二重計上を除外）
   subs.forEach(function(s) {
     if (!s.nextBillingDate || s.cycle==='once') return;
     var bill = parseLocalDate(s.nextBillingDate);
-    if (bill.getFullYear()===ty && bill.getMonth()===tm && !countedKeys[s.id+':'+s.nextBillingDate]) {
+    if (bill.getFullYear()===ty && bill.getMonth()===tm && !paidDates[s.id+':'+s.nextBillingDate]) {
       var cur = s.currency||'JPY';
       totals[cur] = (totals[cur]||0) + Number(s.amount);
       yc++;
+      paidSubIds[s.id] = true;
+    }
+  });
+
+  // ③ startDateが今月のサブスク（①②でカバーされていない初回請求分）
+  // calcNextBillingDateが必ず一周進めてしまう古いデータ対策
+  subs.forEach(function(s) {
+    if (s.cycle==='once' || paidSubIds[s.id] || !s.startDate) return;
+    var start = parseLocalDate(s.startDate);
+    if (start.getFullYear()===ty && start.getMonth()===tm && start <= today) {
+      var bill = s.nextBillingDate ? parseLocalDate(s.nextBillingDate) : null;
+      if (!bill || bill.getFullYear()!==ty || bill.getMonth()!==tm) {
+        var cur = s.currency||'JPY';
+        totals[cur] = (totals[cur]||0) + Number(s.amount);
+        yc++;
+      }
     }
   });
   var keys=Object.keys(totals);
