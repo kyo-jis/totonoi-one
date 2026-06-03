@@ -275,7 +275,7 @@
 </div>
 
 <div class="total-card">
-  <p class="total-label">今月の実際の支出</p>
+  <p class="total-label">今月の支出</p>
   <div id="totalAmounts"><p class="total-amount"><sup>¥</sup><span>0</span></p></div>
   <p class="total-sub" id="totalSub">登録なし</p>
   <div class="total-bar" id="totalBar"></div>
@@ -863,7 +863,7 @@ function autoRecordHistory() {
     while (bill <= now) {
       var pd = bill.toISOString().split('T')[0];
       var already = payHistory.some(function(h){ return h.id===s.id && h.paidDate===pd; });
-      if (!already) payHistory.push({id:s.id, name:s.name, icon:s.icon, domain:s.domain||'', amount:s.amount, cycle:s.cycle, paidDate:pd, payment:s.payment||''});
+      if (!already) payHistory.push({id:s.id, name:s.name, icon:s.icon, domain:s.domain||'', amount:s.amount, currency:s.currency||'JPY', cycle:s.cycle, paidDate:pd, payment:s.payment||''});
       var m = cycleToMonths(s);
       if (m >= 1) bill.setMonth(bill.getMonth() + Math.round(m));
       else bill.setDate(bill.getDate() + Math.round(m * 30));
@@ -939,15 +939,23 @@ function renderList() {
 function updateTotal() {
   var now = new Date(); var ty=now.getFullYear(), tm=now.getMonth();
   var totals={}, mc=0, yc=0;
+  // 今月のpayHistoryから既払い分
+  payHistory.forEach(function(h) {
+    var d = new Date(h.paidDate);
+    if (d.getFullYear()===ty && d.getMonth()===tm) {
+      var cur = h.currency||'JPY';
+      totals[cur] = (totals[cur]||0) + Number(h.amount);
+      mc++;
+    }
+  });
+  // 今月のnextBillingDateから予定分
   subs.forEach(function(s) {
-    if (!s.nextBillingDate) return;
-    var bill=new Date(s.nextBillingDate), months=cycleToMonths(s);
-    if (months===0) return;
-    var cur=s.currency||'JPY';
-    if (months<=1) {
-      if (new Date(ty,tm,1)>=new Date(bill.getFullYear(),bill.getMonth(),1)) { totals[cur]=(totals[cur]||0)+Number(s.amount); mc++; }
-    } else {
-      if (bill.getMonth()===tm) { totals[cur]=(totals[cur]||0)+Number(s.amount); yc++; }
+    if (!s.nextBillingDate || s.cycle==='once') return;
+    var bill = new Date(s.nextBillingDate);
+    if (bill.getFullYear()===ty && bill.getMonth()===tm) {
+      var cur = s.currency||'JPY';
+      totals[cur] = (totals[cur]||0) + Number(s.amount);
+      yc++;
     }
   });
   var keys=Object.keys(totals);
@@ -961,8 +969,8 @@ function updateTotal() {
         return '<p class="total-amount" style="font-size:'+fontSize+';line-height:1.15"><sup style="font-size:.55em">'+sym+'</sup><span>'+val+'</span></p>';
       }).join('');
   var parts=[];
-  if (mc) parts.push('月払い等'+mc+'件');
-  if (yc) parts.push('長期払い'+yc+'件');
+  if (mc) parts.push('支払い済み'+mc+'件');
+  if (yc) parts.push('予定'+yc+'件');
   document.getElementById('totalSub').textContent=parts.length?parts.join(' · '):'今月の請求なし';
   document.getElementById('countText').textContent=subs.length+(isPro?'件':'/5');
   var monthly={};
