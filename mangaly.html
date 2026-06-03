@@ -147,6 +147,36 @@
     .cat-row-bar { width:72px; height:6px; background:var(--surface3); border-radius:3px; overflow:hidden; }
     .cat-row-bar-fill { height:100%; border-radius:3px; background:var(--accent); }
 
+    /* Format badge */
+    .format-badge { font-size:.6rem; padding:.1rem .4rem; border-radius:6px; font-weight:500; white-space:nowrap; }
+    .fmt-physical { background:rgba(94,207,160,.15); color:var(--green); }
+    .fmt-digital  { background:rgba(108,142,255,.15); color:var(--blue); }
+    .fmt-scanned  { background:rgba(245,200,66,.15);  color:var(--yellow); }
+    /* Quick vol edit */
+    .quick-vol-wrap { display:flex; align-items:center; gap:.3rem; }
+    .quick-vol-input { width:52px; background:var(--surface3); border:1px solid var(--accent); border-radius:8px; padding:.3rem .4rem; font-size:.95rem; font-weight:600; color:var(--text); font-family:var(--font); text-align:center; outline:none; }
+    .quick-vol-confirm { background:var(--accent); color:#fff; border:none; border-radius:7px; width:26px; height:26px; font-size:.75rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    /* Item memo */
+    .item-memo { font-size:.75rem; color:var(--muted); margin-top:.55rem; padding-top:.55rem; border-top:1px solid var(--border); line-height:1.5; white-space:pre-wrap; }
+    /* Author */
+    .item-author { font-size:.7rem; color:var(--muted); margin-top:.1rem; }
+    /* Search results */
+    .search-result { display:flex; align-items:center; gap:.75rem; padding:.65rem 0; border-bottom:1px solid var(--border); cursor:pointer; transition:background .1s; }
+    .search-result:last-child { border-bottom:none; }
+    .search-result:active { background:var(--surface2); }
+    .search-result-cover { width:38px; height:50px; border-radius:5px; object-fit:cover; background:var(--surface2); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:1.2rem; }
+    .search-result-cover img { width:100%; height:100%; object-fit:cover; border-radius:5px; }
+    .search-result-info { flex:1; min-width:0; }
+    .search-result-title { font-size:.88rem; font-weight:500; line-height:1.3; }
+    .search-result-meta  { font-size:.7rem; color:var(--muted); margin-top:.15rem; }
+    .search-loading { text-align:center; padding:1.5rem; color:var(--muted); font-size:.85rem; }
+    /* Modal sub-tabs */
+    .modal-tabs { display:flex; background:var(--surface2); border-radius:10px; padding:3px; margin-bottom:1.25rem; border:1px solid var(--border); }
+    .modal-tab { flex:1; padding:.5rem; border:none; border-radius:8px; font-family:var(--font); font-size:.8rem; cursor:pointer; transition:all .2s; background:none; color:var(--muted); }
+    .modal-tab.active { background:var(--surface3); color:var(--text); font-weight:500; }
+    /* CSV import */
+    .csv-drop { border:2px dashed var(--border); border-radius:12px; padding:1.5rem; text-align:center; color:var(--muted); font-size:.82rem; cursor:pointer; transition:border-color .15s; }
+    .csv-drop:hover, .csv-drop.drag { border-color:var(--accent); color:var(--accent); }
     .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); backdrop-filter:blur(6px); z-index:100; display:none; align-items:flex-end; }
     .modal-overlay.show { display:flex; }
     .modal { background:var(--surface); border:1px solid var(--border); border-radius:24px 24px 0 0; padding:1.5rem 1.25rem 2rem; width:100%; max-height:92vh; overflow-y:auto; animation:slideUp .3s ease; }
@@ -367,50 +397,102 @@
   <div class="modal">
     <div class="modal-handle"></div>
     <p class="modal-title" id="modalTitle">作品を追加</p>
-    <p class="preset-title">よく登録されるジャンル</p>
-    <div class="preset-grid" id="presetArea"></div>
-    <div class="divider">または手動入力</div>
-    <div class="form-group">
-      <label>タイトル</label>
-      <input type="text" id="fName" placeholder="例：鬼滅の刃">
+    <div class="modal-tabs" id="modalTabBar">
+      <button class="modal-tab active" onclick="switchModalTab('search',this)">🔍 検索</button>
+      <button class="modal-tab" onclick="switchModalTab('manual',this)">✏️ 手動入力</button>
+      <button class="modal-tab" onclick="switchModalTab('csv',this)">📂 CSV</button>
     </div>
-    <div class="form-row">
+
+    <!-- 検索タブ -->
+    <div id="modalSearchPane">
       <div class="form-group">
-        <label>アイコン（絵文字）</label>
-        <input type="text" id="fIcon" placeholder="📖" maxlength="2">
+        <input type="text" id="searchQuery" placeholder="タイトルや著者名で検索..." oninput="onSearchInput()" style="width:100%;">
+      </div>
+      <div id="searchResults"></div>
+      <p style="font-size:.7rem;color:var(--muted);margin-top:.5rem;text-align:center;">検索結果をタップして登録フォームに反映されます</p>
+    </div>
+
+    <!-- 手動入力タブ -->
+    <div id="modalManualPane" style="display:none;">
+      <div class="form-group">
+        <label>タイトル</label>
+        <input type="text" id="fName" placeholder="例：鬼滅の刃" style="width:100%;">
       </div>
       <div class="form-group">
-        <label>ジャンル</label>
-        <select id="fCategory">
-          <option value="shonen">⚡ 少年</option>
-          <option value="shojo">🌸 少女</option>
-          <option value="seinen">🔥 青年</option>
-          <option value="light_novel">✨ ラノベ</option>
-          <option value="novel">📝 小説</option>
-          <option value="other">📦 その他</option>
+        <label>著者名（任意）</label>
+        <input type="text" id="fAuthor" placeholder="例：吾峠呼世晴" style="width:100%;">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>アイコン</label>
+          <input type="text" id="fIcon" placeholder="📖" maxlength="2" style="width:100%;">
+        </div>
+        <div class="form-group">
+          <label>ジャンル</label>
+          <select id="fCategory" style="width:100%;">
+            <option value="shonen">⚡ 少年</option>
+            <option value="shojo">🌸 少女</option>
+            <option value="seinen">🔥 青年</option>
+            <option value="light_novel">✨ ラノベ</option>
+            <option value="novel">📝 小説</option>
+            <option value="other">📦 その他</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>形態</label>
+        <select id="fFormat" style="width:100%;">
+          <option value="">未設定</option>
+          <option value="physical">📚 物理本</option>
+          <option value="digital">📱 電子書籍</option>
+          <option value="scanned">🗂 自炊</option>
         </select>
       </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>読了巻数</label>
-        <input type="number" id="fReadVols" placeholder="0" min="0" step="1">
+      <div class="form-row">
+        <div class="form-group">
+          <label>読了巻数</label>
+          <input type="number" id="fReadVols" placeholder="0" min="0" step="1" style="width:100%;">
+        </div>
+        <div class="form-group">
+          <label>全巻数（0=連載中）</label>
+          <input type="number" id="fTotalVols" placeholder="0" min="0" step="1" style="width:100%;">
+        </div>
       </div>
       <div class="form-group">
-        <label>全巻数（0=連載中）</label>
-        <input type="number" id="fTotalVols" placeholder="0" min="0" step="1">
+        <label>ステータス</label>
+        <select id="fStatus" style="width:100%;">
+          <option value="backlog">積読</option>
+          <option value="reading">読中</option>
+          <option value="completed">読了</option>
+        </select>
       </div>
+      <div class="form-group">
+        <label>コメント・メモ（任意）</label>
+        <textarea id="fMemo" rows="2" placeholder="感想・次に読む巻・おすすめポイントなど..." style="width:100%;resize:none;"></textarea>
+      </div>
+      <button class="btn-primary" id="saveBtn" onclick="saveItem()">追加する</button>
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
     </div>
-    <div class="form-group">
-      <label>ステータス</label>
-      <select id="fStatus">
-        <option value="backlog">積読</option>
-        <option value="reading">読中</option>
-        <option value="completed">読了</option>
-      </select>
+
+    <!-- CSV インポートタブ -->
+    <div id="modalCsvPane" style="display:none;">
+      <div class="csv-drop" id="csvDrop" onclick="document.getElementById('csvFile').click()">
+        <p style="font-size:1.5rem;margin-bottom:.5rem;">📂</p>
+        <p>CSVファイルを選択</p>
+        <p style="font-size:.7rem;margin-top:.3rem;">タップしてファイルを選択、またはドラッグ&ドロップ</p>
+      </div>
+      <input type="file" id="csvFile" accept=".csv" style="display:none;" onchange="importCSV(this)">
+      <div style="margin-top:1rem;background:var(--surface2);border-radius:10px;padding:.875rem;font-size:.75rem;color:var(--muted);line-height:1.6;">
+        <p style="font-weight:500;color:var(--text);margin-bottom:.35rem;">CSV形式について</p>
+        <p>1行目はヘッダー（スキップ）</p>
+        <p>列順: タイトル, 著者, ジャンル, 読了巻, 全巻, ステータス, 形態, メモ</p>
+        <p style="margin-top:.35rem;">ジャンル: shonen/shojo/seinen/light_novel/novel/other</p>
+        <p>ステータス: backlog/reading/completed</p>
+        <p>形態: physical/digital/scanned</p>
+        <button onclick="downloadCsvTemplate()" style="margin-top:.6rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.4rem .75rem;font-size:.72rem;color:var(--accent);cursor:pointer;font-family:var(--font);">📥 テンプレートをダウンロード</button>
+      </div>
+      <div id="csvPreview" style="margin-top:.75rem;"></div>
     </div>
-    <button class="btn-primary" id="saveBtn" onclick="saveItem()">追加する</button>
-    <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
   </div>
 </div>
 
@@ -465,25 +547,35 @@ function statusBadgeHTML(item) {
   return '<span class="status-badge backlog">積読</span>';
 }
 
+var FORMAT_LABELS = { physical:'📚 物理本', digital:'📱 電子書籍', scanned:'🗂 自炊' };
+var FORMAT_CLASS  = { physical:'fmt-physical', digital:'fmt-digital', scanned:'fmt-scanned' };
+
 function renderCard(item) {
   var pct = getVolProgress(item);
   var read = item.readVols || 0;
   var total = item.totalVols || 0;
-  var volLabel = total > 0 ? (read + '/' + total + '巻') : (read + '巻読了');
   var progressBar = '';
   if (total > 0) {
     var isComplete = item.status === 'completed';
     progressBar = '<div class="progress-wrap"><div class="progress-bar-bg"><div class="progress-bar-fill' + (isComplete ? ' completed' : '') + '" style="width:' + pct + '%"></div></div></div>';
   }
+  var formatBadge = item.format && FORMAT_LABELS[item.format]
+    ? ' <span class="format-badge ' + FORMAT_CLASS[item.format] + '">' + FORMAT_LABELS[item.format] + '</span>' : '';
+  var authorLine = item.author ? '<p class="item-author">' + item.author + '</p>' : '';
+  var memoLine = item.memo ? '<p class="item-memo">' + item.memo.replace(/</g,'&lt;') + '</p>' : '';
+  var volDisplay = '<div class="quick-vol-wrap" id="vol-wrap-' + item.id + '">'
+    + '<span class="vol-display" style="cursor:pointer;" onclick="startQuickEdit(\'' + item.id + '\')">' + read + '<span class="vol-unit">巻</span></span>'
+    + '</div>';
   return '<div class="item-card ' + (item.status === 'reading' ? 'reading' : item.status === 'completed' ? 'completed' : '') + '">'
     + '<div class="item-card-top">'
       + '<div class="item-cover">' + (item.icon || CAT_ICONS[item.category] || '📖') + '</div>'
       + '<div class="item-info">'
         + '<p class="item-name">' + item.name + '</p>'
-        + '<div class="item-meta">' + CAT_LABELS[item.category] + ' ' + statusBadgeHTML(item) + '</div>'
+        + authorLine
+        + '<div class="item-meta">' + CAT_LABELS[item.category] + ' ' + statusBadgeHTML(item) + formatBadge + '</div>'
       + '</div>'
       + '<div class="item-right">'
-        + '<div class="vol-display">' + read + '<span class="vol-unit">巻</span></div>'
+        + volDisplay
         + (total > 0 ? '<div class="vol-total">全' + total + '巻</div>' : '<div class="vol-total">連載中</div>')
       + '</div>'
     + '</div>'
@@ -491,7 +583,7 @@ function renderCard(item) {
     + '<div class="item-actions">'
       + '<div class="vol-controls">'
         + '<button class="vol-btn minus" onclick="updateVol(\'' + item.id + '\',-1)">−</button>'
-        + '<span class="vol-label">' + volLabel + '</span>'
+        + '<span class="vol-label" style="min-width:3.5rem;text-align:center;">' + (total > 0 ? read + '/' + total + '巻' : read + '巻') + '</span>'
         + '<button class="vol-btn plus"  onclick="updateVol(\'' + item.id + '\',1)">＋</button>'
       + '</div>'
       + '<div class="item-btn-row">'
@@ -499,6 +591,7 @@ function renderCard(item) {
         + '<button class="btn-icon" onclick="deleteItem(\'' + item.id + '\')">🗑</button>'
       + '</div>'
     + '</div>'
+    + memoLine
     + '</div>';
 }
 
@@ -642,19 +735,37 @@ function selectPreset(btn, name, icon, category) {
   document.getElementById('fCategory').value = category;
 }
 
+var _modalSearchTimer = null;
+
+function switchModalTab(tab, btn) {
+  document.getElementById('modalSearchPane').style.display = tab==='search' ? '' : 'none';
+  document.getElementById('modalManualPane').style.display = tab==='manual' ? '' : 'none';
+  document.getElementById('modalCsvPane').style.display   = tab==='csv'    ? '' : 'none';
+  document.querySelectorAll('.modal-tab').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+}
+
 function openModal() {
   editId = null;
   document.getElementById('modalTitle').textContent = '作品を追加';
   document.getElementById('saveBtn').textContent = '追加する';
   document.getElementById('fName').value = '';
+  document.getElementById('fAuthor').value = '';
   document.getElementById('fIcon').value = '';
   document.getElementById('fCategory').value = 'shonen';
+  document.getElementById('fFormat').value = '';
   document.getElementById('fReadVols').value = '0';
   document.getElementById('fTotalVols').value = '0';
   document.getElementById('fStatus').value = 'backlog';
-  document.querySelectorAll('.preset-btn').forEach(function(b){ b.classList.remove('selected'); });
+  document.getElementById('fMemo').value = '';
+  document.getElementById('searchQuery').value = '';
+  document.getElementById('searchResults').innerHTML = '';
+  // 新規追加は検索タブから
+  switchModalTab('search', document.querySelectorAll('.modal-tab')[0]);
+  document.getElementById('modalTabBar').style.display = 'flex';
   document.getElementById('modalOverlay').classList.add('show');
 }
+
 function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
 function closeModalOutside(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
 
@@ -665,28 +776,170 @@ function editItem(id) {
   document.getElementById('modalTitle').textContent = '編集';
   document.getElementById('saveBtn').textContent = '保存する';
   document.getElementById('fName').value = item.name;
+  document.getElementById('fAuthor').value = item.author || '';
   document.getElementById('fIcon').value = item.icon || '';
   document.getElementById('fCategory').value = item.category || 'shonen';
+  document.getElementById('fFormat').value = item.format || '';
   document.getElementById('fReadVols').value = item.readVols || 0;
   document.getElementById('fTotalVols').value = item.totalVols || 0;
   document.getElementById('fStatus').value = item.status || 'backlog';
+  document.getElementById('fMemo').value = item.memo || '';
+  // 編集は手動タブから
+  switchModalTab('manual', document.querySelectorAll('.modal-tab')[1]);
+  document.getElementById('modalTabBar').style.display = 'flex';
   document.getElementById('modalOverlay').classList.add('show');
 }
 
 function saveItem() {
   var name      = document.getElementById('fName').value.trim();
+  var author    = document.getElementById('fAuthor').value.trim();
   var icon      = document.getElementById('fIcon').value.trim() || '';
   var category  = document.getElementById('fCategory').value;
+  var format    = document.getElementById('fFormat').value;
   var readVols  = Math.max(0, parseInt(document.getElementById('fReadVols').value) || 0);
   var totalVols = Math.max(0, parseInt(document.getElementById('fTotalVols').value) || 0);
   var status    = document.getElementById('fStatus').value;
+  var memo      = document.getElementById('fMemo').value.trim();
   if (!name) { showToast('タイトルを入力してください'); return; }
   if (!editId && items.length >= FREE_LIMIT && !isPro) { showToast('無料プランは' + FREE_LIMIT + '件まで登録できます'); return; }
   if (totalVols > 0 && readVols >= totalVols) status = 'completed';
-  var entry = { id: editId || Date.now().toString(), name:name, icon:icon || CAT_ICONS[category], category:category, readVols:readVols, totalVols:totalVols, status:status };
+  var prev = editId ? items.find(function(x){ return x.id===editId; }) : {};
+  var entry = {
+    id: editId || Date.now().toString(), name:name, author:author,
+    icon:icon || (prev && prev.icon) || CAT_ICONS[category],
+    coverUrl: prev && prev.coverUrl || '',
+    category:category, format:format, readVols:readVols, totalVols:totalVols, status:status, memo:memo
+  };
   if (editId) { var idx = items.findIndex(function(x){ return x.id === editId; }); items[idx] = entry; }
   else items.push(entry);
   persist(); closeModal(); renderAll();
+}
+
+// ── Quick vol edit ──
+function startQuickEdit(id) {
+  var wrap = document.getElementById('vol-wrap-' + id);
+  if (!wrap) return;
+  var item = items.find(function(x){ return x.id===id; });
+  if (!item) return;
+  wrap.innerHTML = '<input class="quick-vol-input" id="qv-' + id + '" type="number" min="0" value="' + (item.readVols||0) + '" onkeydown="if(event.key===\'Enter\')confirmQuickEdit(\'' + id + '\')">'
+    + '<button class="quick-vol-confirm" onclick="confirmQuickEdit(\'' + id + '\')">✓</button>';
+  var inp = document.getElementById('qv-' + id);
+  if (inp) { inp.focus(); inp.select(); }
+}
+
+function confirmQuickEdit(id) {
+  var inp = document.getElementById('qv-' + id);
+  if (!inp) return;
+  var val = Math.max(0, parseInt(inp.value) || 0);
+  var item = items.find(function(x){ return x.id===id; });
+  if (!item) return;
+  var prev = item.readVols || 0;
+  item.readVols = val;
+  if (item.totalVols > 0 && prev < item.totalVols && val >= item.totalVols) {
+    item.status = 'completed'; item.readVols = item.totalVols;
+    confetti({ particleCount:80, spread:70, origin:{y:.6}, colors:['#bf3c8c','#5ecfa0','#f5c842'] });
+    showToast('🎉 ' + item.name + ' を読了しました！');
+  } else if (val > 0 && item.status === 'backlog') {
+    item.status = 'reading';
+  } else if (val === 0 && item.status === 'reading') {
+    item.status = 'backlog';
+  }
+  persist(); renderAll();
+}
+
+// ── Google Books API Search ──
+function onSearchInput() {
+  clearTimeout(_modalSearchTimer);
+  var q = document.getElementById('searchQuery').value.trim();
+  if (!q) { document.getElementById('searchResults').innerHTML = ''; return; }
+  document.getElementById('searchResults').innerHTML = '<div class="search-loading">検索中...</div>';
+  _modalSearchTimer = setTimeout(function(){ searchBooks(q); }, 500);
+}
+
+function searchBooks(q) {
+  var url = 'https://www.googleapis.com/books/v1/volumes?q=' + encodeURIComponent(q) + '&maxResults=8&langRestrict=ja&orderBy=relevance';
+  fetch(url).then(function(r){ return r.json(); }).then(function(data) {
+    if (!data.items || !data.items.length) {
+      document.getElementById('searchResults').innerHTML = '<p style="text-align:center;color:var(--muted);font-size:.82rem;padding:1rem;">見つかりませんでした</p>';
+      return;
+    }
+    document.getElementById('searchResults').innerHTML = data.items.map(function(item) {
+      var vi = item.volumeInfo || {};
+      var title  = vi.title || '不明';
+      var author = (vi.authors || []).join(', ');
+      var thumb  = vi.imageLinks && vi.imageLinks.thumbnail ? vi.imageLinks.thumbnail.replace('http:','https:') : '';
+      var pub    = vi.publishedDate ? vi.publishedDate.slice(0,4) : '';
+      var safeTitle  = title.replace(/'/g,"\\'");
+      var safeAuthor = author.replace(/'/g,"\\'");
+      var safeThumb  = thumb.replace(/'/g,"\\'");
+      return '<div class="search-result" onclick="applySearchResult(\'' + safeTitle + '\',\'' + safeAuthor + '\',\'' + safeThumb + '\')">'
+        + '<div class="search-result-cover">'
+          + (thumb ? '<img src="' + thumb + '" alt="">' : '📖')
+        + '</div>'
+        + '<div class="search-result-info">'
+          + '<p class="search-result-title">' + title + '</p>'
+          + '<p class="search-result-meta">' + (author||'著者不明') + (pub?' · '+pub:'') + '</p>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+  }).catch(function() {
+    document.getElementById('searchResults').innerHTML = '<p style="text-align:center;color:var(--muted);font-size:.82rem;padding:1rem;">検索に失敗しました。手動入力をお試しください。</p>';
+  });
+}
+
+function applySearchResult(title, author, coverUrl) {
+  document.getElementById('fName').value = title;
+  document.getElementById('fAuthor').value = author;
+  // coverUrlをtemporaryに保存
+  applySearchResult._cover = coverUrl;
+  // 手動入力タブに切り替え
+  switchModalTab('manual', document.querySelectorAll('.modal-tab')[1]);
+  showToast('✅ ' + title + ' を選択しました');
+}
+
+// ── CSV Import ──
+function importCSV(input) {
+  var file = input.files[0]; if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var text = e.target.result;
+    var lines = text.split(/\r?\n/).filter(function(l){ return l.trim(); });
+    if (lines.length <= 1) { showToast('データが見つかりません'); return; }
+    var imported = 0;
+    lines.slice(1).forEach(function(line) {
+      var cols = line.split(',').map(function(c){ return c.replace(/^"|"$/g,'').trim(); });
+      var name = cols[0]; if (!name) return;
+      if (items.some(function(i){ return i.name === name; })) return; // 重複スキップ
+      var status = cols[5] || 'backlog';
+      var rVols = parseInt(cols[3]) || 0;
+      var tVols = parseInt(cols[4]) || 0;
+      if (tVols > 0 && rVols >= tVols) status = 'completed';
+      items.push({
+        id: Date.now().toString() + Math.random().toString(36).slice(2,6),
+        name: name, author: cols[1]||'', category: cols[2]||'other',
+        readVols: rVols, totalVols: tVols, status: status,
+        format: cols[6]||'', memo: cols[7]||'',
+        icon: CAT_ICONS[cols[2]] || '📖', coverUrl:''
+      });
+      imported++;
+    });
+    if (!isPro && items.length > FREE_LIMIT) {
+      items = items.slice(0, FREE_LIMIT);
+      showToast('無料プランは' + FREE_LIMIT + '件まで。超過分はスキップしました');
+    }
+    persist(); renderAll(); closeModal();
+    showToast('✅ ' + imported + '件インポートしました');
+  };
+  reader.readAsText(file, 'UTF-8');
+  input.value = '';
+}
+
+function downloadCsvTemplate() {
+  var header = 'タイトル,著者,ジャンル,読了巻,全巻,ステータス,形態,メモ';
+  var sample = '"鬼滅の刃","吾峠呼世晴",shonen,23,23,completed,physical,全巻完結した名作';
+  var blob = new Blob(['﻿' + header + '\n' + sample], {type:'text/csv'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'mangaly_template.csv'; a.click();
 }
 
 function deleteItem(id) {
@@ -707,8 +960,8 @@ function exportData(fmt) {
     var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
     a.download = 'mangaly_' + new Date().toISOString().split('T')[0] + '.json'; a.click();
   } else {
-    var rows = [['タイトル','アイコン','ジャンル','読了巻','全巻','ステータス'].join(',')];
-    items.forEach(function(i){ rows.push(['"'+i.name+'"',i.icon,i.category,i.readVols,i.totalVols,i.status].join(',')); });
+    var rows = [['タイトル','著者','ジャンル','読了巻','全巻','ステータス','形態','メモ'].join(',')];
+    items.forEach(function(i){ rows.push(['"'+i.name+'"','"'+(i.author||'')+'"',i.category,i.readVols,i.totalVols,i.status,i.format||'','"'+(i.memo||'')+'"'].join(',')); });
     var blob = new Blob(['﻿'+rows.join('\n')],{type:'text/csv'});
     var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
     a.download = 'mangaly_' + new Date().toISOString().split('T')[0] + '.csv'; a.click();
