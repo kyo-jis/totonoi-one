@@ -264,6 +264,9 @@
 <script>
 var FREE_LIMIT = 20;
 var isPro = localStorage.getItem('isPro') === 'true';
+function localDateStr(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
 var CAT_LABELS = { all:'すべて', electronics:'💻 家電・ガジェット', furniture:'🛋 家具', clothing:'👕 衣類', vehicle:'🚗 乗り物', tool:'🔧 工具', other:'📦 その他' };
 var CAT_ICONS  = { electronics:'💻', furniture:'🛋', clothing:'👕', vehicle:'🚗', tool:'🔧', other:'📦' };
 var CONDITION_LABELS = { new:'新品', good:'良好', fair:'普通', poor:'劣化' };
@@ -399,7 +402,7 @@ function openModal(){
   document.getElementById('modalTitle').textContent='アイテムを追加'; document.getElementById('saveBtn').textContent='追加する';
   ['fName','fIcon','fPrice','fWarranty','fMemo'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('fCategory').value='electronics'; document.getElementById('fCondition').value='good';
-  document.getElementById('fPurchaseDate').value=new Date().toISOString().split('T')[0];
+  document.getElementById('fPurchaseDate').value=localDateStr(new Date());
   document.querySelectorAll('.preset-btn').forEach(function(b){b.classList.remove('selected');});
   document.getElementById('modalOverlay').classList.add('show');
 }

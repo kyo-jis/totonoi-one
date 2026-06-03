@@ -1111,7 +1111,7 @@ function openBodyWeightModal() {
   document.getElementById('fBwWeight').value  = last ? last.weight : '';
   document.getElementById('fBwBodyFat').value = last && last.bodyFat ? last.bodyFat : '';
   document.getElementById('fBwNote').value = '';
-  document.getElementById('fBwDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('fBwDate').value = localDateStr(new Date());
   document.getElementById('bodyWeightModal').classList.add('show');
 }
 
@@ -1119,7 +1119,7 @@ function saveBodyWeight() {
   var w = parseFloat(document.getElementById('fBwWeight').value);
   if (!w) { showToast('体重を入力してください'); return; }
   var bf   = parseFloat(document.getElementById('fBwBodyFat').value) || null;
-  var date = document.getElementById('fBwDate').value || new Date().toISOString().split('T')[0];
+  var date = document.getElementById('fBwDate').value || localDateStr(new Date());
   var note = document.getElementById('fBwNote').value.trim();
   bodyWeightLog.unshift({ id:Date.now().toString(), date:date, weight:w, bodyFat:bf, note:note });
   bodyWeightLog.sort(function(a,b){ return b.date.localeCompare(a.date); });

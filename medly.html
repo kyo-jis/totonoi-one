@@ -809,6 +809,10 @@ function daysClass(days) {
   return 'good';
 }
 
+function localDateStr(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
 function daysUntilExpiry(item) {
   if (!item.expiry) return null;
   var p = item.expiry.split('-');
@@ -1113,7 +1117,7 @@ function openRestock(id) {
   document.getElementById('fRestockDaily').value = item ? item.daily : '';
   document.getElementById('fRestockBrand').value = '';
   document.getElementById('fRestockPrice').value = '';
-  document.getElementById('fRestockDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('fRestockDate').value = localDateStr(new Date());
   document.getElementById('restockModal').classList.add('show');
 }
 
@@ -1128,7 +1132,7 @@ function confirmRestock() {
   if (newDaily && newDaily !== item.daily) item.daily = newDaily;
   var brand = document.getElementById('fRestockBrand').value.trim();
   var price = parseInt(document.getElementById('fRestockPrice').value) || 0;
-  var date  = document.getElementById('fRestockDate').value || new Date().toISOString().split('T')[0];
+  var date  = document.getElementById('fRestockDate').value || localDateStr(new Date());
   purchaseHistory.unshift({
     id: Date.now().toString(), itemId: item.id, itemName: item.name,
     icon: item.icon||'💊', unit: item.unit,
@@ -1163,8 +1167,9 @@ function renderDosageLog() {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">💊</div><p>服用記録がありません。<br>スケジュールから服用チェックをすると記録されます。</p></div>';
     return;
   }
-  var today = new Date().toISOString().split('T')[0];
-  var yesterday = new Date(Date.now()-86400000).toISOString().split('T')[0];
+  var today = localDateStr(new Date());
+  var _yd = new Date(); _yd.setDate(_yd.getDate()-1);
+  var yesterday = localDateStr(_yd);
   var grouped = {};
   dosageLog.forEach(function(e) {
     var label = e.date === today ? '今日' : e.date === yesterday ? '昨日' : e.date.replace(/(\d{4})-(\d{2})-(\d{2})/,'$2月$3日');
@@ -1229,7 +1234,8 @@ function renderPurchaseHistory() {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">🛒</div><p>補充時に価格を記録すると<br>ここに履歴が表示されます</p></div>';
     return;
   }
-  var cutoff = isPro ? null : new Date(Date.now() - FREE_HISTORY_DAYS * 86400000).toISOString().split('T')[0];
+  var _co = new Date(); _co.setDate(_co.getDate() - FREE_HISTORY_DAYS);
+  var cutoff = isPro ? null : localDateStr(_co);
   var visible = isPro ? purchaseHistory : purchaseHistory.filter(function(h){ return h.date >= cutoff; });
   var hidden  = isPro ? 0 : purchaseHistory.length - visible.length;
   var total = visible.reduce(function(s,h){ return s+(h.price||0); },0);
@@ -1266,7 +1272,7 @@ function openMemo(id) {
   memoRatings = {condition:0, sleep:0};
   var item = items.find(function(x){ return x.id===id; });
   document.getElementById('memoModalTitle').textContent = (item?item.icon+' '+item.name:'') + ' 効果メモ';
-  document.getElementById('fMemoDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('fMemoDate').value = localDateStr(new Date());
   document.getElementById('fMemoNote').value = '';
   ['condition','sleep'].forEach(function(k){
     [1,2,3].forEach(function(n){ document.getElementById('rb-'+k+'-'+n).classList.remove('selected'); });
@@ -1480,7 +1486,7 @@ function takeFromSchedule(id, timing) {
   saveDailyTaken();
   var now = new Date();
   dosageLog.unshift({
-    id: Date.now().toString(), date: now.toISOString().split('T')[0],
+    id: Date.now().toString(), date: localDateStr(now),
     time: now.toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'}),
     itemId: item.id, itemName: item.name, icon: item.icon,
     timing: TIMING_LABELS[timing] || timing, daily: item.daily, unit: item.unit

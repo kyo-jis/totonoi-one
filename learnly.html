@@ -478,16 +478,20 @@ var isPro = localStorage.getItem('isPro') === 'true';
 var SUBJECT_COLORS = ['#3c8cbf','#7c5cbf','#4a8c5a','#bf6c3c','#bf3c8c','#bf9c3c','#5e6abf','#5ecfa0','#e06060','#bf793c'];
 var ICON_PRESETS   = ['📘','📐','🔬','📖','🌍','💻','🎯','🎨','🎸','🏋️','💼','🗣️','🧮','⚗️','🎬','📊'];
 
-function todayStr() { return new Date().toISOString().split('T')[0]; }
+function localDateStr(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function todayStr() { return localDateStr(new Date()); }
 
 function weekDates() {
   var today = new Date(), day = today.getDay();
   var mon = new Date(today);
   mon.setDate(today.getDate() - ((day === 0 ? 7 : day) - 1));
+  mon.setHours(0,0,0,0);
   var out = [];
   for (var i = 0; i < 7; i++) {
     var d = new Date(mon); d.setDate(mon.getDate() + i);
-    out.push(d.toISOString().split('T')[0]);
+    out.push(localDateStr(d));
   }
   return out;
 }
@@ -510,7 +514,7 @@ function calcStreak() {
   var d = new Date(), streak = 0;
   if (!dates[todayStr()]) d.setDate(d.getDate() - 1);
   for (;;) {
-    var ds = d.toISOString().split('T')[0];
+    var ds = localDateStr(d);
     if (dates[ds]) { streak++; d.setDate(d.getDate() - 1); } else break;
   }
   return streak;
