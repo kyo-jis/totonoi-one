@@ -1,4 +1,4 @@
-const CACHE_NAME = 'subly-v1';
+const CACHE_NAME = 'subly-v2';
 const ASSETS = [
   '/subly',
   '/subly.html',
