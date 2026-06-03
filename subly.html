@@ -275,7 +275,7 @@
 </div>
 
 <div class="total-card">
-  <p class="total-label">今月の支出</p>
+  <p class="total-label">月額合計（月換算）</p>
   <div id="totalAmounts"><p class="total-amount"><sup>¥</sup><span>0</span></p></div>
   <p class="total-sub" id="totalSub">登録なし</p>
   <div class="total-bar" id="totalBar"></div>
@@ -998,31 +998,39 @@ function updateTotal() {
       }
     }
   });
-  var keys=Object.keys(totals);
-  var el=document.getElementById('totalAmounts');
-  var fontSize=keys.length>1?'1.6rem':'3rem';
-  el.innerHTML=keys.length===0
-    ? '<p class="total-amount"><sup>¥</sup><span>0</span></p>'
-    : keys.map(function(cur){
-        var sym=CURRENCY_SYMBOLS[cur]||cur;
-        var val=cur==='JPY'?Math.round(totals[cur]).toLocaleString():totals[cur].toFixed(2);
-        return '<p class="total-amount" style="font-size:'+fontSize+';line-height:1.15"><sup style="font-size:.55em">'+sym+'</sup><span>'+val+'</span></p>';
-      }).join('');
-  var parts=[];
-  if (mc) parts.push('支払済'+mc+'件');
-  if (yc) parts.push('予定'+yc+'件');
-  document.getElementById('totalSub').textContent=parts.length?parts.join(' · '):'今月の請求なし';
   document.getElementById('countText').textContent=subs.length+(isPro?'件':'/5');
-  // 月換算合計（固定）
+
+  // 大きい数字: 月換算合計（固定）
   var monthly={};
   subs.forEach(function(s){ var me=monthlyEquiv(s); if(me>0){var cur=s.currency||'JPY'; monthly[cur]=(monthly[cur]||0)+me;} });
+  var mkeys=Object.keys(monthly);
+  var el=document.getElementById('totalAmounts');
+  var fontSize=mkeys.length>1?'1.6rem':'3rem';
+  el.innerHTML=mkeys.length===0
+    ? '<p class="total-amount"><sup>¥</sup><span>0</span></p>'
+    : mkeys.map(function(cur){
+        var sym=CURRENCY_SYMBOLS[cur]||cur;
+        var val=cur==='JPY'?Math.round(monthly[cur]).toLocaleString():monthly[cur].toFixed(2);
+        return '<p class="total-amount" style="font-size:'+fontSize+';line-height:1.15"><sup style="font-size:.55em">'+sym+'</sup><span>'+val+'</span></p>';
+      }).join('');
+  document.getElementById('totalSub').textContent=subs.length ? subs.length+'サービス登録中' : '登録なし';
+
+  // 下のバー: 今月の実際の支出
   var barHTML='';
-  Object.keys(monthly).forEach(function(cur){
-    var sym=CURRENCY_SYMBOLS[cur]||cur;
-    var val=cur==='JPY'?Math.round(monthly[cur]).toLocaleString():monthly[cur].toFixed(2);
-    barHTML+='<span class="total-bar-item"><span class="dot" style="background:var(--green)"></span>月換算 '+sym+val+'/月</span>';
-  });
-  if (subs.length) barHTML+='<span class="total-bar-item"><span class="dot" style="background:var(--accent)"></span>'+subs.length+'サービス</span>';
+  var akeys=Object.keys(totals);
+  if (akeys.length) {
+    akeys.forEach(function(cur){
+      var sym=CURRENCY_SYMBOLS[cur]||cur;
+      var val=cur==='JPY'?Math.round(totals[cur]).toLocaleString():totals[cur].toFixed(2);
+      var parts=[];
+      if (mc) parts.push('支払済'+mc+'件');
+      if (yc) parts.push('予定'+yc+'件');
+      var label=parts.length?parts.join(' · '):'';
+      barHTML+='<span class="total-bar-item"><span class="dot" style="background:var(--accent2)"></span>今月 '+sym+val+(label?' ('+label+')':'')+'</span>';
+    });
+  } else {
+    barHTML='<span class="total-bar-item" style="color:var(--muted);font-size:.72rem">今月の請求なし</span>';
+  }
   document.getElementById('totalBar').innerHTML=barHTML;
 }
 
