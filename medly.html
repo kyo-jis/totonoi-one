@@ -414,6 +414,9 @@
         <div class="timing-check" id="tc-meal" onclick="toggleTiming('meal')">
           <input type="checkbox" id="t-meal"><label for="t-meal">🍽️ 食後</label>
         </div>
+        <div class="timing-check" id="tc-prn" onclick="toggleTiming('prn')" style="grid-column:1/-1;border-color:rgba(245,200,66,.35);background:rgba(245,200,66,.08);">
+          <input type="checkbox" id="t-prn"><label for="t-prn" style="color:var(--yellow);">🆘 頓服（必要な時だけ）</label>
+        </div>
       </div>
     </div>
     <div class="form-group">
@@ -514,8 +517,8 @@ var dosageLog = JSON.parse(localStorage.getItem('medlyDosageLog') || '[]');
 
 var TYPE_LABELS = {supplement:'サプリメント', medicine:'市販薬', prescription:'処方薬', other:'その他'};
 var TYPE_ICONS = {supplement:'💊', medicine:'💉', prescription:'🏥', other:'📦'};
-var TIMING_LABELS = {morning:'朝', noon:'昼', evening:'夕', night:'夜', bedtime:'就寝前', preworkout:'運動前', workout:'運動後', meal:'食後'};
-var TIMINGS = ['morning','noon','evening','night','bedtime','preworkout','workout','meal'];
+var TIMING_LABELS = {morning:'朝', noon:'昼', evening:'夕', night:'夜', bedtime:'就寝前', preworkout:'運動前', workout:'運動後', meal:'食後', prn:'頓服'};
+var TIMINGS = ['morning','noon','evening','night','bedtime','preworkout','workout','meal','prn'];
 var selectedTimings = [];
 
 var PRESETS = [
@@ -892,9 +895,12 @@ function renderList() {
     var fillCls = 'progress-fill '+cls;
     var badgeText = days===null?'':'残り約'+days+'日';
     var expiryText = item.expiry ? '期限: '+formatDate(item.expiry) : '';
-    var timingHTML = (item.timing||[]).length
-      ? '<div class="timing-wrap">'+item.timing.map(function(t){ return '<span class="timing-badge">'+(TIMING_LABELS[t]||t)+'</span>'; }).join('')+'</div>'
-      : '';
+    var isPrn = (item.timing||[]).indexOf('prn') !== -1;
+    var regularTimings = (item.timing||[]).filter(function(t){ return t !== 'prn'; });
+    var timingHTML = '';
+    if (isPrn) timingHTML += '<span class="timing-badge" style="background:rgba(245,200,66,.15);color:var(--yellow);border-color:rgba(245,200,66,.35);">🆘 頓服</span>';
+    if (regularTimings.length) timingHTML += regularTimings.map(function(t){ return '<span class="timing-badge">'+(TIMING_LABELS[t]||t)+'</span>'; }).join('');
+    timingHTML = timingHTML ? '<div class="timing-wrap">'+timingHTML+'</div>' : '';
     return '<div class="'+cardCls+'">'
       +'<div class="item-header">'
       +'<div class="item-icon" style="background:rgba(179,136,255,.12)">'+(item.icon||TYPE_ICONS[item.type]||'💊')+'</div>'
@@ -938,7 +944,7 @@ function renderSchedule() {
     {id:'preworkout', label:'⚡ 運動前'},
     {id:'workout',    label:'💪 運動後'},
     {id:'meal',       label:'🍽️ 食後'},
-  ];
+  ]; // ※ 'prn'（頓服）は別セクションで表示
   var html = '';
   timings.forEach(function(t) {
     var matched = items.filter(function(item){ return (item.timing||[]).indexOf(t.id)!==-1; });
@@ -964,6 +970,23 @@ function renderSchedule() {
       }).join('')
       +'</div>';
   });
+  // 頓服セクション（スケジュール外・必要な時に服用）
+  var prnItems = items.filter(function(item){ return (item.timing||[]).indexOf('prn') !== -1; });
+  if (prnItems.length) {
+    html += '<div style="margin-top:'+(html?'1rem':'0')+';">'
+      +'<p style="font-size:.85rem;font-weight:500;margin-bottom:.5rem;color:var(--yellow);">🆘 頓服（必要な時）</p>'
+      +prnItems.map(function(item){
+        return '<div style="background:var(--surface);border:1px solid rgba(245,200,66,.3);border-radius:12px;padding:.75rem 1rem;margin-bottom:.4rem;display:flex;align-items:center;justify-content:space-between;">'
+          +'<div style="display:flex;align-items:center;gap:.75rem;">'
+          +'<span style="font-size:1.2rem;">'+(item.icon||'💊')+'</span>'
+          +'<div><p style="font-size:.88rem;font-weight:400;">'+item.name+'</p>'
+          +'<p style="font-size:.7rem;color:var(--muted);">'+item.daily+item.unit+' / 残'+item.current+item.unit+'</p></div>'
+          +'</div>'
+          +'<button class="btn-take" onclick="takeItem(\''+item.id+'\')">服用</button>'
+          +'</div>';
+      }).join('')
+      +'</div>';
+  }
   el.innerHTML = html || '<div class="empty-state"><div class="empty-icon">📅</div><p>摂取タイミングを設定すると<br>ここに表示されます</p></div>';
 }
 
