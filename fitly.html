@@ -1794,7 +1794,11 @@ function startFromMenu(idx) {
 }
 
 function startWorkoutCustom() {
-  currentWorkout.exercises = [];
+  clearInterval(workoutTimerInterval);
+  workoutTimerInterval = null;
+  currentWorkout = {exercises:[], startTime:null, running:false};
+  localStorage.removeItem('fitlyCurrentWorkout');
+  document.getElementById('workoutTimer').textContent = '00:00';
   activateWorkoutUI();
   renderExerciseCards();
   openAddExercise();
@@ -1822,6 +1826,11 @@ function beginTimer() {
 
 // ── Workout Timer ──
 function startWorkout() {
+  clearInterval(workoutTimerInterval);
+  workoutTimerInterval = null;
+  currentWorkout = {exercises:[], startTime:null, running:false};
+  localStorage.removeItem('fitlyCurrentWorkout');
+  document.getElementById('workoutTimer').textContent = '00:00';
   activateWorkoutUI();
 }
 
