@@ -1,0 +1,13 @@
+{
+  "name": "Cookly — レシピ管理",
+  "short_name": "Cookly",
+  "start_url": "/cookly",
+  "display": "standalone",
+  "background_color": "#0c0c18",
+  "theme_color": "#0c0c18",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icon-cookly-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-cookly-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

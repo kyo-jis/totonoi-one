@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Renewly — 更新期限管理</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+  <link rel="manifest" href="/manifest-renewly.json">
+  <link rel="icon" type="image/png" href="/favicon.ico">
+  <meta name="theme-color" content="#0c0c18">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Renewly">
+  <link rel="apple-touch-icon" href="/apple-touch-icon-renewly.png">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:#0c0c18; --surface:#14142a; --surface2:#1c1c38; --surface3:#242448;
+      --border:#2e2e50; --text:#f2f2fa; --muted:#9494b8;
+      --accent:#bf9c3c; --accent-dark:#9a7a20; --accent2:#ff7c6e;
+      --green:#5ecfa0; --yellow:#f5c842; --orange:#ffb347;
+      --font:'Outfit',sans-serif;
+      --shadow-sm:0 2px 10px rgba(0,0,0,.3); --shadow-md:0 4px 24px rgba(0,0,0,.4);
+      --spring:cubic-bezier(.34,1.56,.64,1);
+    }
+    html { font-size:16px; }
+    body { background:var(--bg); color:var(--text); font-family:var(--font); font-weight:400; min-height:100vh; padding-bottom:130px; }
+    .app-header { padding:3rem 1.25rem 1.25rem; }
+    .back-link { font-size:.75rem; color:var(--muted); text-decoration:none; letter-spacing:.1em; text-transform:uppercase; display:inline-flex; align-items:center; gap:.4rem; }
+    .app-title { font-size:1.6rem; font-weight:500; letter-spacing:-.02em; }
+    .app-title span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
+    .auth-chip { background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); transition:all .2s; white-space:nowrap; }
+    .auth-chip.logged-in { border-color:var(--accent); color:var(--accent); }
+    .header-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; }
+    .summary-card { margin:0 1.25rem 1.25rem; background:linear-gradient(145deg,#201500 0%,#150e00 100%); border:1px solid rgba(191,156,60,.38); border-radius:24px; padding:1.5rem; position:relative; overflow:hidden; box-shadow:0 0 60px rgba(191,156,60,.1),inset 0 1px 0 rgba(255,255,255,.07),0 8px 40px rgba(0,0,0,.5); }
+    .summary-card::before { content:''; position:absolute; top:-80px; right:-80px; width:280px; height:280px; background:radial-gradient(circle,rgba(191,156,60,.5) 0%,transparent 60%); border-radius:50%; }
+    .summary-label { font-size:.72rem; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-bottom:.5rem; }
+    .summary-stats { display:flex; gap:1.5rem; margin-top:.5rem; }
+    .summary-stat-value { font-size:2.2rem; font-weight:600; letter-spacing:-.03em; }
+    .summary-stat-label { font-size:.7rem; color:var(--muted); margin-top:.1rem; }
+    .card-deco { position:absolute; right:1rem; bottom:-.75rem; font-size:8.5rem; font-weight:700; line-height:1; color:rgba(255,255,255,.04); pointer-events:none; user-select:none; letter-spacing:-.05em; }
+    .summary-bar { display:flex; gap:.75rem; margin-top:1rem; flex-wrap:wrap; }
+    .summary-bar-item { display:flex; align-items:center; gap:.4rem; font-size:.75rem; color:var(--muted); }
+    .dot { width:8px; height:8px; border-radius:50%; }
+    .free-banner { margin:0 1.25rem 1.25rem; background:rgba(245,200,66,.1); border:1px solid rgba(245,200,66,.25); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+    .free-banner-text { font-size:.8rem; color:var(--yellow); }
+    .upgrade-btn { font-size:.72rem; font-weight:500; color:#1a1a24; background:var(--yellow); border:none; border-radius:8px; padding:.4rem .75rem; cursor:pointer; white-space:nowrap; font-family:var(--font); }
+    .tabs { display:flex; gap:0; margin:0 1.25rem 1.25rem; background:var(--surface); border-radius:14px; padding:4px; border:1px solid var(--border); box-shadow:var(--shadow-sm); }
+    .tab { flex:1; padding:.58rem .2rem; font-size:.72rem; font-weight:400; color:var(--muted); background:none; border:none; border-radius:10px; cursor:pointer; font-family:var(--font); transition:all .2s var(--spring); position:relative; }
+    .tab.active { background:var(--surface2); color:var(--text); font-weight:600; box-shadow:var(--shadow-sm); }
+    .tab:active { transform:scale(.93); }
+    .tab-badge { position:absolute; top:3px; right:5px; background:var(--accent2); color:#fff; border-radius:10px; font-size:.52rem; font-weight:600; padding:.1rem .35rem; min-width:16px; text-align:center; line-height:1.4; }
+    .view { display:none; }
+    .view.active { display:block; }
+    .cat-filter { display:flex; gap:.4rem; padding:0 1.25rem 1rem; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+    .cat-filter::-webkit-scrollbar { display:none; }
+    .cat-chip { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:.3rem .8rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); white-space:nowrap; transition:all .2s; flex-shrink:0; }
+    .cat-chip.active { background:var(--surface2); border-color:var(--accent); color:var(--accent); }
+    .list-section { padding:0 1.25rem; }
+    .section-label { font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:.75rem; }
+    .item-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:.625rem; animation:slideIn .3s ease forwards; }
+    @keyframes slideIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+    .item-card.expired { border-color:rgba(255,107,107,.4); }
+    .item-card.warning { border-color:rgba(255,179,71,.4); }
+    .item-card-top { display:flex; align-items:center; gap:.9rem; }
+    .item-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; background:var(--surface2); }
+    .item-info { flex:1; min-width:0; }
+    .item-name { font-size:.95rem; font-weight:500; }
+    .item-meta { font-size:.72rem; color:var(--muted); margin-top:.2rem; display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+    .status-badge { font-size:.65rem; font-weight:500; padding:.15rem .45rem; border-radius:20px; white-space:nowrap; }
+    .status-badge.expired { background:rgba(255,107,107,.2); color:var(--accent2); }
+    .status-badge.warning  { background:rgba(255,179,71,.2); color:var(--orange); }
+    .status-badge.ok       { background:rgba(94,207,160,.2); color:var(--green); }
+    .item-right { display:flex; flex-direction:column; align-items:flex-end; gap:.25rem; flex-shrink:0; }
+    .days-left { font-size:1.2rem; font-weight:600; letter-spacing:-.02em; }
+    .days-left.expired { color:var(--accent2); }
+    .days-left.warning { color:var(--orange); }
+    .days-left.ok { color:var(--green); }
+    .days-unit { font-size:.65rem; color:var(--muted); font-weight:400; }
+    .expiry-date { font-size:.7rem; color:var(--muted); }
+    .item-actions { display:flex; gap:.4rem; margin-top:.7rem; justify-content:flex-end; }
+    .btn-icon { width:30px; height:30px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); font-size:.75rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .renew-btn { background:var(--accent); color:#fff; border:none; border-radius:8px; padding:.35rem .75rem; font-size:.72rem; font-weight:500; font-family:var(--font); cursor:pointer; }
+    .renew-btn:active { transform:scale(.93); }
+    .empty-state { text-align:center; padding:3rem 2rem; color:var(--muted); }
+    .empty-state .empty-icon { font-size:2.5rem; margin-bottom:.75rem; }
+    .empty-state p { font-size:.88rem; line-height:1.6; }
+    .analytics-wrap { padding:0 1.25rem; }
+    .analytics-section { margin-bottom:1.5rem; }
+    .analytics-title { font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:.75rem; }
+    .bar-chart { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.25rem 1rem; }
+    .analysis-grid { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; margin-bottom:1rem; }
+    .analysis-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1rem; }
+    .analysis-card-label { font-size:.65rem; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:.4rem; }
+    .analysis-card-value { font-size:1.3rem; font-weight:600; letter-spacing:-.02em; }
+    .analysis-card-sub { font-size:.68rem; color:var(--muted); margin-top:.2rem; }
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); backdrop-filter:blur(6px); z-index:100; display:none; align-items:flex-end; }
+    .modal-overlay.show { display:flex; }
+    .modal { background:var(--surface); border:1px solid var(--border); border-radius:24px 24px 0 0; padding:1.5rem 1.25rem 2rem; width:100%; max-height:92vh; overflow-y:auto; animation:slideUp .3s ease; }
+    @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+    .modal-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 1.25rem; }
+    .modal-title { font-size:1.1rem; font-weight:500; margin-bottom:1.25rem; }
+    .preset-title { font-size:.7rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:.75rem; }
+    .preset-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:.4rem; margin-bottom:1rem; }
+    .preset-btn { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:.6rem .3rem; cursor:pointer; font-family:var(--font); text-align:center; transition:border-color .15s; display:flex; flex-direction:column; align-items:center; gap:.3rem; }
+    .preset-btn:active, .preset-btn.selected { border-color:var(--accent); }
+    .preset-btn .p-icon { font-size:1.2rem; }
+    .preset-btn .p-name { font-size:.6rem; color:var(--text); }
+    .divider { display:flex; align-items:center; gap:.75rem; margin:1rem 0; color:var(--muted); font-size:.75rem; }
+    .divider::before, .divider::after { content:''; flex:1; height:1px; background:var(--border); }
+    .form-group { margin-bottom:1rem; }
+    label { display:block; font-size:.75rem; color:var(--muted); letter-spacing:.05em; text-transform:uppercase; margin-bottom:.4rem; }
+    input, select, textarea { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:.75rem 1rem; font-size:.95rem; color:var(--text); font-family:var(--font); outline:none; transition:border-color .15s; }
+    input:focus, select:focus, textarea:focus { border-color:var(--accent); }
+    select option { background:var(--surface2); }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; }
+    .btn-primary { width:100%; padding:.9rem; background:var(--accent); color:#fff; border:none; border-radius:12px; font-size:.95rem; font-weight:500; font-family:var(--font); cursor:pointer; margin-top:.5rem; }
+    .btn-primary:active { transform:scale(.97); }
+    .btn-cancel { width:100%; padding:.75rem; background:none; color:var(--muted); border:none; font-size:.88rem; font-family:var(--font); cursor:pointer; margin-top:.25rem; }
+    .fab { position:fixed; bottom:calc(72px + env(safe-area-inset-bottom)); right:1.25rem; width:56px; height:56px; border-radius:18px; background:var(--accent); color:#fff; border:none; font-size:1.5rem; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 24px rgba(191,156,60,.4); z-index:50; transition:transform .15s; }
+    .fab:active { transform:scale(.92); }
+    .ad-banner { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--border); padding:.6rem 1rem; display:flex; align-items:center; justify-content:center; gap:.5rem; z-index:40; padding-bottom:calc(.6rem + env(safe-area-inset-bottom)); }
+    .ad-label { font-size:.6rem; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; }
+    .ad-content { font-size:.78rem; color:var(--muted); flex:1; text-align:center; }
+    .share-btn { width:100%; padding:.8rem; border:none; border-radius:12px; font-size:.88rem; font-weight:500; font-family:var(--font); cursor:pointer; }
+    .share-x { background:#000; color:#fff; }
+    .share-line { background:#06c755; color:#fff; }
+    .share-copy { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+  </style>
+</head>
+<body>
+<div class="app-header">
+  <div class="header-top">
+    <a class="back-link" href="index.html"> Totonoi One</a>
+    <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
+  </div>
+  <h1 class="app-title">Renew<span>ly</span></h1>
+</div>
+
+<div class="summary-card">
+  <p class="summary-label">期限管理</p>
+  <div class="summary-stats">
+    <div class="summary-stat">
+      <p class="summary-stat-value" id="summaryTotal">0</p>
+      <p class="summary-stat-label">登録中</p>
+    </div>
+    <div class="summary-stat">
+      <p class="summary-stat-value" style="color:var(--accent2)" id="summaryExpired">0</p>
+      <p class="summary-stat-label">期限切れ</p>
+    </div>
+    <div class="summary-stat">
+      <p class="summary-stat-value" style="color:var(--orange)" id="summarySoon">0</p>
+      <p class="summary-stat-label">まもなく</p>
+    </div>
+  </div>
+  <div class="summary-bar" id="summaryBar"></div>
+  <span class="card-deco" aria-hidden="true">更</span>
+</div>
+
+<div class="free-banner" id="freeBanner">
+  <p class="free-banner-text"><strong id="countText">0/10</strong> 件登録中（無料プラン）</p>
+  <a href="index.html" class="upgrade-btn">アップグレード</a>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('list',this)">一覧</button>
+  <button class="tab" onclick="switchTab('soon',this)" id="tabSoon">まもなく</button>
+  <button class="tab" onclick="switchTab('settings',this)">設定</button>
+</div>
+
+<div class="view active" id="view-list">
+  <div class="cat-filter">
+    <button class="cat-chip active" onclick="filterCat('all',this)">すべて</button>
+    <button class="cat-chip" onclick="filterCat('insurance',this)">🛡 保険</button>
+    <button class="cat-chip" onclick="filterCat('license',this)">🪪 免許・資格</button>
+    <button class="cat-chip" onclick="filterCat('subscription',this)">📱 契約</button>
+    <button class="cat-chip" onclick="filterCat('card',this)">💳 カード</button>
+    <button class="cat-chip" onclick="filterCat('vehicle',this)">🚗 車</button>
+    <button class="cat-chip" onclick="filterCat('passport',this)">🛂 パスポート</button>
+    <button class="cat-chip" onclick="filterCat('other',this)">📦 その他</button>
+  </div>
+  <div class="list-section"><div id="itemList"></div></div>
+</div>
+
+<div class="view" id="view-soon">
+  <div class="list-section" style="padding-top:.25rem;">
+    <p class="section-label" style="margin-bottom:.75rem;">期限切れ・まもなく期限</p>
+    <div id="soonList"></div>
+  </div>
+</div>
+
+<div class="view" id="view-settings">
+  <div class="analytics-wrap">
+    <div class="analytics-section">
+      <p class="analytics-title">統計</p>
+      <div class="analysis-grid" id="statsGrid"></div>
+    </div>
+    <div class="analytics-section">
+      <p class="analytics-title">プラン</p>
+      <div class="bar-chart" style="padding:1rem 1.1rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <p style="font-size:.95rem;font-weight:500;" id="planLabel">無料プラン</p>
+            <p style="font-size:.75rem;color:var(--muted);margin-top:.2rem;" id="planDesc">登録10件・広告あり</p>
+          </div>
+          <span style="font-size:.7rem;padding:.25rem .6rem;border-radius:20px;background:rgba(191,156,60,.15);color:var(--accent);" id="planBadge">現在</span>
+        </div>
+        <a href="index.html" style="display:block;margin-top:.9rem;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:.75rem;font-size:.85rem;color:var(--accent);text-decoration:none;">ダッシュボードでプランを管理 →</a>
+      </div>
+    </div>
+    <div class="analytics-section">
+      <p class="analytics-title">口コミ・シェア</p>
+      <div class="bar-chart" style="padding:1rem 1.1rem;">
+        <div style="display:flex;flex-direction:column;gap:.5rem;">
+          <button onclick="shareX()" class="share-btn share-x">𝕏 でシェアする</button>
+          <button onclick="shareLine()" class="share-btn share-line">🟢 LINEで送る</button>
+          <button onclick="shareCopy()" class="share-btn share-copy" id="copyBtn">🔗 リンクをコピー</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="fab" onclick="openModal()">＋</button>
+<div class="ad-banner" id="adBanner">
+  <span class="ad-label">広告</span>
+  <p class="ad-content">Google AdSense 広告エリア</p>
+</div>
+
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <p class="modal-title" id="modalTitle">期限を追加</p>
+    <p class="preset-title">よく使うアイテム</p>
+    <div class="preset-grid" id="presetArea"></div>
+    <div class="divider">または手動入力</div>
+    <div class="form-group">
+      <label>名前</label>
+      <input type="text" id="fName" placeholder="例：自動車保険">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>アイコン</label>
+        <input type="text" id="fIcon" placeholder="🛡" maxlength="2">
+      </div>
+      <div class="form-group">
+        <label>カテゴリ</label>
+        <select id="fCategory">
+          <option value="insurance">🛡 保険</option>
+          <option value="license">🪪 免許・資格</option>
+          <option value="subscription">📱 契約</option>
+          <option value="card">💳 カード</option>
+          <option value="vehicle">🚗 車</option>
+          <option value="passport">🛂 パスポート</option>
+          <option value="other">📦 その他</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>期限日</label>
+        <input type="date" id="fExpiry">
+      </div>
+      <div class="form-group">
+        <label>警告（日前）</label>
+        <select id="fReminder">
+          <option value="7">7日前</option>
+          <option value="14">14日前</option>
+          <option value="30" selected>30日前</option>
+          <option value="60">60日前</option>
+          <option value="90">90日前</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>メモ（任意）</label>
+      <input type="text" id="fMemo" placeholder="保険会社名など">
+    </div>
+    <button class="btn-primary" id="saveBtn" onclick="saveItem()">追加する</button>
+    <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+  </div>
+</div>
+
+<script>
+var FREE_LIMIT = 10;
+var isPro = localStorage.getItem('isPro') === 'true';
+var CAT_LABELS = { all:'すべて', insurance:'🛡 保険', license:'🪪 免許・資格', subscription:'📱 契約', card:'💳 カード', vehicle:'🚗 車', passport:'🛂 パスポート', other:'📦 その他' };
+var CAT_ICONS  = { insurance:'🛡', license:'🪪', subscription:'📱', card:'💳', vehicle:'🚗', passport:'🛂', other:'📦' };
+var PRESETS = [
+  {name:'自動車保険', icon:'🚗', cat:'insurance'},   {name:'生命保険', icon:'🛡', cat:'insurance'},
+  {name:'火災保険',   icon:'🏠', cat:'insurance'},   {name:'運転免許',  icon:'🪪', cat:'license'},
+  {name:'パスポート', icon:'🛂', cat:'passport'},     {name:'車検',      icon:'🔧', cat:'vehicle'},
+  {name:'クレカ',     icon:'💳', cat:'card'},         {name:'スマホ契約',icon:'📱', cat:'subscription'},
+];
+var items = JSON.parse(localStorage.getItem('renewly_items') || '[]');
+var editId = null;
+var currentCat = 'all';
+
+function daysLeft(item) {
+  if (!item.expiry) return null;
+  var now = new Date(); now.setHours(0,0,0,0);
+  var exp = new Date(item.expiry); exp.setHours(0,0,0,0);
+  return Math.round((exp - now) / 86400000);
+}
+function statusOf(item) {
+  var d = daysLeft(item);
+  if (d === null) return 'ok';
+  if (d < 0) return 'expired';
+  if (d <= (item.reminder || 30)) return 'warning';
+  return 'ok';
+}
+function statusBadge(item) {
+  var d = daysLeft(item); var s = statusOf(item);
+  if (s === 'expired') return '<span class="status-badge expired">期限切れ</span>';
+  if (s === 'warning') return '<span class="status-badge warning">まもなく</span>';
+  return '<span class="status-badge ok">OK</span>';
+}
+
+function init() { buildPresets(); renderList(); renderSoon(); updateSummary(); updateProUI(); }
+
+function filterCat(cat, btn) {
+  currentCat = cat;
+  document.querySelectorAll('.cat-chip').forEach(function(c){ c.classList.remove('active'); });
+  btn.classList.add('active');
+  renderList();
+}
+
+function renderCard(item) {
+  var d = daysLeft(item); var s = statusOf(item);
+  var daysStr = d === null ? '—' : d < 0 ? Math.abs(d)+'日超過' : d+'日';
+  var daysClass = s === 'expired' ? 'expired' : s === 'warning' ? 'warning' : 'ok';
+  var dateStr = item.expiry ? new Date(item.expiry).toLocaleDateString('ja-JP',{year:'numeric',month:'short',day:'numeric'}) : '未設定';
+  return '<div class="item-card ' + s + '">'
+    + '<div class="item-card-top">'
+      + '<div class="item-icon">' + (item.icon || CAT_ICONS[item.category] || '📦') + '</div>'
+      + '<div class="item-info"><p class="item-name">' + item.name + '</p>'
+        + '<div class="item-meta">' + CAT_LABELS[item.category] + ' ' + statusBadge(item) + (item.memo ? ' · ' + item.memo : '') + '</div>'
+      + '</div>'
+      + '<div class="item-right">'
+        + '<span class="days-left ' + daysClass + '">' + daysStr + '</span>'
+        + '<span class="expiry-date">' + dateStr + '</span>'
+      + '</div>'
+    + '</div>'
+    + '<div class="item-actions">'
+      + '<button class="renew-btn" onclick="renewItem(\'' + item.id + '\')">🔄 更新</button>'
+      + '<button class="btn-icon" onclick="editItem(\'' + item.id + '\')">✏️</button>'
+      + '<button class="btn-icon" onclick="deleteItem(\'' + item.id + '\')">🗑</button>'
+    + '</div>'
+    + '</div>';
+}
+
+function renderList() {
+  var el = document.getElementById('itemList');
+  var list = currentCat === 'all' ? items : items.filter(function(i){ return i.category === currentCat; });
+  if (!list.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">🗓</div><p>' + (currentCat==='all'?'期限を登録しましょう。<br>＋ボタンで追加できます。':'このカテゴリに登録がありません') + '</p></div>'; return; }
+  var order = {expired:0, warning:1, ok:2};
+  list = list.slice().sort(function(a,b){ var sa=order[statusOf(a)], sb=order[statusOf(b)]; if(sa!==sb) return sa-sb; return (daysLeft(a)||9999)-(daysLeft(b)||9999); });
+  el.innerHTML = list.map(renderCard).join('');
+  updateSoonBadge();
+}
+
+function renderSoon() {
+  var el = document.getElementById('soonList');
+  var list = items.filter(function(i){ return statusOf(i) !== 'ok'; }).sort(function(a,b){ return (daysLeft(a)||9999)-(daysLeft(b)||9999); });
+  if (!list.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><p>期限切れ・まもなくの<br>アイテムはありません</p></div>'; return; }
+  el.innerHTML = list.map(renderCard).join('');
+}
+
+function updateSoonBadge() {
+  var count = items.filter(function(i){ return statusOf(i) !== 'ok'; }).length;
+  var tab = document.getElementById('tabSoon');
+  var ex = tab.querySelector('.tab-badge');
+  if (count) { if (!ex) { var b = document.createElement('span'); b.className='tab-badge'; tab.appendChild(b); } tab.querySelector('.tab-badge').textContent = count; }
+  else { if (ex) ex.remove(); }
+}
+
+function updateSummary() {
+  var total = items.length;
+  var expired = items.filter(function(i){ return statusOf(i)==='expired'; }).length;
+  var soon    = items.filter(function(i){ return statusOf(i)==='warning'; }).length;
+  document.getElementById('summaryTotal').textContent   = total;
+  document.getElementById('summaryExpired').textContent = expired;
+  document.getElementById('summarySoon').textContent    = soon;
+  var bar = '';
+  if (expired) bar += '<span class="summary-bar-item"><span class="dot" style="background:var(--accent2)"></span>期限切れ ' + expired + '件</span>';
+  if (soon)    bar += '<span class="summary-bar-item"><span class="dot" style="background:var(--orange)"></span>まもなく ' + soon + '件</span>';
+  if (total-expired-soon) bar += '<span class="summary-bar-item"><span class="dot" style="background:var(--green)"></span>OK ' + (total-expired-soon) + '件</span>';
+  document.getElementById('summaryBar').innerHTML = bar;
+  document.getElementById('countText').textContent = total + (isPro ? '件' : '/10');
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  document.getElementById('view-'+name).classList.add('active');
+  btn.classList.add('active');
+  if (name==='soon') renderSoon();
+  if (name==='settings') renderStats();
+}
+
+function renderStats() {
+  var total = items.length;
+  var expired = items.filter(function(i){ return statusOf(i)==='expired'; }).length;
+  var next = items.filter(function(i){ return daysLeft(i)!==null && daysLeft(i)>=0; }).sort(function(a,b){ return daysLeft(a)-daysLeft(b); })[0];
+  document.getElementById('statsGrid').innerHTML =
+    '<div class="analysis-card"><p class="analysis-card-label">登録数</p><p class="analysis-card-value">' + total + '件</p><p class="analysis-card-sub">合計</p></div>'
+    + '<div class="analysis-card"><p class="analysis-card-label">期限切れ</p><p class="analysis-card-value" style="color:var(--accent2)">' + expired + '件</p><p class="analysis-card-sub">要更新</p></div>'
+    + '<div class="analysis-card"><p class="analysis-card-label">次の期限</p><p class="analysis-card-value" style="font-size:.95rem;">' + (next ? next.name : '—') + '</p><p class="analysis-card-sub">' + (next ? daysLeft(next)+'日後' : '') + '</p></div>'
+    + '<div class="analysis-card"><p class="analysis-card-label">今月の期限</p><p class="analysis-card-value">' + items.filter(function(i){ var d=daysLeft(i); return d!==null&&d>=0&&d<=30; }).length + '件</p><p class="analysis-card-sub">30日以内</p></div>';
+}
+
+function buildPresets() {
+  document.getElementById('presetArea').innerHTML = PRESETS.map(function(p) {
+    return '<button class="preset-btn" onclick="selectPreset(this,\'' + p.name + '\',\'' + p.icon + '\',\'' + p.cat + '\')">'
+      + '<span class="p-icon">' + p.icon + '</span><span class="p-name">' + p.name + '</span></button>';
+  }).join('');
+}
+function selectPreset(btn, name, icon, cat) {
+  document.querySelectorAll('.preset-btn').forEach(function(b){ b.classList.remove('selected'); });
+  btn.classList.add('selected');
+  document.getElementById('fName').value = name;
+  document.getElementById('fIcon').value = icon;
+  document.getElementById('fCategory').value = cat;
+}
+
+function openModal() {
+  editId = null;
+  document.getElementById('modalTitle').textContent = '期限を追加';
+  document.getElementById('saveBtn').textContent = '追加する';
+  document.getElementById('fName').value = '';
+  document.getElementById('fIcon').value = '';
+  document.getElementById('fCategory').value = 'insurance';
+  document.getElementById('fExpiry').value = '';
+  document.getElementById('fReminder').value = '30';
+  document.getElementById('fMemo').value = '';
+  document.querySelectorAll('.preset-btn').forEach(function(b){ b.classList.remove('selected'); });
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+function closeModalOutside(e) { if (e.target===document.getElementById('modalOverlay')) closeModal(); }
+
+function editItem(id) {
+  var item = items.find(function(x){ return x.id===id; });
+  if (!item) return;
+  editId = id;
+  document.getElementById('modalTitle').textContent = '編集';
+  document.getElementById('saveBtn').textContent = '保存する';
+  document.getElementById('fName').value = item.name;
+  document.getElementById('fIcon').value = item.icon||'';
+  document.getElementById('fCategory').value = item.category||'other';
+  document.getElementById('fExpiry').value = item.expiry||'';
+  document.getElementById('fReminder').value = item.reminder||30;
+  document.getElementById('fMemo').value = item.memo||'';
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function saveItem() {
+  var name = document.getElementById('fName').value.trim();
+  var icon = document.getElementById('fIcon').value.trim();
+  var cat  = document.getElementById('fCategory').value;
+  var exp  = document.getElementById('fExpiry').value;
+  var rem  = parseInt(document.getElementById('fReminder').value)||30;
+  var memo = document.getElementById('fMemo').value.trim();
+  if (!name) { showToast('名前を入力してください'); return; }
+  if (!editId && items.length >= FREE_LIMIT && !isPro) { showToast('無料プランは'+FREE_LIMIT+'件まで'); return; }
+  var entry = { id: editId||Date.now().toString(), name:name, icon:icon||CAT_ICONS[cat], category:cat, expiry:exp, reminder:rem, memo:memo };
+  if (editId) { var i=items.findIndex(function(x){ return x.id===editId; }); items[i]=entry; }
+  else items.push(entry);
+  persist(); closeModal(); renderList(); renderSoon(); updateSummary();
+}
+
+function renewItem(id) {
+  var item = items.find(function(x){ return x.id===id; });
+  if (!item) return;
+  editItem(id);
+  showToast('📅 新しい期限日を入力してください');
+}
+
+function deleteItem(id) {
+  if (!confirm('削除しますか？')) return;
+  items = items.filter(function(x){ return x.id!==id; });
+  persist(); renderList(); renderSoon(); updateSummary();
+}
+
+function persist() { localStorage.setItem('renewly_items', JSON.stringify(items)); dbSave('items', items); }
+
+var SHARE_URL='https://totonoi-one.vercel.app/renewly';
+var SHARE_TEXT='Renewlyで各種期限を管理しています🗓 Totonoiの無料ツールです！ #Totonoi #Renewly';
+function shareX(){ window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(SHARE_TEXT)+'&url='+encodeURIComponent(SHARE_URL),'_blank'); }
+function shareLine(){ window.open('https://social-plugins.line.me/lineit/share?url='+encodeURIComponent(SHARE_URL),'_blank'); }
+function shareCopy(){ navigator.clipboard.writeText(SHARE_URL).then(function(){ var b=document.getElementById('copyBtn'); b.textContent='✅ コピーしました'; setTimeout(function(){ b.textContent='🔗 リンクをコピー'; },2000); }); }
+
+function updateProUI() {
+  var ad=document.getElementById('adBanner'); if(ad) ad.style.display=isPro?'none':'flex';
+  var fab=document.querySelector('.fab'); if(fab) fab.style.bottom=isPro?'1.25rem':'calc(72px + env(safe-area-inset-bottom))';
+  document.body.style.paddingBottom=isPro?'80px':'130px';
+  var fb=document.getElementById('freeBanner'); if(fb) fb.style.display=isPro?'none':'flex';
+  FREE_LIMIT=isPro?999:10;
+  document.getElementById('countText').textContent=items.length+(isPro?'件':'/10');
+  var pl=document.getElementById('planLabel'), pd=document.getElementById('planDesc'), pb=document.getElementById('planBadge');
+  if(pl) pl.textContent=isPro?'Proプラン':'無料プラン';
+  if(pd) pd.textContent=isPro?'全機能が利用できます':'登録10件・広告あり';
+  if(pb){ pb.textContent=isPro?'✅ 有効中':'現在'; pb.style.background=isPro?'rgba(94,207,160,.15)':'rgba(191,156,60,.15)'; pb.style.color=isPro?'var(--green)':'var(--accent)'; }
+}
+
+function showToast(msg) {
+  var t=document.createElement('div');
+  t.style.cssText='position:fixed;top:1.5rem;left:50%;transform:translateX(-50%);background:#22222e;border:1px solid #35354a;border-radius:12px;padding:.75rem 1.25rem;font-size:.85rem;font-weight:500;z-index:300;color:#f0eee8;white-space:nowrap;font-family:Outfit,sans-serif;';
+  t.textContent=msg; document.body.appendChild(t); setTimeout(function(){ t.remove(); },2500);
+}
+
+init();
+
+if ('serviceWorker' in navigator) { window.addEventListener('load', function(){ navigator.serviceWorker.register('/sw-renewly.js').catch(function(){}); }); }
+
+// ── Supabase ──
+var _sb = window.supabase.createClient(
+  'https://foknpmvpgbkwgpmlgzrn.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZva25wbXZwZ2Jrd2dwbWxnenJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyODc4NTksImV4cCI6MjA5NTg2Mzg1OX0.6KP9_m4Q6x0hs7IsinNhZsODmZCjrvAL1CxtbQ32-80'
+);
+var currentUser = null; var _APP = 'renewly';
+function dbSave(key, data) { if (!currentUser) return; _sb.from('user_data').upsert({ user_id:currentUser.id, app:_APP, key:key, data:data, updated_at:new Date().toISOString() },{ onConflict:'user_id,app,key' }); }
+async function syncFromCloud() {
+  var res = await _sb.from('user_data').select('key,data').eq('user_id',currentUser.id).eq('app',_APP);
+  if (res.data) res.data.forEach(function(row){ if(row.key==='items'){ items=row.data; localStorage.setItem('renewly_items',JSON.stringify(items)); } });
+  var p = await _sb.from('profiles').select('is_pro').eq('id',currentUser.id).maybeSingle();
+  if (p.data){ isPro=p.data.is_pro; localStorage.setItem('isPro',String(isPro)); }
+  renderList(); renderSoon(); updateSummary(); updateProUI(); showToast('☁️ データを同期しました');
+}
+var _authMode='login';
+function setAuthMode(mode){ _authMode=mode; var tl=document.getElementById('tabLogin'),ts=document.getElementById('tabSignup'),sb=document.getElementById('authSubmitBtn'); if(mode==='login'){tl.style.cssText+=';background:var(--surface3);color:var(--text);font-weight:500;';ts.style.cssText+=';background:none;color:var(--muted);font-weight:300;';sb.textContent='ログイン';}else{ts.style.cssText+=';background:var(--surface3);color:var(--text);font-weight:500;';tl.style.cssText+=';background:none;color:var(--muted);font-weight:300;';sb.textContent='アカウントを作成';} }
+function openAuthModal(){ if(currentUser){if(confirm(currentUser.email+'\nログアウトしますか？'))_sb.auth.signOut();return;} setAuthMode('login'); document.getElementById('authModal').classList.add('show'); }
+async function handleAuth(){ var email=document.getElementById('authEmail').value.trim(),pass=document.getElementById('authPassword').value; if(!email||!pass){showToast('メールとパスワードを入力してください');return;} var result=_authMode==='login'?await _sb.auth.signInWithPassword({email,password:pass}):await _sb.auth.signUp({email,password:pass}); if(result.error){showToast('⚠️ '+result.error.message);return;} document.getElementById('authModal').classList.remove('show'); showToast(_authMode==='signup'?'✅ 登録完了！ようこそ':'✅ ログインしました'); }
+async function handleGoogleAuth(){ await _sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.href}}); }
+function updateAuthUI(){ var btn=document.getElementById('authBtn');if(!btn)return; if(currentUser){btn.textContent=currentUser.email.split('@')[0];btn.classList.add('logged-in');}else{btn.textContent='ログイン';btn.classList.remove('logged-in');} }
+_sb.auth.onAuthStateChange(function(event,session){ currentUser=session?session.user:null; updateAuthUI(); if(currentUser&&event==='SIGNED_IN')syncFromCloud(); if(!currentUser)updateProUI(); });
+_sb.auth.getSession().then(function(res){ currentUser=res.data.session?res.data.session.user:null; updateAuthUI(); if(currentUser)syncFromCloud(); });
+(function(){ var tabNames=['list','soon','settings'],currentIdx=0,sx=0,sy=0; document.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true}); document.addEventListener('touchend',function(e){if(document.querySelector('.modal-overlay.show'))return;var dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.abs(dx)<50||Math.abs(dx)<Math.abs(dy)*1.5)return;var ni=Math.max(0,Math.min(tabNames.length-1,currentIdx+(dx<0?1:-1)));if(ni===currentIdx)return;currentIdx=ni;var btn=document.querySelectorAll('.tab')[currentIdx];if(btn)btn.click();if(navigator.vibrate)navigator.vibrate(15);},{passive:true}); var orig=window.switchTab;if(orig)window.switchTab=function(name,btn){var i=tabNames.indexOf(name);if(i>=0)currentIdx=i;orig(name,btn);}; })();
+</script>
+
+<div class="modal-overlay" id="authModal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div style="display:flex;background:var(--surface2);border-radius:10px;padding:3px;margin-bottom:1.25rem;border:1px solid var(--border);">
+      <button id="tabLogin" onclick="setAuthMode('login')" style="flex:1;padding:.55rem;border:none;border-radius:8px;font-family:var(--font);font-size:.82rem;cursor:pointer;transition:all .2s;background:var(--surface3);color:var(--text);font-weight:500;">ログイン</button>
+      <button id="tabSignup" onclick="setAuthMode('signup')" style="flex:1;padding:.55rem;border:none;border-radius:8px;font-family:var(--font);font-size:.82rem;cursor:pointer;transition:all .2s;background:none;color:var(--muted);font-weight:300;">新規登録</button>
+    </div>
+    <div class="form-group"><label>メールアドレス</label><input type="email" id="authEmail" placeholder="your@email.com"></div>
+    <div class="form-group"><label>パスワード（6文字以上）</label><input type="password" id="authPassword" placeholder="••••••••"></div>
+    <button onclick="handleGoogleAuth()" style="width:100%;padding:.85rem;background:#fff;color:#1a1a24;border:none;border-radius:12px;font-size:.95rem;font-weight:500;font-family:var(--font);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.6rem;margin-bottom:.75rem;">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Google でログイン
+    </button>
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;color:var(--muted);font-size:.75rem;"><div style="flex:1;height:1px;background:var(--border);"></div>または<div style="flex:1;height:1px;background:var(--border);"></div></div>
+    <button class="btn-primary" id="authSubmitBtn" onclick="handleAuth()">ログイン</button>
+    <button class="btn-cancel" onclick="document.getElementById('authModal').classList.remove('show')">キャンセル</button>
+  </div>
+</div>
+</body>
+</html>

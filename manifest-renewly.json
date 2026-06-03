@@ -1,0 +1,13 @@
+{
+  "name": "Renewly — 更新期限管理",
+  "short_name": "Renewly",
+  "start_url": "/renewly",
+  "display": "standalone",
+  "background_color": "#0c0c18",
+  "theme_color": "#0c0c18",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icon-renewly-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-renewly-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
