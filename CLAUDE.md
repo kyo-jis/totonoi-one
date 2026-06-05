@@ -65,7 +65,7 @@ var isPro = localStorage.getItem('isPro') === 'true';
 ```
 
 ログイン時、`profiles.is_pro` を Supabase から読み込んで更新。
-**管理者 (`kyouji.o.2@gmail.com`) は常に自動でPro有効化**（各アプリの `syncFromCloud()` 内に記述）。
+**管理者 (`kyouji.o@gmail.com`) は常に自動でPro有効化**（各アプリの `syncFromCloud()` 内に記述）。
 
 Stripe Webhook（`api/webhook.js`）→ Supabase `profiles.is_pro = true` → 次回同期で反映。
 
@@ -146,6 +146,22 @@ var _APP = 'appname'; // 'subly', 'medly', 'fitly' ...
 - `STRIPE_WEBHOOK_SECRET`
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
+
+## セキュリティルール
+
+### 絶対に守ること
+
+- **シークレットキーをコードに書かない**: `STRIPE_SECRET_KEY` / `SUPABASE_SERVICE_ROLE_KEY` は必ず Vercel 環境変数経由で参照する（`process.env.*`）。HTMLに直書き禁止。
+- **`.gitignore` を設置する**: ローカルに `.env` を作成した場合は必ず `.gitignore` に追加してからコミットする。
+- **Supabase anon key はHTMLに書いてよい**: 公開用キーのため問題なし。ただし Service Role Key は絶対にフロントエンドに書かない。
+- **RLSを必ず有効化**: 新しいSupabaseテーブルを作成する際は必ず Row Level Security を有効にし、`auth.uid() = user_id` ポリシーを設定する。
+- **APIルートにCORSを設定する**: `api/` の関数は `Access-Control-Allow-Origin` を `https://totonoi-one.vercel.app` に限定する（ワイルドカード `*` 禁止）。
+
+### 注意事項
+
+- `isPro` は localStorage に保存されるが、**重要な操作はSupabaseの `profiles.is_pro` を正とする**。フロントのみの判定はUI制御にとどめる。
+- Stripe Webhook は必ず署名検証（`stripe.webhooks.constructEvent`）を行う。
+- ユーザーの入力値を `innerHTML` に直接挿入しない（XSS対策）。
 
 ## アイコン命名規則
 
