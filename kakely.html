@@ -1115,8 +1115,16 @@ function generateUUID() {
   });
 }
 
+function uniqueCategories() {
+  var seen = {};
+  return categories.filter(function(c) {
+    if (seen[c.name]) return false;
+    seen[c.name] = true; return true;
+  });
+}
+
 function buildGroupCatOptions(selectedId) {
-  return categories.map(function(c) {
+  return uniqueCategories().map(function(c) {
     return '<option value="'+c.id+'"'+(c.id===selectedId?' selected':'')+'>'+c.icon+' '+c.name+'</option>';
   }).join('');
 }
@@ -1129,7 +1137,10 @@ function openGroupModal() {
     + paymentMethods.map(function(p){ return '<option value="'+p.id+'">'+p.icon+' '+p.name+'</option>'; }).join('');
   document.getElementById('gAssignCat').innerHTML = buildGroupCatOptions('');
   document.getElementById('groupRows').innerHTML = '';
-  addGroupRow(); addGroupRow();
+  var cats = uniqueCategories();
+  var foodId  = (cats.find(function(c){ return c.name==='食費'; })||cats[0]||{}).id||'';
+  var dailyId = (cats.find(function(c){ return c.name==='日用品'; })||cats[1]||{}).id||'';
+  addGroupRow(foodId); addGroupRow(dailyId);
   updateGroupDisplay();
   document.getElementById('groupModal').classList.add('show');
 }
