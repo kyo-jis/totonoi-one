@@ -1079,8 +1079,16 @@ function persistCurrentWorkout() {
   localStorage.setItem('fitlyCurrentWorkout', JSON.stringify(currentWorkout));
 }
 var restTimerInterval = null;
-var defaultRestTime = parseInt(localStorage.getItem('fitlyRestTime') || '90');
-if (isNaN(defaultRestTime) || defaultRestTime < 5) defaultRestTime = 90;
+// fitlyRestTime: { exerciseId: 秒数 } 形式（旧: 単一数値は無視して90秒デフォルトへ）
+var restTimeMap = (function() {
+  try {
+    var v = localStorage.getItem('fitlyRestTime');
+    if (!v) return {};
+    var p = JSON.parse(v);
+    return (p && typeof p === 'object' && !Array.isArray(p)) ? p : {};
+  } catch(e) { return {}; }
+})();
+var defaultRestTime = 90;
 var restTimeLeft = 0;
 var restTotalTime = defaultRestTime;
 var currentRestExId = null;
@@ -1802,7 +1810,7 @@ function startFromMenu(idx) {
       });
       sets.push(s);
     }
-    var restTime = (exerciseSettings[e.id] && exerciseSettings[e.id].restTime) ? exerciseSettings[e.id].restTime : resolveRestTime(DEFAULT_REST[e.cat]);
+    var restTime = restTimeMap[e.id] || (exerciseSettings[e.id] && exerciseSettings[e.id].restTime) || resolveRestTime(DEFAULT_REST[e.cat]);
     return { id: e.id, name: e.name, cat: e.cat, part: e.part, keyword: e.keyword||'', sets: sets, restTime: restTime };
   });
   activateWorkoutUI();
@@ -2070,9 +2078,7 @@ function addExerciseToWorkout(ex) {
     sets.push(s);
   }
   var savedSettings = exerciseSettings[ex.id] || {};
-  var restTime = savedSettings.restTime
-    ? savedSettings.restTime
-    : resolveRestTime(DEFAULT_REST[ex.cat]);
+  var restTime = restTimeMap[ex.id] || savedSettings.restTime || resolveRestTime(DEFAULT_REST[ex.cat]);
   currentWorkout.exercises.push({
     id: ex.id, name: ex.name, cat: ex.cat, part: ex.part,
     keyword: ex.keyword||'', sets: sets, restTime: restTime
@@ -2133,7 +2139,12 @@ function completeSet(ei, si) {
 // ── Rest Timer ──
 function startRestTimer(seconds, exerciseName, exId) {
   if (restTimerInterval) clearInterval(restTimerInterval);
-  seconds = (typeof seconds === 'number' && !isNaN(seconds)) ? seconds : defaultRestTime;
+  // 種目別の前回使用時間を優先。なければ種目設定→デフォルト
+  if (exId && restTimeMap[exId]) {
+    seconds = restTimeMap[exId];
+  } else {
+    seconds = (typeof seconds === 'number' && !isNaN(seconds)) ? seconds : defaultRestTime;
+  }
   currentRestExId = exId;
   restTimeLeft = seconds;
   restTotalTime = seconds;
@@ -2151,6 +2162,8 @@ function startRestTimer(seconds, exerciseName, exId) {
       showToast('🔔 休憩終了！次のセットへ');
       // 休憩時間を種目別に記憶
       if (exId) {
+        restTimeMap[exId] = restTotalTime;
+        localStorage.setItem('fitlyRestTime', JSON.stringify(restTimeMap));
         if (!exerciseSettings[exId]) exerciseSettings[exId] = {};
         exerciseSettings[exId].restTime = restTotalTime;
         localStorage.setItem('exerciseSettings', JSON.stringify(exerciseSettings));
@@ -2168,6 +2181,10 @@ function updateRestDisplay() {
 
 function saveExRestTime(s) {
   if (currentRestExId) {
+    // 種目別restTimeMapに保存
+    restTimeMap[currentRestExId] = s;
+    localStorage.setItem('fitlyRestTime', JSON.stringify(restTimeMap));
+    // exerciseSettingsにも反映（後方互換）
     if (!exerciseSettings[currentRestExId]) exerciseSettings[currentRestExId] = {};
     exerciseSettings[currentRestExId].restTime = s;
     localStorage.setItem('exerciseSettings', JSON.stringify(exerciseSettings));
@@ -2217,7 +2234,7 @@ function skipRest() {
 // ── Independent Timer ──
 function saveRestTimeSetting(s) {
   defaultRestTime = s;
-  localStorage.setItem('fitlyRestTime', s);
+  // fitlyRestTimeはper-exercise object形式のため、ここでは上書きしない
   // 休憩オーバーレイにも反映（次のセットから）
   restTotalTime = s;
   var label = s >= 60 ? Math.floor(s/60)+'分'+(s%60 ? s%60+'秒' : '') : s+'秒';
