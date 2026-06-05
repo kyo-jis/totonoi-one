@@ -932,7 +932,7 @@ function renderList() {
       var amountHTML = s.cycle === 'once'
         ? '<p class="sub-amount">'+amtStr+'</p><p class="sub-cycle">買い切り</p>'
         : '<p class="sub-amount">'+amtStr+'<span class="sub-cycle">/'+cycleLabel(s)+'</span></p>'
-          + (cycleToMonths(s)!==1&&me>0&&cur==='JPY'?'<p class="sub-monthly-small">¥'+me.toLocaleString()+'/月換算</p>':'');
+          + (cycleToMonths(s)!==1&&me>0?'<p class="sub-monthly-small">¥'+me.toLocaleString()+'/月換算</p>':'');
       var payBadge = s.payment ? '<span class="payment-badge">' + (PAYMENT_LABELS[s.payment]||s.payment) + '</span>' : '';
       return '<div class="sub-card">'
         + '<div class="sub-card-top">'
