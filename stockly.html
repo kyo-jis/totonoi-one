@@ -996,8 +996,6 @@ async function syncFromCloud() {
   showToast('☁️ データを同期しました');
 }
 
-  else { ts.style.cssText+=';background:var(--surface3);color:var(--text);font-weight:500;'; tl.style.cssText+=';background:none;color:var(--muted);font-weight:300;'; sb.textContent='アカウントを作成'; }
-}
 function openAuthModal() {
   if (currentUser) { if (confirm(currentUser.email+'\nログアウトしますか？')) _sb.auth.signOut(); return; }
   document.getElementById('authModal').classList.add('show');

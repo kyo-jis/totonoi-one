@@ -3456,7 +3456,6 @@ async function handleGoogleAuth() {
 
 function startCheckout() { window.location.href = 'index.html'; }
 
-}
 function openAuthModal() {
   if (currentUser) {
     if (confirm(currentUser.email + '\nログアウトしますか？')) { _sb.auth.signOut(); }
