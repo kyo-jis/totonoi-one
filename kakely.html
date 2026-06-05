@@ -445,6 +445,13 @@ function init() {
 function loadFromStorage() {
   var key = 'kakely_txn_' + viewYear + '_' + (viewMonth+1);
   transactions = JSON.parse(localStorage.getItem(key) || '[]');
+  // カテゴリが空なら初期カテゴリをセット
+  if (categories.length === 0) {
+    categories = DEFAULT_CATS.map(function(c, i) {
+      return Object.assign({ id: 'default_' + i }, c);
+    });
+    localStorage.setItem('kakely_cats', JSON.stringify(categories));
+  }
 }
 
 function renderAll() {
