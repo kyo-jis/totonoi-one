@@ -1416,11 +1416,14 @@ function dbSave(key, data) {
 
 async function syncFromCloud() {
   var res = await _sb.from('user_data').select('key,data').eq('user_id', currentUser.id).eq('app', _APP);
-  if (res.data) {
+  if (res.data && res.data.length > 0) {
     res.data.forEach(function(row) {
       if (row.key === 'subs') { subs = row.data; localStorage.setItem('subs', JSON.stringify(subs)); }
       if (row.key === 'history') { payHistory = row.data; localStorage.setItem('subHistory', JSON.stringify(payHistory)); }
     });
+  } else if (res.data && res.data.length === 0) {
+    if (subs.length > 0) dbSave('subs', subs);
+    if (payHistory.length > 0) dbSave('history', payHistory);
   }
   var p = await _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle();
   if (p.data) { isPro = p.data.is_pro; localStorage.setItem('isPro', String(isPro)); }

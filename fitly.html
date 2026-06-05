@@ -3447,7 +3447,7 @@ function dbSave(key, data) {
 
 async function syncFromCloud() {
   var res = await _sb.from('user_data').select('key,data').eq('user_id', currentUser.id).eq('app', _APP);
-  if (res.data) {
+  if (res.data && res.data.length > 0) {
     res.data.forEach(function(row) {
       if (row.key === 'history')    { workoutHistory = row.data; localStorage.setItem('fitlyHistory', JSON.stringify(workoutHistory)); }
       if (row.key === 'menus')      { savedMenus = row.data; localStorage.setItem('fitlyMenus', JSON.stringify(savedMenus)); }
@@ -3455,6 +3455,12 @@ async function syncFromCloud() {
       if (row.key === 'bodyweight') { bodyWeightLog = row.data; localStorage.setItem('fitlyBodyWeight', JSON.stringify(bodyWeightLog)); }
       if (row.key === 'prs')        { personalRecords = row.data; localStorage.setItem('fitlyPRs', JSON.stringify(personalRecords)); }
     });
+  } else if (res.data && res.data.length === 0) {
+    if (workoutHistory.length > 0) dbSave('history', workoutHistory);
+    if (savedMenus.length > 0) dbSave('menus', savedMenus);
+    if (exerciseSettings.length > 0) dbSave('exSettings', exerciseSettings);
+    if (bodyWeightLog.length > 0) dbSave('bodyweight', bodyWeightLog);
+    if (personalRecords.length > 0) dbSave('prs', personalRecords);
   }
   var p = await _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle();
   if (p.data) { isPro = p.data.is_pro; localStorage.setItem('isPro', String(isPro)); }

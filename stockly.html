@@ -1001,10 +1001,16 @@ function dbSave(key, data) {
 
 async function syncFromCloud() {
   var res = await _sb.from('user_data').select('key,data').eq('user_id',currentUser.id).eq('app',_APP);
-  if (res.data) res.data.forEach(function(row) {
+  if (res.data && res.data.length > 0) {
+    res.data.forEach(function(row) {
     if (row.key === 'items') { items = row.data; localStorage.setItem('stockly_items', JSON.stringify(items)); }
     if (row.key === 'shop')  { shopList = row.data; localStorage.setItem('stockly_shop', JSON.stringify(shopList)); }
   });
+  } else {
+    // 初回ログイン: ローカルデータをSupabaseへアップロード
+    if (items.length > 0) dbSave('items', items);
+    if (shopList.length > 0) dbSave('shop', shopList);
+  }
   var p = await _sb.from('profiles').select('is_pro').eq('id',currentUser.id).maybeSingle();
   if (p.data) { isPro = p.data.is_pro; localStorage.setItem('isPro', String(isPro)); }
   if (currentUser.email === 'kyouji.o@gmail.com') { isPro = true; localStorage.setItem('isPro', 'true'); }
