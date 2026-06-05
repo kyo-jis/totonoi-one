@@ -155,12 +155,14 @@
     .type-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(245,166,35,.1); }
 
     /* Category grid in modal */
-    .cat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .4rem; margin-bottom: 1rem; }
-    .cat-chip { padding: .55rem .3rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; font-family: var(--font); text-align: center; transition: border-color .15s; }
-    .cat-chip.selected { border-color: var(--accent); background: rgba(245,166,35,.1); }
-    .cat-chip .ci { font-size: 1.1rem; display: block; }
-    .cat-chip .cn { font-size: .6rem; color: var(--muted); margin-top: .15rem; }
+    .cat-scroll { max-height: 220px; overflow-y: auto; margin-bottom: 1rem; -webkit-overflow-scrolling: touch; }
+    .cat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
+    .cat-chip { padding: .6rem .3rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; font-family: var(--font); text-align: center; transition: all .15s; }
+    .cat-chip.selected { border-color: var(--accent); background: rgba(245,166,35,.12); }
+    .cat-chip .ci { font-size: 1.3rem; display: block; }
+    .cat-chip .cn { font-size: .65rem; color: var(--muted); margin-top: .2rem; line-height: 1.3; }
     .cat-chip.selected .cn { color: var(--accent); }
+    .cat-chip:active { transform: scale(.93); }
 
     /* Toast */
     .toast { position: fixed; bottom: calc(80px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: var(--surface3); border: 1px solid var(--border); border-radius: 20px; padding: .55rem 1.2rem; font-size: .82rem; color: var(--text); white-space: nowrap; z-index: 200; pointer-events: none; }
@@ -285,7 +287,9 @@
     </div>
     <div class="form-group" id="catSelectWrap">
       <label class="form-label">カテゴリ</label>
-      <div class="cat-grid" id="catSelectGrid"></div>
+      <div class="cat-scroll">
+        <div class="cat-grid" id="catSelectGrid"></div>
+      </div>
     </div>
     <div class="form-group">
       <label class="form-label">支払い方法</label>
@@ -427,6 +431,15 @@ var DEFAULT_CATS = [
   {icon:'❓',name:'その他',sort_order:20},
 ];
 
+var DEFAULT_PAYS = [
+  {icon:'💴',name:'現金',        type:'cash',   withdrawal_date:null},
+  {icon:'💳',name:'クレジットカード',type:'card',   withdrawal_date:27},
+  {icon:'📱',name:'PayPay',      type:'emoney', withdrawal_date:null},
+  {icon:'🚃',name:'Suica・交通系IC',type:'emoney',withdrawal_date:null},
+  {icon:'🔴',name:'楽天ペイ',    type:'emoney', withdrawal_date:null},
+  {icon:'🏦',name:'銀行口座',    type:'bank',   withdrawal_date:null},
+];
+
 var CAT_COLORS = [
   '#f5a623','#ff7c6e','#a0c4ff','#6c8eff','#5ecfa0',
   '#f5c842','#b388ff','#4dd0e1','#ff8a65','#a5d6a7',
@@ -451,6 +464,13 @@ function loadFromStorage() {
       return Object.assign({ id: 'default_' + i }, c);
     });
     localStorage.setItem('kakely_cats', JSON.stringify(categories));
+  }
+  // 支払い方法が空なら初期支払い方法をセット
+  if (paymentMethods.length === 0) {
+    paymentMethods = DEFAULT_PAYS.map(function(p, i) {
+      return Object.assign({ id: 'defpay_' + i }, p);
+    });
+    localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
   }
 }
 
