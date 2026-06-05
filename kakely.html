@@ -164,6 +164,25 @@
     .cat-chip.selected .cn { color: var(--accent); }
     .cat-chip:active { transform: scale(.93); }
 
+    /* Group Input */
+    .btn-group-toggle { font-size:.72rem; color:var(--muted); background:none; border:1px solid var(--border); border-radius:8px; padding:.3rem .65rem; font-family:var(--font); cursor:pointer; float:right; margin-top:.1rem; }
+    .btn-group-toggle:active { opacity:.7; }
+    .group-row { display:flex; gap:.4rem; align-items:center; margin-bottom:.4rem; }
+    .group-row select { flex:1; min-width:0; font-size:.82rem; }
+    .group-row .g-amt { width:90px; flex-shrink:0; font-size:.88rem; text-align:right; }
+    .group-row-del { width:30px; height:30px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); font-size:.88rem; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+    .group-row-del:active { opacity:.7; }
+    .group-remaining { display:flex; justify-content:space-between; align-items:center; padding:.65rem 1rem; background:var(--surface2); border-radius:12px; margin:.75rem 0 .6rem; }
+    .group-remaining-label { font-size:.78rem; color:var(--muted); }
+    .group-remaining-amt { font-size:1.1rem; font-weight:600; }
+    .group-remaining-amt.ok   { color:var(--green); }
+    .group-remaining-amt.over { color:var(--red); }
+    .group-remaining-amt.under { color:var(--accent); }
+    .group-assign { display:flex; gap:.4rem; margin-bottom:.75rem; }
+    .group-assign select { flex:1; font-size:.82rem; }
+    .btn-assign { padding:.55rem .75rem; background:var(--surface3); border:1px solid var(--border); border-radius:10px; color:var(--text); font-size:.75rem; font-family:var(--font); cursor:pointer; white-space:nowrap; }
+    .btn-assign:active { transform:scale(.93); }
+
     /* Toast */
     .toast { position: fixed; bottom: calc(80px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: var(--surface3); border: 1px solid var(--border); border-radius: 20px; padding: .55rem 1.2rem; font-size: .82rem; color: var(--text); white-space: nowrap; z-index: 200; pointer-events: none; }
   </style>
@@ -272,7 +291,9 @@
 <div class="modal-overlay" id="txnModal" onclick="if(event.target===this)closeModal('txnModal')">
   <div class="modal">
     <div class="modal-handle"></div>
-    <p class="modal-title" id="txnModalTitle">支出を記録</p>
+    <p class="modal-title" id="txnModalTitle">支出を記録
+      <button class="btn-group-toggle" onclick="closeModal('txnModal');openGroupModal()">📋 まとめ入力</button>
+    </p>
     <div class="type-selector">
       <button class="type-btn active" id="typeExpense" onclick="setTxnType(false)">📤 支出</button>
       <button class="type-btn" id="typeIncome" onclick="setTxnType(true)">📥 収入</button>
@@ -363,6 +384,41 @@
     <button class="btn-primary" onclick="savePay()">保存する</button>
     <button class="btn-danger" id="deletePayBtn" onclick="deletePay()" style="display:none">削除する</button>
     <button class="btn-cancel" onclick="closeModal('payModal')">キャンセル</button>
+  </div>
+</div>
+
+<!-- Group Input Modal -->
+<div class="modal-overlay" id="groupModal" onclick="if(event.target===this)closeModal('groupModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <p class="modal-title">📋 まとめ入力</p>
+    <div class="form-group">
+      <label class="form-label">合計金額（円）</label>
+      <input type="number" id="gTotal" placeholder="3000" inputmode="numeric" oninput="updateGroupDisplay()">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">日付</label>
+        <input type="date" id="gDate">
+      </div>
+      <div class="form-group">
+        <label class="form-label">支払い方法</label>
+        <select id="gPayMethod"><option value="">未設定</option></select>
+      </div>
+    </div>
+    <label class="form-label" style="margin-bottom:.5rem;display:block">分割内訳</label>
+    <div id="groupRows"></div>
+    <button class="btn-add-row" onclick="addGroupRow()" style="margin-bottom:.5rem">＋ 行を追加</button>
+    <div class="group-remaining">
+      <span class="group-remaining-label">残り</span>
+      <span class="group-remaining-amt under" id="groupRemainingAmt">¥0</span>
+    </div>
+    <div class="group-assign" id="groupAssignWrap" style="display:none">
+      <select id="gAssignCat"></select>
+      <button class="btn-assign" onclick="assignRemaining()">残りを割り当て →</button>
+    </div>
+    <button class="btn-primary" id="groupSaveBtn" onclick="saveGroupTxns()" style="opacity:.4;pointer-events:none">保存する</button>
+    <button class="btn-cancel" onclick="closeModal('groupModal')">キャンセル</button>
   </div>
 </div>
 
@@ -1050,6 +1106,122 @@ _sb.auth.getSession().then(function(res) {
   updateAuthUI();
   if (currentUser) syncFromCloud();
 });
+
+// ── まとめ入力 ──
+function generateUUID() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random()*16|0;
+    return (c==='x'?r:(r&0x3|0x8)).toString(16);
+  });
+}
+
+function buildGroupCatOptions(selectedId) {
+  return categories.map(function(c) {
+    return '<option value="'+c.id+'"'+(c.id===selectedId?' selected':'')+'>'+c.icon+' '+c.name+'</option>';
+  }).join('');
+}
+
+function openGroupModal() {
+  document.getElementById('gDate').value = localDateStr(new Date());
+  document.getElementById('gTotal').value = '';
+  var sel = document.getElementById('gPayMethod');
+  sel.innerHTML = '<option value="">未設定</option>'
+    + paymentMethods.map(function(p){ return '<option value="'+p.id+'">'+p.icon+' '+p.name+'</option>'; }).join('');
+  document.getElementById('gAssignCat').innerHTML = buildGroupCatOptions('');
+  document.getElementById('groupRows').innerHTML = '';
+  addGroupRow(); addGroupRow();
+  updateGroupDisplay();
+  document.getElementById('groupModal').classList.add('show');
+}
+
+function addGroupRow(catId, amt) {
+  var div = document.createElement('div');
+  div.className = 'group-row';
+  div.innerHTML = '<select class="g-cat-sel" onchange="updateGroupDisplay()">'
+    + buildGroupCatOptions(catId||'') + '</select>'
+    + '<input type="number" class="g-amt" placeholder="0" inputmode="numeric"'
+    + (amt?' value="'+amt+'"':'')
+    + ' oninput="updateGroupDisplay()"><button class="group-row-del" onclick="removeGroupRow(this)">×</button>';
+  document.getElementById('groupRows').appendChild(div);
+  updateGroupDisplay();
+}
+
+function removeGroupRow(btn) {
+  btn.closest('.group-row').remove();
+  updateGroupDisplay();
+}
+
+function calcGroupRemaining() {
+  var total = parseInt(document.getElementById('gTotal').value)||0;
+  var sum = 0;
+  document.querySelectorAll('#groupRows .g-amt').forEach(function(el){ sum += parseInt(el.value)||0; });
+  return total - sum;
+}
+
+function updateGroupDisplay() {
+  var rem = calcGroupRemaining();
+  var el = document.getElementById('groupRemainingAmt');
+  el.textContent = (rem<0?'-':'')+'¥'+Math.abs(rem).toLocaleString();
+  el.className = 'group-remaining-amt '+(rem===0?'ok':rem>0?'under':'over');
+  var saveBtn = document.getElementById('groupSaveBtn');
+  if (rem === 0) { saveBtn.style.opacity='1'; saveBtn.style.pointerEvents=''; }
+  else           { saveBtn.style.opacity='.4'; saveBtn.style.pointerEvents='none'; }
+  var assignWrap = document.getElementById('groupAssignWrap');
+  assignWrap.style.display = rem>0 ? 'flex' : 'none';
+}
+
+function assignRemaining() {
+  var rem = calcGroupRemaining();
+  if (rem <= 0) return;
+  var catId = document.getElementById('gAssignCat').value;
+  addGroupRow(catId, rem);
+}
+
+async function saveGroupTxns() {
+  var total = parseInt(document.getElementById('gTotal').value)||0;
+  var date  = document.getElementById('gDate').value;
+  var payId = document.getElementById('gPayMethod').value||null;
+  if (!date || total <= 0) { showToast('合計金額と日付を入力してください'); return; }
+  if (calcGroupRemaining() !== 0) { showToast('残りが0円になるよう明細を入力してください'); return; }
+
+  var rows = document.querySelectorAll('#groupRows .group-row');
+  var items = [];
+  rows.forEach(function(row) {
+    var catId = row.querySelector('.g-cat-sel').value;
+    var amt   = parseInt(row.querySelector('.g-amt').value)||0;
+    if (amt > 0) items.push({ category_id: catId||null, amount: amt });
+  });
+  if (!items.length) { showToast('明細を入力してください'); return; }
+
+  var groupId = generateUUID();
+
+  // ローカル保存
+  items.forEach(function(item) {
+    transactions.unshift({
+      id: 'tmp_'+Date.now()+'_'+Math.random().toString(36).slice(2),
+      amount: item.amount, date: date, is_income: false,
+      category_id: item.category_id, payment_method_id: payId,
+      memo: null, group_id: groupId
+    });
+  });
+  saveMonthCache();
+
+  // Supabase保存
+  if (currentUser) {
+    await _sb.from('kakely_transactions').insert(
+      items.map(function(item) {
+        return { user_id: currentUser.id, amount: item.amount, date: date, is_income: false,
+          category_id: item.category_id, payment_method_id: payId, memo: null, group_id: groupId };
+      })
+    );
+    await fetchMonthTransactions();
+  }
+
+  closeModal('groupModal');
+  renderAll();
+  showToast('まとめて記録しました ✓');
+}
 
 // ── Start ──
 init();
