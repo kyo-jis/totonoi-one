@@ -1017,7 +1017,7 @@ function openAuthModal() {
   document.getElementById('authModal').classList.add('show');
 }
 async function handleGoogleAuth() {
-  await _sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo:window.location.href } });
+  await _sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin + window.location.pathname } });
 }
 function updateAuthUI() {
   var btn=document.getElementById('authBtn'); if (!btn) return;
