@@ -1007,11 +1007,6 @@ function openAuthModal() {
   if (currentUser) { if (confirm(currentUser.email+'\nログアウトしますか？')) _sb.auth.signOut(); return; }
   document.getElementById('authModal').classList.add('show');
 }
-  var r = _authMode==='login' ? await _sb.auth.signInWithPassword({email,password:pass}) : await _sb.auth.signUp({email,password:pass});
-  if (r.error){ showToast('⚠️ '+r.error.message); return; }
-  document.getElementById('authModal').classList.remove('show');
-  showToast(_authMode==='signup' ? '✅ 登録完了！ようこそ' : '✅ ログインしました');
-}
 async function handleGoogleAuth() {
   await _sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo:window.location.href } });
 }

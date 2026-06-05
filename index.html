@@ -564,13 +564,6 @@
       await _sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } });
     }
 
-          var result = _authMode === 'login'
-        ? await _sb.auth.signInWithPassword({ email, password: pass })
-        : await _sb.auth.signUp({ email, password: pass });
-      if (result.error) { showToast('⚠️ ' + result.error.message); return; }
-      document.getElementById('authModal').classList.remove('show');
-      showToast(_authMode === 'signup' ? '✅ 登録完了！' : '✅ ログインしました');
-    }
 
     function updateAuthUI() {
       var btn = document.getElementById('authBtn');

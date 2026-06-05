@@ -3464,13 +3464,6 @@ function openAuthModal() {
   }
   document.getElementById('authModal').classList.add('show');
 }
-  var result = _authMode === 'login'
-    ? await _sb.auth.signInWithPassword({ email: email, password: pass })
-    : await _sb.auth.signUp({ email: email, password: pass });
-  if (result.error) { showToast('⚠️ ' + result.error.message); return; }
-  closeModal('authModal');
-  showToast(_authMode === 'signup' ? '✅ 登録完了！ようこそ' : '✅ ログインしました');
-}
 function updateAuthUI() {
   var btn = document.getElementById('authBtn');
   if (!btn) return;

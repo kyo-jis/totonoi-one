@@ -1465,20 +1465,12 @@ async function handleGoogleAuth() {
 
 function startCheckout() { window.location.href = 'index.html'; }
 
-}
 function openAuthModal() {
   if (currentUser) {
     if (confirm(currentUser.email + '\nログアウトしますか？')) { _sb.auth.signOut(); }
     return;
   }
   document.getElementById('authModal').classList.add('show');
-}
-  var result = _authMode === 'login'
-    ? await _sb.auth.signInWithPassword({ email: email, password: pass })
-    : await _sb.auth.signUp({ email: email, password: pass });
-  if (result.error) { showAuthToast('⚠️ ' + result.error.message); return; }
-  document.getElementById('authModal').classList.remove('show');
-  showAuthToast(_authMode === 'signup' ? '✅ 登録完了！ようこそ' : '✅ ログインしました');
 }
 function updateAuthUI() {
   var btn = document.getElementById('authBtn');
