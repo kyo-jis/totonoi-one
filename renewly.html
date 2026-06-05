@@ -33,6 +33,9 @@
     .app-title span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
     .auth-chip { background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); transition:all .2s; white-space:nowrap; }
     .auth-chip.logged-in { border-color:var(--accent); color:var(--accent); }
+    /* Login Notice */
+    .login-notice { margin: -.25rem 1.25rem .75rem; background: rgba(148,148,184,.07); border: 1px solid rgba(148,148,184,.18); border-radius: 12px; padding: .6rem 1rem; display: flex; align-items: center; gap: .65rem; cursor: pointer; font-size: .78rem; color: var(--muted); transition: opacity .2s; }
+    .login-notice:active { opacity: .7; }
     .header-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; }
     .summary-card { margin:0 1.25rem 1.25rem; background:linear-gradient(145deg,#201500 0%,#150e00 100%); border:1px solid rgba(191,156,60,.38); border-radius:24px; padding:1.5rem; position:relative; overflow:hidden; box-shadow:0 0 60px rgba(191,156,60,.1),inset 0 1px 0 rgba(255,255,255,.07),0 8px 40px rgba(0,0,0,.5); }
     .summary-card::before { content:''; position:absolute; top:-80px; right:-80px; width:280px; height:280px; background:radial-gradient(circle,rgba(191,156,60,.5) 0%,transparent 60%); border-radius:50%; }
@@ -138,6 +141,11 @@
     <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
   </div>
   <h1 class="app-title">Renew<span>ly</span></h1>
+</div>
+<div id="loginNotice" class="login-notice" onclick="openAuthModal()" style="display:none">
+  <span style="font-size:1rem">&#x2601;&#xFE0F;</span>
+  <span style="flex:1;line-height:1.4">ログインするとデータをクラウドで保護できます</span>
+  <span style="font-size:.75rem;opacity:.6">ログイン →</span>
 </div>
 
 <div class="summary-card">
