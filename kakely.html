@@ -1032,7 +1032,7 @@ function updateBalanceDisplay() {
   if (cashPays.length === 0) { el.style.display = 'none'; return; }
   var total = cashPays.reduce(function(s,p){ return s + p.balance; }, 0);
   el.textContent = '💴 財布残高 ¥' + total.toLocaleString();
-  el.style.display = '';
+  el.style.display = 'block';
 }
 
 // ── Cache ──
@@ -1097,7 +1097,13 @@ async function syncFromCloud() {
       var pr2 = await _sb.from('kakely_payment_methods').select('*').eq('user_id', currentUser.id).order('created_at');
       paymentMethods = pr2.data || [];
     } else {
-      paymentMethods = payRes.data;
+      // ローカルのbalanceをSupabaseのnullで上書きしない
+      var localPays = JSON.parse(localStorage.getItem('kakely_pays') || '[]');
+      paymentMethods = payRes.data.map(function(p) {
+        if (p.balance != null) return p;
+        var local = localPays.find(function(l){ return l.name === p.name && l.type === p.type; });
+        return (local && local.balance != null) ? Object.assign({}, p, { balance: local.balance }) : p;
+      });
     }
     localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
   }
