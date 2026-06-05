@@ -999,6 +999,7 @@ async function savePay() {
   localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
   closeModal('payModal');
   renderSettings();
+  updateBalanceDisplay();
   showToast('保存しました');
 }
 
