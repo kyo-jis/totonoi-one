@@ -479,7 +479,8 @@ function showToast(msg){var t=document.createElement('div');t.style.cssText='pos
 init();
 if('serviceWorker'in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw-ownly.js').catch(function(){});});}
 
-var _sb=window.supabase.createClient('https://foknpmvpgbkwgpmlgzrn.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZva25wbXZwZ2Jrd2dwbWxnenJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyODc4NTksImV4cCI6MjA5NTg2Mzg1OX0.6KP9_m4Q6x0hs7IsinNhZsODmZCjrvAL1CxtbQ32-80');
+var _sb=window.supabase.createClient('https://foknpmvpgbkwgpmlgzrn.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZva25wbXZwZ2Jrd2dwbWxnenJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyODc4NTksImV4cCI6MjA5NTg2Mzg1OX0.6KP9_m4Q6x0hs7IsinNhZsODmZCjrvAL1CxtbQ32-80',
+  { auth: { flowType: 'implicit', detectSessionInUrl: true } });
 var currentUser=null;var _APP='ownly';
 function dbSave(key,data){if(!currentUser)return;_sb.from('user_data').upsert({user_id:currentUser.id,app:_APP,key:key,data:data,updated_at:new Date().toISOString()},{onConflict:'user_id,app,key'});}
 async function syncFromCloud(){var res=await _sb.from('user_data').select('key,data').eq('user_id',currentUser.id).eq('app',_APP);if (res.data && res.data.length > 0) {

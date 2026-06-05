@@ -999,7 +999,8 @@ function shareCopy(){
 var _sb = window.supabase.createClient(
   'https://foknpmvpgbkwgpmlgzrn.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZva25wbXZwZ2Jrd2dwbWxnenJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyODc4NTksImV4cCI6MjA5NTg2Mzg1OX0.6KP9_m4Q6x0hs7IsinNhZsODmZCjrvAL1CxtbQ32-80'
-);
+,
+  { auth: { flowType: 'implicit', detectSessionInUrl: true } });
 var currentUser = null;
 
 function dbSave(key, data) {
