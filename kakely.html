@@ -284,6 +284,7 @@
       <p class="settings-title">カテゴリ</p>
       <div id="catList"></div>
       <button class="btn-add-row" onclick="openCatModal()">＋ カテゴリを追加</button>
+      <button class="btn-add-row" onclick="resetCategoriesToDefault()" style="margin-top:.25rem;color:var(--muted);border-color:rgba(148,148,184,.3)">↺ デフォルトに戻す</button>
     </div>
     <div class="settings-section">
       <p class="settings-title">固定費</p>
@@ -1624,6 +1625,23 @@ async function autoAddFixedCosts() {
     renderAll();
     showToast('🏠 固定費 ' + added + '件を自動追加しました');
   }
+}
+
+async function resetCategoriesToDefault() {
+  if (!confirm('カテゴリをデフォルト21種類にリセットしますか？\n\n⚠️ 自分で追加したカテゴリはすべて削除されます。\n既存の取引データのカテゴリ紐付けは解除されます。')) return;
+  // Supabase: 既存カテゴリを全削除 → デフォルトを挿入
+  if (currentUser) {
+    await _sb.from('kakely_categories').delete().eq('user_id', currentUser.id);
+    var res = await _sb.from('kakely_categories').insert(
+      DEFAULT_CATS.map(function(c){ return Object.assign({ user_id: currentUser.id }, c); })
+    ).select();
+    categories = res.data || DEFAULT_CATS.map(function(c, i){ return Object.assign({ id:'default_'+i }, c); });
+  } else {
+    categories = DEFAULT_CATS.map(function(c, i){ return Object.assign({ id:'default_'+i }, c); });
+  }
+  localStorage.setItem('kakely_cats', JSON.stringify(categories));
+  renderSettings();
+  showToast('カテゴリをデフォルトに戻しました');
 }
 
 async function deduplicateCategories() {
