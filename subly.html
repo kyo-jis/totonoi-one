@@ -496,25 +496,9 @@
         </div>
       </div>
     </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>金額</label>
-        <input type="number" id="fAmount" placeholder="9.99" step="0.01">
-      </div>
-      <div class="form-group">
-        <label>通貨</label>
-        <select id="fCurrency">
-          <option value="JPY">¥ 円 (JPY)</option>
-          <option value="USD">$ ドル (USD)</option>
-          <option value="EUR">€ ユーロ (EUR)</option>
-          <option value="GBP">£ ポンド (GBP)</option>
-          <option value="AUD">A$ 豪ドル (AUD)</option>
-          <option value="CAD">C$ カナダ (CAD)</option>
-          <option value="KRW">₩ ウォン (KRW)</option>
-          <option value="SGD">S$ シンガポール (SGD)</option>
-          <option value="HKD">HK$ 香港 (HKD)</option>
-        </select>
-      </div>
+    <div class="form-group">
+      <label>金額（円）</label>
+      <input type="number" id="fAmount" placeholder="980" step="1" inputmode="numeric">
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -587,7 +571,6 @@
 var FREE_LIMIT = 5;
 var isPro = localStorage.getItem('isPro') === 'true';
 
-var CURRENCY_SYMBOLS = { JPY:'¥', USD:'$', EUR:'€', GBP:'£', AUD:'A$', CAD:'C$', KRW:'₩', SGD:'S$', HKD:'HK$', CNY:'¥CN' };
 
 var PAYMENT_LABELS = {
   '': '未設定', 'visa': '💳 Visa', 'master': '💳 Mastercard', 'jcb': '💳 JCB', 'amex': '💳 AMEX',
@@ -945,8 +928,7 @@ function renderList() {
     el.innerHTML = sorted.map(function(s) {
       var days = daysUntilNext(s);
       var me = monthlyEquiv(s);
-      var cur=s.currency||'JPY', sym=CURRENCY_SYMBOLS[cur]||cur;
-      var amtStr=cur==='JPY'?sym+Number(s.amount).toLocaleString():sym+Number(s.amount).toFixed(2);
+      var amtStr='¥'+Math.round(Number(s.amount)).toLocaleString();
       var amountHTML = s.cycle === 'once'
         ? '<p class="sub-amount">'+amtStr+'</p><p class="sub-cycle">買い切り</p>'
         : '<p class="sub-amount">'+amtStr+'<span class="sub-cycle">/'+cycleLabel(s)+'</span></p>'
@@ -972,7 +954,7 @@ function renderList() {
 function updateTotal() {
   var now = new Date(); var ty=now.getFullYear(), tm=now.getMonth();
   var today = new Date(); today.setHours(0,0,0,0);
-  var totals={}, mc=0, yc=0;
+  var total=0, mc=0, yc=0;
 
   // ① payHistoryから今月の既払い分
   var paidDates = {}; // id+':'+date → true（二重計上防止）
@@ -980,8 +962,7 @@ function updateTotal() {
   payHistory.forEach(function(h) {
     var d = parseLocalDate(h.paidDate);
     if (d.getFullYear()===ty && d.getMonth()===tm) {
-      var cur = h.currency||'JPY';
-      totals[cur] = (totals[cur]||0) + Number(h.amount);
+      total += Number(h.amount);
       mc++;
       paidDates[h.id+':'+h.paidDate] = true;
       paidSubIds[h.id] = true;
@@ -993,49 +974,34 @@ function updateTotal() {
     if (!s.nextBillingDate || s.cycle==='once') return;
     var bill = parseLocalDate(s.nextBillingDate);
     if (bill.getFullYear()===ty && bill.getMonth()===tm && !paidDates[s.id+':'+s.nextBillingDate]) {
-      var cur = s.currency||'JPY';
-      totals[cur] = (totals[cur]||0) + Number(s.amount);
+      total += Number(s.amount);
       yc++;
       paidSubIds[s.id] = true;
     }
   });
 
   // ③ startDateが今月のサブスク（①②でカバーされていない初回請求分）
-  // calcNextBillingDateが必ず一周進めてしまう古いデータ対策
   subs.forEach(function(s) {
     if (s.cycle==='once' || paidSubIds[s.id] || !s.startDate) return;
     var start = parseLocalDate(s.startDate);
     if (start.getFullYear()===ty && start.getMonth()===tm && start <= today) {
       var bill = s.nextBillingDate ? parseLocalDate(s.nextBillingDate) : null;
       if (!bill || bill.getFullYear()!==ty || bill.getMonth()!==tm) {
-        var cur = s.currency||'JPY';
-        totals[cur] = (totals[cur]||0) + Number(s.amount);
+        total += Number(s.amount);
         yc++;
       }
     }
   });
+
   // 大きい数字: 月換算合計（固定）
-  var monthly={};
-  subs.forEach(function(s){ var me=monthlyEquiv(s); if(me>0){var cur=s.currency||'JPY'; monthly[cur]=(monthly[cur]||0)+me;} });
-  var mkeys=Object.keys(monthly);
+  var monthlyTotal = 0;
+  subs.forEach(function(s){ var me=monthlyEquiv(s); if(me>0) monthlyTotal+=me; });
   var el=document.getElementById('totalAmounts');
-  var fontSize=mkeys.length>1?'1.6rem':'3rem';
-  el.innerHTML=mkeys.length===0
-    ? '<p class="total-amount"><sup>¥</sup><span>0</span></p>'
-    : mkeys.map(function(cur){
-        var sym=CURRENCY_SYMBOLS[cur]||cur;
-        var val=cur==='JPY'?Math.round(monthly[cur]).toLocaleString():monthly[cur].toFixed(2);
-        return '<p class="total-amount" style="font-size:'+fontSize+';line-height:1.15"><sup style="font-size:.55em">'+sym+'</sup><span>'+val+'</span></p>';
-      }).join('');
+  el.innerHTML='<p class="total-amount"><sup>¥</sup><span>'+(monthlyTotal>0?Math.round(monthlyTotal).toLocaleString():'0')+'</span></p>';
+
   // 今月の実際の支出（totalSubに表示）
-  var akeys=Object.keys(totals);
-  if (akeys.length) {
-    var subHTML=akeys.map(function(cur){
-      var sym=CURRENCY_SYMBOLS[cur]||cur;
-      var val=cur==='JPY'?Math.round(totals[cur]).toLocaleString():totals[cur].toFixed(2);
-      return '今月の支出 <span style="color:var(--text);font-size:1rem;font-weight:500">'+sym+val+'</span>';
-    }).join(' ');
-    document.getElementById('totalSub').innerHTML=subHTML;
+  if (total > 0) {
+    document.getElementById('totalSub').innerHTML='今月の支出 <span style="color:var(--text);font-size:1rem;font-weight:500">¥'+Math.round(total).toLocaleString()+'</span>';
   } else {
     document.getElementById('totalSub').textContent='今月の請求なし';
   }
@@ -1231,7 +1197,6 @@ function openModal() {
   editId=null;
   document.getElementById('modalTitle').textContent='サービスを追加';
   ['fName','fIcon','fAmount'].forEach(function(id){ document.getElementById(id).value=''; });
-  document.getElementById('fCurrency').value='JPY';
   document.getElementById('fCycle').value='monthly';
   document.getElementById('fPayment').value='';
   document.getElementById('fStartDate').value='';
@@ -1252,7 +1217,7 @@ function editSub(id) {
   document.getElementById('fName').value=s.name;
   document.getElementById('fIcon').value=s.icon||'';
   document.getElementById('fAmount').value=s.amount;
-  document.getElementById('fCurrency').value=s.currency||'JPY';
+
   document.getElementById('fCycle').value=s.cycle;
   document.getElementById('fPayment').value=s.payment||'';
   document.getElementById('fStartDate').value=s.startDate||'';
@@ -1274,7 +1239,7 @@ function saveSubscription() {
   var name=document.getElementById('fName').value.trim();
   var icon=document.getElementById('fIcon').value.trim()||'💳';
   var amount=parseFloat(document.getElementById('fAmount').value);
-  var currency=document.getElementById('fCurrency').value||'JPY';
+  var currency='JPY';
   var cycle=document.getElementById('fCycle').value;
   var date=document.getElementById('fDate').value;
   var payment=document.getElementById('fPayment').value;
