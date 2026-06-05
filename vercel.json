@@ -23,6 +23,10 @@
     {
       "source": "/stockly",
       "destination": "/stockly.html"
+    },
+    {
+      "source": "/kakely",
+      "destination": "/kakely.html"
     }
   ],
   "headers": [
@@ -67,6 +71,19 @@
     },
     {
       "source": "/sw-stockly.js",
+      "headers": [
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    },
+    {
+      "source": "/sw-kakely.js",
       "headers": [
         {
           "key": "Service-Worker-Allowed",

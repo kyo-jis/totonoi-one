@@ -149,6 +149,7 @@
     .bookly  { background: linear-gradient(140deg, #1e1040 0%, #6d28d9 100%); animation-delay: .5s;  }
     .readly  { background: linear-gradient(140deg, #1a2a4a 0%, #3c5cbf 100%); animation-delay: .55s; }
     .ownly   { background: linear-gradient(140deg, #3a3a1a 0%, #9c9c3c 100%); animation-delay: .6s;  }
+    .kakely  { background: linear-gradient(140deg, #4a2e00 0%, #c47d0e 100%); animation-delay: .65s; }
 
     /* ── Card Content ── */
     .bc-icon {
@@ -408,6 +409,17 @@
       <span class="bc-arrow">→</span>
     </a>
 
+    <!-- Kakely -->
+    <a class="bc kakely full" href="kakely.html">
+      <div>
+        <span class="bc-icon">💰</span>
+        <span class="bc-tag">家計簿</span>
+        <p class="bc-name">Kakely</p>
+        <p class="bc-desc">収支を記録して家計を整える</p>
+      </div>
+      <span class="bc-arrow">→</span>
+    </a>
+
     <!-- Pro Plan Card -->
     <div class="bc pro-card" id="proCard">
       <div class="pro-top">
@@ -604,7 +616,7 @@
     updateProUI();
 
     // ── Bento Customization ──
-    var APP_KEYS = ['subly','medly','fitly','stockly','cookly','learnly','renewly','bookly','readly','ownly'];
+    var APP_KEYS = ['subly','medly','fitly','stockly','cookly','learnly','renewly','bookly','readly','ownly','kakely'];
     var APP_META = {
       subly:   { name:'Subly',   icon:'💳', tag:'サブスク管理',     soon:false },
       medly:   { name:'Medly',   icon:'💊', tag:'サプリ・薬',       soon:false },
@@ -616,11 +628,12 @@
       bookly:  { name:'Bookly',  icon:'📚', tag:'本・読書管理',     soon:false },
       readly:  { name:'Readly',  icon:'📝', tag:'メモ・日記',       soon:false },
       ownly:   { name:'Ownly',   icon:'🏠', tag:'持ち物管理',       soon:false },
+      kakely:  { name:'Kakely',  icon:'💰', tag:'家計簿',           soon:false },
     };
     var APP_COLORS = {
       subly:'#3d6b8e', medly:'#7c5cbf', fitly:'#4a8c5a', stockly:'#7c9c3c',
       cookly:'#bf6c3c', learnly:'#3c8cbf', renewly:'#bf9c3c', bookly:'#6d28d9',
-      readly:'#3c5cbf', ownly:'#9c9c3c'
+      readly:'#3c5cbf', ownly:'#9c9c3c', kakely:'#c47d0e'
     };
 
     var _defaultPrefs = { order: APP_KEYS.slice(), hidden: [] };
