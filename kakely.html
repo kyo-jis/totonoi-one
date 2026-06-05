@@ -1117,10 +1117,12 @@ function generateUUID() {
 
 function uniqueCategories() {
   var seen = {};
-  return categories.filter(function(c) {
-    if (seen[c.name]) return false;
-    seen[c.name] = true; return true;
-  });
+  return categories
+    .slice().sort(function(a,b){ return (a.sort_order||0)-(b.sort_order||0); })
+    .filter(function(c) {
+      if (seen[c.name]) return false;
+      seen[c.name] = true; return true;
+    });
 }
 
 function buildGroupCatOptions(selectedId) {
