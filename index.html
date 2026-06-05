@@ -236,6 +236,9 @@
     /* ── Auth chip ── */
     .auth-chip { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); }
     .auth-chip.logged-in { border-color:rgba(94,207,160,.4); color:#5ecfa0; }
+    /* Login Notice */
+    .login-notice { margin: .25rem 1.25rem .5rem; background: rgba(148,148,184,.07); border: 1px solid rgba(148,148,184,.18); border-radius: 12px; padding: .6rem 1rem; display: flex; align-items: center; gap: .65rem; cursor: pointer; font-size: .78rem; color: var(--muted); transition: opacity .2s; }
+    .login-notice:active { opacity: .7; }
     .header-row { display:flex; justify-content:flex-end; align-items:center; padding:.75rem 1.25rem 0; gap:.5rem; }
     .edit-dash-btn { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); transition:all .2s; }
     .edit-dash-btn:active { background:rgba(255,255,255,.1); color:var(--ink); }
@@ -301,6 +304,12 @@
     <h1>毎日を、<em>ととのえ</em>る。</h1>
     <p class="tagline">暮らしを整える、オールインワンダッシュボード</p>
   </header>
+
+  <div id="loginNotice" class="login-notice" onclick="openAuthModal()" style="display:none">
+    <span style="font-size:1rem">&#x2601;&#xFE0F;</span>
+    <span style="flex:1;line-height:1.4">ログインするとデータをクラウドで保護できます</span>
+    <span style="font-size:.75rem;opacity:.6">ログイン →</span>
+  </div>
 
   <main class="bento">
 
@@ -410,7 +419,7 @@
     </a>
 
     <!-- Kakely -->
-    <a class="bc kakely full" href="kakely.html">
+    <a class="bc kakely" href="kakely.html">
       <div>
         <span class="bc-icon">💰</span>
         <span class="bc-tag">家計簿</span>
@@ -581,6 +590,7 @@
       var btn = document.getElementById('authBtn');
       if (currentUser) { btn.textContent = currentUser.email.split('@')[0]; btn.classList.add('logged-in'); }
       else { btn.textContent = 'ログイン'; btn.classList.remove('logged-in'); }
+      var n = document.getElementById('loginNotice'); if (n) n.style.display = currentUser ? 'none' : 'flex';
     }
 
     _sb.auth.onAuthStateChange(function(event, session) {
