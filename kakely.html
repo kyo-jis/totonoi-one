@@ -463,7 +463,7 @@ var isPro = localStorage.getItem('isPro') === 'true';
 var _pieChart = null, _barChart = null;
 
 var DEFAULT_CATS = [
-  {icon:'🛒',name:'食費',sort_order:0},
+  {icon:'🛒',name:'食料品',sort_order:0},
   {icon:'🍽',name:'外食',sort_order:1},
   {icon:'☕',name:'カフェ',sort_order:2},
   {icon:'🚃',name:'交通費',sort_order:3},
@@ -1140,7 +1140,7 @@ function openGroupModal() {
   document.getElementById('gAssignCat').innerHTML = buildGroupCatOptions('');
   document.getElementById('groupRows').innerHTML = '';
   var cats = uniqueCategories();
-  var foodId  = (cats.find(function(c){ return c.name==='食費'; })||cats[0]||{}).id||'';
+  var foodId  = (cats.find(function(c){ return c.name==='食料品'||c.name==='食費'; })||cats[0]||{}).id||'';
   var dailyId = (cats.find(function(c){ return c.name==='日用品'; })||cats[1]||{}).id||'';
   addGroupRow(foodId); addGroupRow(dailyId);
   updateGroupDisplay();
