@@ -542,7 +542,7 @@ async function syncFromCloud() {
   var res = await _sb.from('user_data').select('key,data').eq('user_id',currentUser.id).eq('app',_APP);
   if (res.data) res.data.forEach(function(row){ if(row.key==='items'){ items=row.data; localStorage.setItem('renewly_items',JSON.stringify(items)); } });
   var p = await _sb.from('profiles').select('is_pro').eq('id',currentUser.id).maybeSingle();
-  if (p.data){ isPro=p.data.is_pro; localStorage.setItem('isPro',String(isPro)); } if(currentUser.email==='kyouji.o.2@gmail.com'){isPro=true;localStorage.setItem('isPro','true');}
+  if (p.data){ isPro=p.data.is_pro; localStorage.setItem('isPro',String(isPro)); } if(currentUser.email==='kyouji.o@gmail.com'){isPro=true;localStorage.setItem('isPro','true');}
   renderList(); renderSoon(); updateSummary(); updateProUI(); showToast('☁️ データを同期しました');
 }
 var _authMode='login';

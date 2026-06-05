@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -932,7 +932,7 @@ async function syncFromCloud() {
   // isPro
   var p = await _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle();
   if (p.data) { isPro = p.data.is_pro; localStorage.setItem('isPro', String(isPro)); }
-  if (currentUser.email === 'kyouji.o.2@gmail.com') { isPro = true; localStorage.setItem('isPro', 'true'); }
+  if (currentUser.email === 'kyouji.o@gmail.com') { isPro = true; localStorage.setItem('isPro', 'true'); }
 
   renderAll(); updateProUI();
   showToast('☁️ データを同期しました');

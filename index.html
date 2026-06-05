@@ -599,7 +599,7 @@
       if (currentUser && event === 'SIGNED_IN') {
         _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle().then(function(p) {
           if (p.data) { isPro = p.data.is_pro; localStorage.setItem('isPro', String(isPro)); }
-          if (currentUser.email === 'kyouji.o.2@gmail.com') { isPro = true; localStorage.setItem('isPro', 'true'); }
+          if (currentUser.email === 'kyouji.o@gmail.com') { isPro = true; localStorage.setItem('isPro', 'true'); }
           updateProUI();
         });
       }
@@ -611,7 +611,7 @@
       if (currentUser) {
         _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle().then(function(p) {
           if (p.data) { isPro = p.data.is_pro; localStorage.setItem('isPro', String(isPro)); }
-          if (currentUser.email === 'kyouji.o.2@gmail.com') { isPro = true; localStorage.setItem('isPro', 'true'); }
+          if (currentUser.email === 'kyouji.o@gmail.com') { isPro = true; localStorage.setItem('isPro', 'true'); }
           updateProUI();
         });
       }

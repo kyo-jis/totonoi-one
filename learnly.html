@@ -1006,7 +1006,7 @@ async function syncFromCloud() {
     if (row.key==='sessions') { sessions=row.data; localStorage.setItem('learnly_sessions',JSON.stringify(sessions)); }
   });
   var p = await _sb.from('profiles').select('is_pro').eq('id',currentUser.id).maybeSingle();
-  if (p.data) { isPro=p.data.is_pro; localStorage.setItem('isPro',String(isPro)); } if(currentUser.email==='kyouji.o.2@gmail.com'){isPro=true;localStorage.setItem('isPro','true');}
+  if (p.data) { isPro=p.data.is_pro; localStorage.setItem('isPro',String(isPro)); } if(currentUser.email==='kyouji.o@gmail.com'){isPro=true;localStorage.setItem('isPro','true');}
   renderAll(); updateProUI();
   showToast('☁️ データを同期しました');
 }
