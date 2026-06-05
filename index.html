@@ -266,8 +266,19 @@
     .form-group label { display:block; font-size:.75rem; color:var(--muted); letter-spacing:.05em; text-transform:uppercase; margin-bottom:.4rem; }
     .form-group input { width:100%; background:#22222e; border:1px solid #35354a; border-radius:10px; padding:.75rem 1rem; font-size:.95rem; color:#f0eee8; font-family:var(--font); outline:none; }
     .form-group input:focus { border-color:#9b6dff; }
+    .modal-title { font-size:1.1rem; font-weight:500; margin-bottom:1.25rem; }
     .btn-primary { width:100%; padding:.9rem; background:#9b6dff; color:#fff; border:none; border-radius:12px; font-size:.95rem; font-weight:500; font-family:var(--font); cursor:pointer; }
     .btn-cancel { width:100%; padding:.75rem; background:none; color:var(--muted); border:none; font-size:.88rem; font-family:var(--font); cursor:pointer; margin-top:.25rem; }
+
+    /* ── Backup ── */
+    .backup-btn { display:inline-flex; align-items:center; gap:.4rem; margin-bottom:.5rem; font-size:.78rem; color:var(--muted); text-decoration:none; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:.45rem .9rem; cursor:pointer; font-family:var(--font); }
+    .backup-btn:active { opacity:.7; }
+    .backup-row { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; margin-bottom:1rem; }
+    .backup-app-row { display:flex; align-items:center; justify-content:space-between; padding:.5rem .75rem; background:var(--surface); border:1px solid var(--border); border-radius:10px; margin-bottom:.35rem; font-size:.82rem; }
+    .backup-app-count { font-size:.72rem; color:var(--muted); }
+    .btn-export { width:100%; padding:.85rem; background:linear-gradient(135deg,#3c6cbf,#6c8eff); color:#fff; border:none; border-radius:12px; font-size:.95rem; font-weight:500; font-family:var(--font); cursor:pointer; margin-bottom:.5rem; }
+    .btn-import { width:100%; padding:.85rem; background:var(--surface); color:var(--ink); border:1px solid var(--border); border-radius:12px; font-size:.95rem; font-weight:500; font-family:var(--font); cursor:pointer; margin-bottom:.5rem; }
+    .btn-export:active, .btn-import:active { opacity:.8; }
 
     /* ── Promo (hidden) ── */
     .promo-wrap { max-height:0; overflow:hidden; transition:max-height .3s ease; }
@@ -458,7 +469,8 @@
   </main>
 
   <footer>
-    <a href="guide.html" style="display:inline-block;margin-bottom:.75rem;font-size:.78rem;color:var(--muted);text-decoration:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.45rem .9rem;">📖 使い方ガイド &amp; Pro比較</a><br>
+    <a href="guide.html" style="display:inline-block;margin-bottom:.5rem;font-size:.78rem;color:var(--muted);text-decoration:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.45rem .9rem;">📖 使い方ガイド &amp; Pro比較</a><br>
+    <button class="backup-btn" onclick="openBackupModal()">💾 バックアップ / 復元</button><br>
     © 2026 Totonoi One
     <button class="footer-admin" onclick="togglePromo()">・・・</button>
     <div class="promo-wrap" id="promoWrap">
@@ -469,6 +481,21 @@
       <p id="promoMsg" style="font-size:.68rem;margin-top:.35rem;min-height:.9rem;color:var(--muted);"></p>
     </div>
   </footer>
+
+  <!-- Backup Modal -->
+  <div class="modal-overlay" id="backupModal" onclick="if(event.target===this)closeBackupModal()">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <p class="modal-title" style="font-size:1rem;font-weight:500;margin-bottom:.25rem;">💾 バックアップ / 復元</p>
+      <p style="font-size:.75rem;color:var(--muted);margin-bottom:1.25rem;">全アプリのデータをJSON形式で保存・読み込みできます</p>
+      <div id="backupAppList" style="margin-bottom:1.25rem;max-height:220px;overflow-y:auto;"></div>
+      <button class="btn-export" onclick="exportAllData()">📥 JSONでエクスポート</button>
+      <button class="btn-import" onclick="document.getElementById('importFile').click()">📤 JSONから復元</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importAllData(this)">
+      <p id="importMsg" style="font-size:.75rem;color:var(--muted);text-align:center;min-height:1rem;margin-top:.25rem;"></p>
+      <button class="btn-cancel" onclick="closeBackupModal()">閉じる</button>
+    </div>
+  </div>
 
   <!-- Bento Edit Modal -->
   <div class="modal-overlay" id="bentoEditModal" onclick="if(event.target===this)closeBentoEdit()">
@@ -741,6 +768,100 @@
     }
 
     applyBentoPrefs();
+
+    // ── Backup / Restore ──
+    var BACKUP_KEYS = {
+      subly:   { label:'Subly', icon:'💳', keys:['subs','subHistory'] },
+      medly:   { label:'Medly', icon:'💊', keys:['medlyItems','medlyPurchase','medlyEffectLogs','medlyDosageLog'] },
+      fitly:   { label:'Fitly', icon:'🏋️', keys:['fitlyHistory','fitlyMenus','exerciseSettings','fitlyBodyWeight','fitlyPRs'] },
+      stockly: { label:'Stockly', icon:'📦', keys:['stockly_items','stockly_shop'] },
+      cookly:  { label:'Cookly', icon:'🍳', keys:['cookly_recipes'] },
+      learnly: { label:'Learnly', icon:'📚', keys:['learnly_subjects','learnly_sessions'] },
+      renewly: { label:'Renewly', icon:'🔄', keys:['renewly_items'] },
+      bookly:  { label:'Bookly', icon:'📚', keys:['bookly_items'] },
+      readly:  { label:'Readly', icon:'📝', keys:['readly_notes'] },
+      ownly:   { label:'Ownly', icon:'🏠', keys:['ownly_items'] },
+      kakely:  { label:'Kakely', icon:'💰', keys:['kakely_cats','kakely_pays'] },
+    };
+
+    function openBackupModal() {
+      var html = '';
+      Object.keys(BACKUP_KEYS).forEach(function(app) {
+        var meta = BACKUP_KEYS[app];
+        var count = 0;
+        meta.keys.forEach(function(k) {
+          var d = JSON.parse(localStorage.getItem(k) || 'null');
+          if (Array.isArray(d)) count += d.length;
+          else if (d && typeof d === 'object') count += Object.keys(d).length;
+        });
+        html += '<div class="backup-app-row">'
+          + '<span>' + meta.icon + ' ' + meta.label + '</span>'
+          + '<span class="backup-app-count">' + count + '件</span>'
+          + '</div>';
+      });
+      document.getElementById('backupAppList').innerHTML = html;
+      document.getElementById('importMsg').textContent = '';
+      document.getElementById('backupModal').classList.add('show');
+    }
+
+    function closeBackupModal() {
+      document.getElementById('backupModal').classList.remove('show');
+    }
+
+    function exportAllData() {
+      var backup = { version: 1, exportedAt: new Date().toISOString(), apps: {} };
+      Object.keys(BACKUP_KEYS).forEach(function(app) {
+        backup.apps[app] = {};
+        BACKUP_KEYS[app].keys.forEach(function(k) {
+          var val = localStorage.getItem(k);
+          if (val) backup.apps[app][k] = JSON.parse(val);
+        });
+        // Kakelyの月別トランザクションも収集
+        if (app === 'kakely') {
+          for (var i = 0; i < localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if (key && key.startsWith('kakely_txn_')) {
+              backup.apps[app][key] = JSON.parse(localStorage.getItem(key));
+            }
+          }
+        }
+      });
+      var json = JSON.stringify(backup, null, 2);
+      var blob = new Blob([json], { type: 'application/json' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'totonoi-backup-' + new Date().toISOString().split('T')[0] + '.json';
+      a.click();
+      showToast('📥 エクスポート完了');
+    }
+
+    function importAllData(input) {
+      var file = input.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          var backup = JSON.parse(e.target.result);
+          if (!backup.apps) throw new Error('形式が正しくありません');
+          var count = 0;
+          Object.keys(backup.apps).forEach(function(app) {
+            var appData = backup.apps[app];
+            Object.keys(appData).forEach(function(k) {
+              localStorage.setItem(k, JSON.stringify(appData[k]));
+              count++;
+            });
+          });
+          document.getElementById('importMsg').textContent = '✅ ' + count + '件のデータを復元しました。ページを再読み込みしてください。';
+          document.getElementById('importMsg').style.color = '#5ecfa0';
+          showToast('✅ 復元完了 — ページを更新してください');
+        } catch(err) {
+          document.getElementById('importMsg').textContent = '❌ 読み込みに失敗しました: ' + err.message;
+          document.getElementById('importMsg').style.color = '#ff6b6b';
+        }
+        input.value = '';
+      };
+      reader.readAsText(file);
+    }
   </script>
 
 </body>
