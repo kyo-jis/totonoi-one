@@ -1251,10 +1251,21 @@ function importCSV(input) {
       imported++;
     });
     if(!isPro&&items.length>FREE_LIMIT)items=items.slice(0,FREE_LIMIT);
-    persist();renderAll();closeModal();
-    showToast(currentUser
-      ? '✅ '+imported+'件インポート・クラウド同期しました'
-      : '✅ '+imported+'件インポートしました（ログインするとクラウド同期されます）');
+    localStorage.setItem('bookly_items',JSON.stringify(items)); // まずローカルへ確実に保存
+    renderAll();closeModal();
+    if (!currentUser) {
+      showToast('✅ '+imported+'件インポートしました（ログインすると同期されます）');
+      return;
+    }
+    showToast('☁️ Supabaseへ保存中...');
+    _sb.from('user_data').upsert(
+      {user_id:currentUser.id,app:_APP,key:'items',data:items,updated_at:new Date().toISOString()},
+      {onConflict:'user_id,app,key'}
+    ).then(function(r){
+      showToast(r.error
+        ? '⚠️ ローカル保存済・クラウド同期失敗（'+r.error.message+'）'
+        : '✅ '+imported+'件インポート・クラウド同期しました');
+    });
   };
   reader.readAsText(file,'UTF-8');
   input.value='';
@@ -1293,7 +1304,13 @@ if('serviceWorker'in navigator){window.addEventListener('load',function(){naviga
 var _sb=window.supabase.createClient('https://foknpmvpgbkwgpmlgzrn.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZva25wbXZwZ2Jrd2dwbWxnenJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyODc4NTksImV4cCI6MjA5NTg2Mzg1OX0.6KP9_m4Q6x0hs7IsinNhZsODmZCjrvAL1CxtbQ32-80',
   { auth: { flowType: 'implicit', detectSessionInUrl: true } });
 var currentUser=null;var _APP='bookly';
-function dbSave(key,data){if(!currentUser)return;_sb.from('user_data').upsert({user_id:currentUser.id,app:_APP,key:key,data:data,updated_at:new Date().toISOString()},{onConflict:'user_id,app,key'});}
+function dbSave(key,data){
+  if(!currentUser)return Promise.resolve(null);
+  return _sb.from('user_data').upsert(
+    {user_id:currentUser.id,app:_APP,key:key,data:data,updated_at:new Date().toISOString()},
+    {onConflict:'user_id,app,key'}
+  );
+}
 async function syncFromCloud(){
   var res=await _sb.from('user_data').select('key,data').eq('user_id',currentUser.id).eq('app',_APP);
   if (res.data && res.data.length > 0) {
