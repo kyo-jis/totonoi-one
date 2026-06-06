@@ -249,6 +249,12 @@
 
     /* Settings */
     .data-btn { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:.55rem .9rem; font-size:.8rem; color:var(--text); cursor:pointer; font-family:var(--font); display:inline-block; }
+    .sync-slot{margin-top:.3rem;text-align:right;min-height:1rem;}
+    .sync-badge{display:inline-flex;align-items:center;gap:.2rem;font-size:.58rem;font-weight:500;padding:.1rem .38rem;border-radius:20px;cursor:default;white-space:nowrap;}
+    .sync-local{background:rgba(148,148,184,.15);color:var(--muted);}
+    .sync-syncing{background:rgba(108,142,255,.15);color:#6c8eff;}
+    .sync-synced{background:rgba(94,207,160,.15);color:#5ecfa0;}
+    .sync-failed{background:rgba(255,107,107,.15);color:#ff6b6b;cursor:pointer;}
     .share-btn { width:100%; padding:.8rem; border:none; border-radius:12px; font-size:.88rem; font-weight:500; font-family:var(--font); cursor:pointer; }
     .share-x    { background:#000; color:#fff; }
     .share-line { background:#06c755; color:#fff; }
@@ -889,9 +895,7 @@ function autoRecordHistory() {
     s.nextBillingDate = localDateStr(bill);
   });
   if (updated) {
-    localStorage.setItem('subs', JSON.stringify(subs));
-    localStorage.setItem('subHistory', JSON.stringify(payHistory));
-    dbSave('subs', subs); dbSave('history', payHistory);
+    persist();
   }
 }
 
@@ -947,7 +951,9 @@ function renderList() {
         + '<div class="sub-card-bot">'
         + '<div class="sub-meta"><span>次回 ' + formatDate(s.nextBillingDate) + '</span>' + daysBadge(days) + payBadge + '</div>'
         + '<div class="sub-right">' + amountHTML + '</div>'
-        + '</div></div>';
+        + '</div>'
+        + '<div class="sync-slot"></div>'
+        + '</div>';
     }).join('');
   }
   updateTotal();
@@ -1255,16 +1261,14 @@ function saveSubscription() {
   var entry={id:editId||Date.now().toString(),name:name,icon:icon,amount:amount,currency:currency,cycle:cycle,nextBillingDate:date,domain:domain,payment:payment,customNum:customNum,customUnit:customUnit,startDate:startDate};
   if (editId) { var idx=subs.findIndex(function(x){return x.id===editId;}); subs[idx]=entry; }
   else subs.push(entry);
-  localStorage.setItem('subs',JSON.stringify(subs));
-  dbSave('subs', subs);
+  persist();
   closeModal(); renderList(); renderCalendar();
 }
 
 function deleteSub(id) {
   if (!confirm('削除しますか？')) return;
   subs=subs.filter(function(x){ return x.id!==id; });
-  localStorage.setItem('subs',JSON.stringify(subs));
-  dbSave('subs', subs);
+  persist();
   renderList(); renderCalendar();
 }
 
@@ -1407,23 +1411,37 @@ var _sb = window.supabase.createClient(
 ,
   { auth: { flowType: 'implicit', detectSessionInUrl: true } });
 var currentUser = null;
-var _APP = 'subly';
+var _APP = 'subly'; var _syncStatus = 'local';
+function syncBadgeHTML(){if(!currentUser)return'<span class="sync-badge sync-local">💾 ローカル</span>';if(_syncStatus==='syncing')return'<span class="sync-badge sync-syncing">🔄 同期中</span>';if(_syncStatus==='synced')return'<span class="sync-badge sync-synced">☁️</span>';return'<span class="sync-badge sync-failed" onclick="retrySync()">⚠️ 再同期</span>';}
+function updateSyncBadges(){var h=syncBadgeHTML();document.querySelectorAll('.sync-slot').forEach(function(el){el.innerHTML=h;});}
+function retrySync(){if(!currentUser)return;_syncStatus='syncing';updateSyncBadges();Promise.all([dbSave('subs',subs),dbSave('history',payHistory)]).then(function(rs){_syncStatus=rs.every(function(r){return r&&!r.error;})?'synced':'failed';if(_syncStatus==='failed')showAuthToast('⚠️ クラウド同期失敗');updateSyncBadges();});}
+function persist() {
+  localStorage.setItem('subs', JSON.stringify(subs));
+  localStorage.setItem('subHistory', JSON.stringify(payHistory));
+  localStorage.setItem('subly_updated_at', Date.now().toString());
+  if(!currentUser){_syncStatus='local';updateSyncBadges();return;}
+  _syncStatus='syncing';updateSyncBadges();
+  Promise.all([dbSave('subs',subs),dbSave('history',payHistory)]).then(function(rs){_syncStatus=rs.every(function(r){return r&&!r.error;})?'synced':'failed';if(_syncStatus==='failed')showAuthToast('⚠️ クラウド同期失敗');updateSyncBadges();});
+}
 
 function dbSave(key, data) {
-  if (!currentUser) return;
-  _sb.from('user_data').upsert(
+  if (!currentUser) return Promise.resolve(null);
+  return _sb.from('user_data').upsert(
     { user_id: currentUser.id, app: _APP, key: key, data: data, updated_at: new Date().toISOString() },
     { onConflict: 'user_id,app,key' }
   );
 }
 
 async function syncFromCloud() {
-  var res = await _sb.from('user_data').select('key,data').eq('user_id', currentUser.id).eq('app', _APP);
+  var res = await _sb.from('user_data').select('key,data,updated_at').eq('user_id', currentUser.id).eq('app', _APP);
   if (res.data && res.data.length > 0) {
+    var localTime = parseInt(localStorage.getItem('subly_updated_at')||'0');
     res.data.forEach(function(row) {
-      if (row.key === 'subs') { subs = row.data; localStorage.setItem('subs', JSON.stringify(subs)); }
-      if (row.key === 'history') { payHistory = row.data; localStorage.setItem('subHistory', JSON.stringify(payHistory)); }
+      var cloudTime = new Date(row.updated_at).getTime();
+      if (row.key === 'subs') { if(cloudTime>=localTime){subs=row.data||[];localStorage.setItem('subs',JSON.stringify(subs));}else dbSave('subs',subs); }
+      if (row.key === 'history') { if(cloudTime>=localTime){payHistory=row.data||[];localStorage.setItem('subHistory',JSON.stringify(payHistory));}else dbSave('history',payHistory); }
     });
+    _syncStatus = 'synced';
   } else if (res.data && res.data.length === 0) {
     if (subs.length > 0) dbSave('subs', subs);
     if (payHistory.length > 0) dbSave('history', payHistory);
@@ -1431,7 +1449,7 @@ async function syncFromCloud() {
   var p = await _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle();
   if (p.data) { isPro = p.data.is_pro; localStorage.setItem('isPro', String(isPro)); }
   if (currentUser.email === 'kyouji.o@gmail.com') { isPro = true; localStorage.setItem('isPro', 'true'); }
-  renderList(); renderCalendar(); updateProUI(); updateSummary();
+  renderList(); renderCalendar(); updateProUI(); updateSummary(); updateSyncBadges();
   showAuthToast('☁️ データを同期しました');
 }
 

@@ -125,6 +125,12 @@
     .ad-banner { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--border); padding:.6rem 1rem; display:flex; align-items:center; justify-content:center; gap:.5rem; z-index:40; padding-bottom:calc(.6rem + env(safe-area-inset-bottom)); }
     .ad-label { font-size:.6rem; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; }
     .ad-content { font-size:.78rem; color:var(--muted); flex:1; text-align:center; }
+    .sync-slot{margin-top:.3rem;text-align:right;min-height:1rem;}
+    .sync-badge{display:inline-flex;align-items:center;gap:.2rem;font-size:.58rem;font-weight:500;padding:.1rem .38rem;border-radius:20px;cursor:default;white-space:nowrap;}
+    .sync-local{background:rgba(148,148,184,.15);color:var(--muted);}
+    .sync-syncing{background:rgba(108,142,255,.15);color:#6c8eff;}
+    .sync-synced{background:rgba(94,207,160,.15);color:#5ecfa0;}
+    .sync-failed{background:rgba(255,107,107,.15);color:#ff6b6b;cursor:pointer;}
     .share-btn { width:100%; padding:.8rem; border:none; border-radius:12px; font-size:.88rem; font-weight:500; font-family:var(--font); cursor:pointer; }
     .share-x { background:#000; color:#fff; }
     .share-line { background:#06c755; color:#fff; }
@@ -335,6 +341,7 @@ function renderCard(r) {
       + '<button class="btn-icon" onclick="event.stopPropagation();editRecipe(\'' + r.id + '\')">✏️</button>'
       + '<button class="btn-icon" onclick="event.stopPropagation();deleteRecipe(\'' + r.id + '\')">🗑</button>'
     + '</div>'
+    + '<div class="sync-slot"></div>'
     + '</div>';
 }
 
@@ -489,7 +496,14 @@ function deleteRecipe(id) {
   persist(); backToList(); showToast('🗑 削除しました');
 }
 
-function persist() { localStorage.setItem('cookly_recipes', JSON.stringify(recipes)); dbSave('recipes', recipes); renderRecipes(); renderFav(); renderStats(); }
+function persist() {
+  localStorage.setItem('cookly_recipes', JSON.stringify(recipes));
+  localStorage.setItem('cookly_updated_at', Date.now().toString());
+  renderRecipes(); renderFav(); renderStats();
+  if(!currentUser){_syncStatus='local';updateSyncBadges();return;}
+  _syncStatus='syncing';updateSyncBadges();
+  dbSave('recipes',recipes).then(function(r){_syncStatus=r&&!r.error?'synced':'failed';if(r&&r.error)showToast('⚠️ クラウド同期失敗');updateSyncBadges();});
+}
 
 function switchTab(name, btn) {
   document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
@@ -532,14 +546,21 @@ if('serviceWorker'in navigator){window.addEventListener('load',function(){naviga
 
 var _sb=window.supabase.createClient('https://foknpmvpgbkwgpmlgzrn.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZva25wbXZwZ2Jrd2dwbWxnenJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyODc4NTksImV4cCI6MjA5NTg2Mzg1OX0.6KP9_m4Q6x0hs7IsinNhZsODmZCjrvAL1CxtbQ32-80',
   { auth: { flowType: 'implicit', detectSessionInUrl: true } });
-var currentUser=null;var _APP='cookly';
-function dbSave(key,data){if(!currentUser)return;_sb.from('user_data').upsert({user_id:currentUser.id,app:_APP,key:key,data:data,updated_at:new Date().toISOString()},{onConflict:'user_id,app,key'});}
-async function syncFromCloud(){var res=await _sb.from('user_data').select('key,data').eq('user_id',currentUser.id).eq('app',_APP);if (res.data && res.data.length > 0) {
-    res.data.forEach(function(row){if(row.key==='recipes'){recipes=row.data;localStorage.setItem('cookly_recipes',JSON.stringify(recipes));}});
-  } else {
-    // 初回ログイン: ローカルデータをSupabaseへアップロード
-    if (recipes.length > 0) dbSave('recipes', recipes);
-  }var p=await _sb.from('profiles').select('is_pro').eq('id',currentUser.id).maybeSingle();if(p.data){isPro=p.data.is_pro;localStorage.setItem('isPro',String(isPro));} if(currentUser.email==='kyouji.o@gmail.com'){isPro=true;localStorage.setItem('isPro','true');}renderRecipes();renderFav();updateProUI();showToast('☁️ データを同期しました');}
+var currentUser=null;var _APP='cookly';var _syncStatus='local';
+function syncBadgeHTML(){if(!currentUser)return'<span class="sync-badge sync-local">💾 ローカル</span>';if(_syncStatus==='syncing')return'<span class="sync-badge sync-syncing">🔄 同期中</span>';if(_syncStatus==='synced')return'<span class="sync-badge sync-synced">☁️</span>';return'<span class="sync-badge sync-failed" onclick="retrySync()">⚠️ 再同期</span>';}
+function updateSyncBadges(){var h=syncBadgeHTML();document.querySelectorAll('.sync-slot').forEach(function(el){el.innerHTML=h;});}
+function retrySync(){if(!currentUser)return;_syncStatus='syncing';updateSyncBadges();dbSave('recipes',recipes).then(function(r){_syncStatus=r&&!r.error?'synced':'failed';if(r&&r.error)showToast('⚠️ クラウド同期失敗');updateSyncBadges();});}
+function dbSave(key,data){if(!currentUser)return Promise.resolve(null);return _sb.from('user_data').upsert({user_id:currentUser.id,app:_APP,key:key,data:data,updated_at:new Date().toISOString()},{onConflict:'user_id,app,key'});}
+async function syncFromCloud(){
+  var res=await _sb.from('user_data').select('key,data,updated_at').eq('user_id',currentUser.id).eq('app',_APP);
+  if(res.data&&res.data.length>0){
+    var localTime=parseInt(localStorage.getItem('cookly_updated_at')||'0');
+    res.data.forEach(function(row){if(row.key==='recipes'){var cloudTime=new Date(row.updated_at).getTime();if(cloudTime>=localTime){recipes=row.data||[];localStorage.setItem('cookly_recipes',JSON.stringify(recipes));}else dbSave('recipes',recipes);}});
+    _syncStatus='synced';
+  }else{if(recipes.length>0)dbSave('recipes',recipes);}
+  var p=await _sb.from('profiles').select('is_pro').eq('id',currentUser.id).maybeSingle();if(p.data){isPro=p.data.is_pro;localStorage.setItem('isPro',String(isPro));} if(currentUser.email==='kyouji.o@gmail.com'){isPro=true;localStorage.setItem('isPro','true');}
+  renderRecipes();renderFav();updateProUI();updateSyncBadges();showToast('☁️ データを同期しました');
+}
 async function handleGoogleAuth(){ await _sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin + window.location.pathname } }); }
 function openAuthModal(){if(currentUser){if(confirm(currentUser.email+'\nログアウトしますか？'))_sb.auth.signOut();return;}document.getElementById('authModal').classList.add('show');}
 function updateAuthUI(){var btn=document.getElementById('authBtn');if(!btn)return;if(currentUser){btn.textContent=currentUser.email.split('@')[0];btn.classList.add('logged-in');}else{btn.textContent='ログイン';btn.classList.remove('logged-in');}}

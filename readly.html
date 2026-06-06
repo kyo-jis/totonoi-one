@@ -110,6 +110,12 @@
     .form-label { font-size:.75rem; color:var(--muted); letter-spacing:.05em; text-transform:uppercase; display:block; margin-bottom:.4rem; }
     .btn-primary { width:100%; padding:.9rem; background:var(--accent); color:#fff; border:none; border-radius:12px; font-size:.95rem; font-weight:500; font-family:var(--font); cursor:pointer; margin-top:.5rem; }
     .btn-cancel { width:100%; padding:.75rem; background:none; color:var(--muted); border:none; font-size:.88rem; font-family:var(--font); cursor:pointer; margin-top:.25rem; }
+    .sync-slot{margin-top:.3rem;text-align:right;min-height:1rem;}
+    .sync-badge{display:inline-flex;align-items:center;gap:.2rem;font-size:.58rem;font-weight:500;padding:.1rem .38rem;border-radius:20px;cursor:default;white-space:nowrap;}
+    .sync-local{background:rgba(148,148,184,.15);color:var(--muted);}
+    .sync-syncing{background:rgba(108,142,255,.15);color:#6c8eff;}
+    .sync-synced{background:rgba(94,207,160,.15);color:#5ecfa0;}
+    .sync-failed{background:rgba(255,107,107,.15);color:#ff6b6b;cursor:pointer;}
     .share-btn { width:100%; padding:.8rem; border:none; border-radius:12px; font-size:.88rem; font-weight:500; font-family:var(--font); cursor:pointer; }
     .share-x { background:#000; color:#fff; }
     .share-line { background:#06c755; color:#fff; }
@@ -286,6 +292,7 @@ function renderNotes() {
           + '<button class="btn-icon" onclick="event.stopPropagation();deleteNote(\'' + n.id + '\')">🗑</button>'
         + '</div>'
       + '</div>'
+      + '<div class="sync-slot"></div>'
       + '</div>';
   }).join('');
   document.getElementById('countText').textContent = notes.length + (isPro ? '件' : '/30');
@@ -345,7 +352,14 @@ function updateCharCount() {
   document.getElementById('charCount').textContent = len + '文字';
 }
 
-function persist() { localStorage.setItem('readly_notes', JSON.stringify(notes)); dbSave('notes', notes); renderNotes(); renderStats(); }
+function persist() {
+  localStorage.setItem('readly_notes', JSON.stringify(notes));
+  localStorage.setItem('readly_updated_at', Date.now().toString());
+  renderNotes(); renderStats();
+  if(!currentUser){_syncStatus='local';updateSyncBadges();return;}
+  _syncStatus='syncing';updateSyncBadges();
+  dbSave('notes',notes).then(function(r){_syncStatus=r&&!r.error?'synced':'failed';if(r&&r.error)showToast('⚠️ クラウド同期失敗');updateSyncBadges();});
+}
 
 function switchTab(name, btn) {
   document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
@@ -398,14 +412,21 @@ if ('serviceWorker' in navigator) { window.addEventListener('load', function(){ 
 
 var _sb=window.supabase.createClient('https://foknpmvpgbkwgpmlgzrn.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZva25wbXZwZ2Jrd2dwbWxnenJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyODc4NTksImV4cCI6MjA5NTg2Mzg1OX0.6KP9_m4Q6x0hs7IsinNhZsODmZCjrvAL1CxtbQ32-80',
   { auth: { flowType: 'implicit', detectSessionInUrl: true } });
-var currentUser=null; var _APP='readly';
-function dbSave(key,data){if(!currentUser)return;_sb.from('user_data').upsert({user_id:currentUser.id,app:_APP,key:key,data:data,updated_at:new Date().toISOString()},{onConflict:'user_id,app,key'});}
-async function syncFromCloud(){var res=await _sb.from('user_data').select('key,data').eq('user_id',currentUser.id).eq('app',_APP);if (res.data && res.data.length > 0) {
-    res.data.forEach(function(row){if(row.key==='notes'){notes=row.data;localStorage.setItem('readly_notes',JSON.stringify(notes));}});
-  } else {
-    // 初回ログイン: ローカルデータをSupabaseへアップロード
-    if (notes.length > 0) dbSave('notes', notes);
-  }var p=await _sb.from('profiles').select('is_pro').eq('id',currentUser.id).maybeSingle();if(p.data){isPro=p.data.is_pro;localStorage.setItem('isPro',String(isPro));} if(currentUser.email==='kyouji.o@gmail.com'){isPro=true;localStorage.setItem('isPro','true');}renderNotes();updateProUI();showToast('☁️ データを同期しました');}
+var currentUser=null; var _APP='readly'; var _syncStatus='local';
+function syncBadgeHTML(){if(!currentUser)return'<span class="sync-badge sync-local">💾 ローカル</span>';if(_syncStatus==='syncing')return'<span class="sync-badge sync-syncing">🔄 同期中</span>';if(_syncStatus==='synced')return'<span class="sync-badge sync-synced">☁️</span>';return'<span class="sync-badge sync-failed" onclick="retrySync()">⚠️ 再同期</span>';}
+function updateSyncBadges(){var h=syncBadgeHTML();document.querySelectorAll('.sync-slot').forEach(function(el){el.innerHTML=h;});}
+function retrySync(){if(!currentUser)return;_syncStatus='syncing';updateSyncBadges();dbSave('notes',notes).then(function(r){_syncStatus=r&&!r.error?'synced':'failed';if(r&&r.error)showToast('⚠️ クラウド同期失敗');updateSyncBadges();});}
+function dbSave(key,data){if(!currentUser)return Promise.resolve(null);return _sb.from('user_data').upsert({user_id:currentUser.id,app:_APP,key:key,data:data,updated_at:new Date().toISOString()},{onConflict:'user_id,app,key'});}
+async function syncFromCloud(){
+  var res=await _sb.from('user_data').select('key,data,updated_at').eq('user_id',currentUser.id).eq('app',_APP);
+  if(res.data&&res.data.length>0){
+    var localTime=parseInt(localStorage.getItem('readly_updated_at')||'0');
+    res.data.forEach(function(row){if(row.key==='notes'){var cloudTime=new Date(row.updated_at).getTime();if(cloudTime>=localTime){notes=row.data||[];localStorage.setItem('readly_notes',JSON.stringify(notes));}else dbSave('notes',notes);}});
+    _syncStatus='synced';
+  }else{if(notes.length>0)dbSave('notes',notes);}
+  var p=await _sb.from('profiles').select('is_pro').eq('id',currentUser.id).maybeSingle();if(p.data){isPro=p.data.is_pro;localStorage.setItem('isPro',String(isPro));} if(currentUser.email==='kyouji.o@gmail.com'){isPro=true;localStorage.setItem('isPro','true');}
+  renderNotes();updateProUI();updateSyncBadges();showToast('☁️ データを同期しました');
+}
 var _authMode='login';
 function setAuthMode(mode){_authMode=mode;var tl=document.getElementById('tabLogin'),ts=document.getElementById('tabSignup'),sb=document.getElementById('authSubmitBtn');if(mode==='login'){tl.style.cssText+=';background:var(--surface3);color:var(--text);font-weight:500;';ts.style.cssText+=';background:none;color:var(--muted);font-weight:300;';sb.textContent='ログイン';}else{ts.style.cssText+=';background:var(--surface3);color:var(--text);font-weight:500;';tl.style.cssText+=';background:none;color:var(--muted);font-weight:300;';sb.textContent='アカウントを作成';}}
 async function handleGoogleAuth(){ await _sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin + window.location.pathname } }); }

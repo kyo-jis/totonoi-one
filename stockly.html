@@ -194,6 +194,12 @@
     .ad-label { font-size:.6rem; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; }
     .ad-content { font-size:.78rem; color:var(--muted); flex:1; text-align:center; }
 
+    .sync-slot{margin-top:.3rem;text-align:right;min-height:1rem;}
+    .sync-badge{display:inline-flex;align-items:center;gap:.2rem;font-size:.58rem;font-weight:500;padding:.1rem .38rem;border-radius:20px;cursor:default;white-space:nowrap;}
+    .sync-local{background:rgba(148,148,184,.15);color:var(--muted);}
+    .sync-syncing{background:rgba(108,142,255,.15);color:#6c8eff;}
+    .sync-synced{background:rgba(94,207,160,.15);color:#5ecfa0;}
+    .sync-failed{background:rgba(255,107,107,.15);color:#ff6b6b;cursor:pointer;}
     .share-btn { width:100%; padding:.8rem; border:none; border-radius:12px; font-size:.88rem; font-weight:500; font-family:var(--font); cursor:pointer; }
     .share-x    { background:#000; color:#fff; }
     .share-line { background:#06c755; color:#fff; }
@@ -568,6 +574,7 @@ function renderList() {
         + '<button class="btn-icon" onclick="editItem(\'' + item.id + '\')">✏️</button>'
         + '<button class="btn-icon" onclick="deleteItem(\'' + item.id + '\')">🗑</button>'
       + '</div>'
+      + '<div class="sync-slot"></div>'
       + '</div>';
   }).join('');
 }
@@ -881,7 +888,10 @@ function deleteItem(id) {
 // ── Persist ──
 function persist() {
   localStorage.setItem('stockly_items', JSON.stringify(items));
-  dbSave('items', items);
+  localStorage.setItem('stockly_updated_at', Date.now().toString());
+  if(!currentUser){_syncStatus='local';updateSyncBadges();return;}
+  _syncStatus='syncing';updateSyncBadges();
+  dbSave('items',items).then(function(r){_syncStatus=r&&!r.error?'synced':'failed';if(r&&r.error)showToast('⚠️ クラウド同期失敗');updateSyncBadges();});
 }
 
 // ── Export ──
@@ -992,32 +1002,37 @@ var _sb = window.supabase.createClient(
 ,
   { auth: { flowType: 'implicit', detectSessionInUrl: true } });
 var currentUser = null;
-var _APP = 'stockly';
+var _APP = 'stockly'; var _syncStatus = 'local';
+function syncBadgeHTML(){if(!currentUser)return'<span class="sync-badge sync-local">💾 ローカル</span>';if(_syncStatus==='syncing')return'<span class="sync-badge sync-syncing">🔄 同期中</span>';if(_syncStatus==='synced')return'<span class="sync-badge sync-synced">☁️</span>';return'<span class="sync-badge sync-failed" onclick="retrySync()">⚠️ 再同期</span>';}
+function updateSyncBadges(){var h=syncBadgeHTML();document.querySelectorAll('.sync-slot').forEach(function(el){el.innerHTML=h;});}
+function retrySync(){if(!currentUser)return;_syncStatus='syncing';updateSyncBadges();Promise.all([dbSave('items',items),dbSave('shop',shopList)]).then(function(rs){_syncStatus=rs.every(function(r){return r&&!r.error;})?'synced':'failed';if(_syncStatus==='failed')showToast('⚠️ クラウド同期失敗');updateSyncBadges();});}
 
 function dbSave(key, data) {
-  if (!currentUser) return;
-  _sb.from('user_data').upsert(
+  if (!currentUser) return Promise.resolve(null);
+  return _sb.from('user_data').upsert(
     { user_id:currentUser.id, app:_APP, key:key, data:data, updated_at:new Date().toISOString() },
     { onConflict:'user_id,app,key' }
   );
 }
 
 async function syncFromCloud() {
-  var res = await _sb.from('user_data').select('key,data').eq('user_id',currentUser.id).eq('app',_APP);
+  var res = await _sb.from('user_data').select('key,data,updated_at').eq('user_id',currentUser.id).eq('app',_APP);
   if (res.data && res.data.length > 0) {
+    var localTime = parseInt(localStorage.getItem('stockly_updated_at')||'0');
     res.data.forEach(function(row) {
-    if (row.key === 'items') { items = row.data; localStorage.setItem('stockly_items', JSON.stringify(items)); }
-    if (row.key === 'shop')  { shopList = row.data; localStorage.setItem('stockly_shop', JSON.stringify(shopList)); }
-  });
+      var cloudTime = new Date(row.updated_at).getTime();
+      if (row.key === 'items') { if(cloudTime>=localTime){items=row.data||[];localStorage.setItem('stockly_items',JSON.stringify(items));}else dbSave('items',items); }
+      if (row.key === 'shop')  { if(cloudTime>=localTime){shopList=row.data||[];localStorage.setItem('stockly_shop',JSON.stringify(shopList));}else dbSave('shop',shopList); }
+    });
+    _syncStatus = 'synced';
   } else {
-    // 初回ログイン: ローカルデータをSupabaseへアップロード
     if (items.length > 0) dbSave('items', items);
     if (shopList.length > 0) dbSave('shop', shopList);
   }
   var p = await _sb.from('profiles').select('is_pro').eq('id',currentUser.id).maybeSingle();
   if (p.data) { isPro = p.data.is_pro; localStorage.setItem('isPro', String(isPro)); }
   if (currentUser.email === 'kyouji.o@gmail.com') { isPro = true; localStorage.setItem('isPro', 'true'); }
-  renderList(); renderAlert(); updateSummary(); updateProUI(); updateShopBadge();
+  renderList(); renderAlert(); updateSummary(); updateProUI(); updateShopBadge(); updateSyncBadges();
   showToast('☁️ データを同期しました');
 }
 

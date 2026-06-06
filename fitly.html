@@ -229,6 +229,12 @@
     .ad-banner { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--border); padding:.6rem 1rem; display:flex; align-items:center; justify-content:center; gap:.5rem; z-index:40; padding-bottom:calc(.6rem + env(safe-area-inset-bottom)); }
     .ad-label { font-size:.6rem; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; }
     .ad-content { font-size:.78rem; color:var(--muted); flex:1; text-align:center; }
+    .sync-slot{margin-top:.3rem;text-align:right;min-height:1rem;}
+    .sync-badge{display:inline-flex;align-items:center;gap:.2rem;font-size:.58rem;font-weight:500;padding:.1rem .38rem;border-radius:20px;cursor:default;white-space:nowrap;}
+    .sync-local{background:rgba(148,148,184,.15);color:var(--muted);}
+    .sync-syncing{background:rgba(108,142,255,.15);color:#6c8eff;}
+    .sync-synced{background:rgba(94,207,160,.15);color:#5ecfa0;}
+    .sync-failed{background:rgba(255,107,107,.15);color:#ff6b6b;cursor:pointer;}
 
     /* Form elements */
     input, select, textarea { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:.75rem 1rem; font-size:.95rem; color:var(--text); font-family:var(--font); outline:none; }
@@ -3005,6 +3011,7 @@ function renderHistory() {
       +'<span class="history-stat">📦 <span>'+((w.totalVolume||0).toLocaleString())+'kg</span></span>'
       +'</div>'
       +'<div class="history-exercises" style="margin-top:.5rem;">'+tags+'</div>'
+      +'<div class="sync-slot"></div>'
       +'</div>';
   }).join('');
 }
@@ -3468,26 +3475,37 @@ var _sb = window.supabase.createClient(
 ,
   { auth: { flowType: 'implicit', detectSessionInUrl: true } });
 var currentUser = null;
-var _APP = 'fitly';
+var _APP = 'fitly'; var _syncStatus = 'local';
+function syncBadgeHTML(){if(!currentUser)return'<span class="sync-badge sync-local">💾 ローカル</span>';if(_syncStatus==='syncing')return'<span class="sync-badge sync-syncing">🔄 同期中</span>';if(_syncStatus==='synced')return'<span class="sync-badge sync-synced">☁️</span>';return'<span class="sync-badge sync-failed" onclick="retrySync()">⚠️ 再同期</span>';}
+function updateSyncBadges(){var h=syncBadgeHTML();document.querySelectorAll('.sync-slot').forEach(function(el){el.innerHTML=h;});}
+function retrySync(){if(!currentUser)return;_syncStatus='syncing';updateSyncBadges();Promise.all([dbSave('history',workoutHistory),dbSave('menus',savedMenus),dbSave('exSettings',exerciseSettings),dbSave('bodyweight',bodyWeightLog),dbSave('prs',personalRecords)]).then(function(rs){_syncStatus=rs.every(function(r){return r&&!r.error;})?'synced':'failed';if(_syncStatus==='failed')showToast('⚠️ クラウド同期失敗');updateSyncBadges();});}
 
 function dbSave(key, data) {
-  if (!currentUser) return;
-  _sb.from('user_data').upsert(
+  localStorage.setItem('fitly_updated_at', Date.now().toString());
+  if (!currentUser) { return Promise.resolve(null); }
+  _syncStatus = 'syncing'; updateSyncBadges();
+  return _sb.from('user_data').upsert(
     { user_id: currentUser.id, app: _APP, key: key, data: data, updated_at: new Date().toISOString() },
     { onConflict: 'user_id,app,key' }
-  );
+  ).then(function(r) {
+    if (_syncStatus !== 'synced') { _syncStatus = r && !r.error ? 'synced' : 'failed'; if(r&&r.error)showToast('⚠️ クラウド同期失敗'); updateSyncBadges(); }
+    return r;
+  });
 }
 
 async function syncFromCloud() {
-  var res = await _sb.from('user_data').select('key,data').eq('user_id', currentUser.id).eq('app', _APP);
+  var res = await _sb.from('user_data').select('key,data,updated_at').eq('user_id', currentUser.id).eq('app', _APP);
   if (res.data && res.data.length > 0) {
+    var localTime = parseInt(localStorage.getItem('fitly_updated_at')||'0');
     res.data.forEach(function(row) {
-      if (row.key === 'history')    { workoutHistory = row.data; localStorage.setItem('fitlyHistory', JSON.stringify(workoutHistory)); }
-      if (row.key === 'menus')      { savedMenus = row.data; localStorage.setItem('fitlyMenus', JSON.stringify(savedMenus)); }
-      if (row.key === 'exSettings') { exerciseSettings = row.data; localStorage.setItem('exerciseSettings', JSON.stringify(exerciseSettings)); }
-      if (row.key === 'bodyweight') { bodyWeightLog = row.data; localStorage.setItem('fitlyBodyWeight', JSON.stringify(bodyWeightLog)); }
-      if (row.key === 'prs')        { personalRecords = row.data; localStorage.setItem('fitlyPRs', JSON.stringify(personalRecords)); }
+      var cloudTime = new Date(row.updated_at).getTime();
+      if (row.key === 'history')    { if(cloudTime>=localTime){workoutHistory=row.data||[];localStorage.setItem('fitlyHistory',JSON.stringify(workoutHistory));}else dbSave('history',workoutHistory); }
+      if (row.key === 'menus')      { if(cloudTime>=localTime){savedMenus=row.data||[];localStorage.setItem('fitlyMenus',JSON.stringify(savedMenus));}else dbSave('menus',savedMenus); }
+      if (row.key === 'exSettings') { if(cloudTime>=localTime){exerciseSettings=row.data||[];localStorage.setItem('exerciseSettings',JSON.stringify(exerciseSettings));}else dbSave('exSettings',exerciseSettings); }
+      if (row.key === 'bodyweight') { if(cloudTime>=localTime){bodyWeightLog=row.data||[];localStorage.setItem('fitlyBodyWeight',JSON.stringify(bodyWeightLog));}else dbSave('bodyweight',bodyWeightLog); }
+      if (row.key === 'prs')        { if(cloudTime>=localTime){personalRecords=row.data||[];localStorage.setItem('fitlyPRs',JSON.stringify(personalRecords));}else dbSave('prs',personalRecords); }
     });
+    _syncStatus = 'synced';
   } else if (res.data && res.data.length === 0) {
     if (workoutHistory.length > 0) dbSave('history', workoutHistory);
     if (savedMenus.length > 0) dbSave('menus', savedMenus);
@@ -3498,7 +3516,8 @@ async function syncFromCloud() {
   var p = await _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle();
   if (p.data) { isPro = p.data.is_pro; localStorage.setItem('isPro', String(isPro)); }
   if (currentUser.email === 'kyouji.o@gmail.com') { isPro = true; localStorage.setItem('isPro', 'true'); }
-  renderHistory(); renderMenuList(); renderAnalysis(); updateProUI();
+  _syncStatus = 'synced';
+  renderHistory(); renderMenuList(); renderAnalysis(); updateProUI(); updateSyncBadges();
   showToast('☁️ データを同期しました');
 }
 
