@@ -987,17 +987,19 @@ async function saveTxn() {
 async function deleteTxn() {
   if (!editTxnId || !confirm('この記録を削除しますか？')) return;
   var del = transactions.find(function(t){ return t.id === editTxnId; });
-  // 残高を元に戻す
   if (del && del.payment_method_id) {
     var undoDelta = del.is_income ? -del.amount : del.amount;
     updateCashBalance(del.payment_method_id, undoDelta);
   }
-  transactions = transactions.filter(function(t){ return t.id !== editTxnId; });
-  if (currentUser) await _sb.from('kakely_transactions').delete().eq('id', editTxnId);
+  var delId = editTxnId;
+  transactions = transactions.filter(function(t){ return t.id !== delId; });
   saveMonthCache();
   closeModal('txnModal');
   renderAll();
   showToast('削除しました');
+  if (currentUser && !String(delId).startsWith('tmp_') && !String(delId).startsWith('temp_')) {
+    await _sb.from('kakely_transactions').delete().eq('id', delId);
+  }
 }
 
 // ── Category Modal ──
@@ -1138,23 +1140,25 @@ function updatePayBalanceHint() {
   hint.textContent = (isLow ? '⚠️ 残高不足注意：' : '💴 現在の残高：') + '¥' + p.balance.toLocaleString();
 }
 
-function quickDeleteTxn(id, event) {
+async function quickDeleteTxn(id, event) {
   event.stopPropagation();
   if (!confirm('この記録を削除しますか？')) return;
   var del = transactions.find(function(t){ return t.id===id; });
   if (del && del.payment_method_id) updateCashBalance(del.payment_method_id, del.is_income ? -del.amount : del.amount);
   transactions = transactions.filter(function(t){ return t.id!==id; });
-  if (currentUser) _sb.from('kakely_transactions').delete().eq('id', id);
   saveMonthCache(); renderAll(); showToast('削除しました');
+  if (currentUser && !String(id).startsWith('tmp_') && !String(id).startsWith('temp_')) {
+    await _sb.from('kakely_transactions').delete().eq('id', id);
+  }
 }
 
-function deleteGroupTxns(groupId, event) {
+async function deleteGroupTxns(groupId, event) {
   event.stopPropagation();
   var grp = transactions.filter(function(t){ return t.group_id===groupId; });
   if (!grp.length || !confirm('グループ全体（' + grp.length + '件）を削除しますか？')) return;
   transactions = transactions.filter(function(t){ return t.group_id!==groupId; });
-  if (currentUser) _sb.from('kakely_transactions').delete().eq('group_id', groupId);
   saveMonthCache(); renderAll(); showToast(grp.length + '件を削除しました');
+  if (currentUser) await _sb.from('kakely_transactions').delete().eq('group_id', groupId);
 }
 
 // ── 残高管理 ──
@@ -1436,13 +1440,18 @@ async function saveGroupTxns() {
 
   // Supabase保存
   if (currentUser) {
-    await _sb.from('kakely_transactions').insert(
+    var ins = await _sb.from('kakely_transactions').insert(
       items.map(function(item) {
         return { user_id: currentUser.id, amount: item.amount, date: date, is_income: false,
           category_id: item.category_id, payment_method_id: payId, memo: null, group_id: groupId };
       })
-    );
-    await fetchMonthTransactions();
+    ).select();
+    if (ins.data && ins.data.length) {
+      // tempIDをSupabaseの実UUIDに置き換え（fetchMonthTransactionsは呼ばない）
+      transactions = transactions.filter(function(t){ return t.group_id !== groupId; });
+      ins.data.slice().reverse().forEach(function(t){ transactions.unshift(t); });
+      saveMonthCache();
+    }
   }
 
   closeModal('groupModal');
@@ -1632,26 +1641,33 @@ async function autoAddFixedCosts() {
   var todayStr = localDateStr(today);
   var todayY = today.getFullYear();
   var todayM = today.getMonth();
+  var isCurMonth = (todayY === viewYear && todayM === viewMonth);
   var cacheKey = 'kakely_txn_' + todayY + '_' + (todayM + 1);
-  var todayTxns = JSON.parse(localStorage.getItem(cacheKey) || '[]');
   var added = 0;
   for (var i = 0; i < fixedCosts.length; i++) {
     var fc = fixedCosts[i];
     if (fc.day !== todayDay) continue;
     var memoKey = '固定費:' + fc.id;
-    var already = todayTxns.some(function(t){ return t.memo && t.memo.indexOf(memoKey) !== -1; });
-    if (already) continue;
+    // 重複チェック: 表示中の月はtransactions、それ以外はlocalStorageで確認
+    var checkArr = isCurMonth ? transactions : JSON.parse(localStorage.getItem(cacheKey) || '[]');
+    if (checkArr.some(function(t){ return t.memo && t.memo.indexOf(memoKey) !== -1; })) continue;
     var payload = { amount:fc.amount, date:todayStr, is_income:false, category_id:fc.category_id||null, payment_method_id:fc.payment_method_id||null, memo:memoKey };
     var newTxn = Object.assign({ id:'tmp_fix_'+Date.now()+'_'+i }, payload);
-    todayTxns.unshift(newTxn); added++;
     if (currentUser) {
       var res = await _sb.from('kakely_transactions').insert(Object.assign({ user_id:currentUser.id }, payload)).select().single();
-      if (res.data) newTxn.id = res.data.id;
+      if (res.data) newTxn = res.data;
     }
+    if (isCurMonth) {
+      transactions.unshift(newTxn);
+    } else {
+      var cached = JSON.parse(localStorage.getItem(cacheKey) || '[]');
+      cached.unshift(newTxn);
+      localStorage.setItem(cacheKey, JSON.stringify(cached));
+    }
+    added++;
   }
   if (added > 0) {
-    localStorage.setItem(cacheKey, JSON.stringify(todayTxns));
-    if (todayY === viewYear && todayM === viewMonth) transactions = todayTxns;
+    if (isCurMonth) saveMonthCache();
     renderAll();
     showToast('🏠 固定費 ' + added + '件を自動追加しました');
   }
