@@ -1531,12 +1531,14 @@ var _sb = supabase.createClient(
 ,
   { auth: { flowType: 'implicit', detectSessionInUrl: true } });
 var currentUser = null;
-var _syncing = false;
+var _APP = 'kakely'; var _syncing = false;
 function syncBadgeHTML(){if(!currentUser)return'<span class="sync-badge sync-local">💾 ローカル</span>';if(_syncing)return'<span class="sync-badge sync-syncing">🔄 同期中</span>';return'<span class="sync-badge sync-synced">☁️</span>';}
 function updateSyncBadges(){var h=syncBadgeHTML();document.querySelectorAll('.sync-slot').forEach(function(el){el.innerHTML=h;});}
+function logAction(action){if(!currentUser)return;_sb.from('app_logs').insert({user_id:currentUser.id,app:_APP,action:action});}
 
 async function syncFromCloud() {
   if (!currentUser || _syncing) return;
+  logAction('open');
   _syncing = true; updateSyncBadges();
 
   // Categories

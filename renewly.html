@@ -566,7 +566,9 @@ function syncBadgeHTML(){if(!currentUser)return'<span class="sync-badge sync-loc
 function updateSyncBadges(){var h=syncBadgeHTML();document.querySelectorAll('.sync-slot').forEach(function(el){el.innerHTML=h;});}
 function retrySync(){if(!currentUser)return;_syncStatus='syncing';updateSyncBadges();dbSave('items',items).then(function(r){_syncStatus=r&&!r.error?'synced':'failed';if(r&&r.error)showToast('⚠️ クラウド同期失敗');updateSyncBadges();});}
 function dbSave(key, data) { if (!currentUser) return Promise.resolve(null); return _sb.from('user_data').upsert({ user_id:currentUser.id, app:_APP, key:key, data:data, updated_at:new Date().toISOString() },{ onConflict:'user_id,app,key' }); }
+function logAction(action){if(!currentUser)return;_sb.from('app_logs').insert({user_id:currentUser.id,app:_APP,action:action});}
 async function syncFromCloud() {
+  logAction('open');
   var res = await _sb.from('user_data').select('key,data,updated_at').eq('user_id',currentUser.id).eq('app',_APP);
   if (res.data && res.data.length > 0) {
     var localTime = parseInt(localStorage.getItem('renewly_updated_at')||'0');

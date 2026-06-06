@@ -292,6 +292,12 @@
       color: var(--muted);
     }
     .footer-admin { font-size:.62rem; color:rgba(106,104,128,.3); background:none; border:none; font-family:var(--font); cursor:pointer; margin-top:.4rem; display:block; width:100%; }
+    .admin-dash-btn { background:rgba(155,109,255,.12); border:1px solid rgba(155,109,255,.25); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:#c89aff; cursor:pointer; font-family:var(--font); }
+    .admin-stat-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.4rem; margin-bottom:1rem; }
+    .admin-stat { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:.65rem .5rem; text-align:center; }
+    .admin-stat-label { font-size:.65rem; color:var(--muted); margin-bottom:.2rem; }
+    .admin-stat-val { font-size:1.1rem; font-weight:600; }
+    .admin-rank-row { display:flex; justify-content:space-between; align-items:center; padding:.45rem 0; border-top:1px solid var(--border); }
 
     /* ── Animation ── */
     @keyframes fadeUp {
@@ -312,6 +318,7 @@
 
   <div class="header-row">
     <button class="edit-dash-btn" onclick="openBentoEdit()">⚙️ 編集</button>
+    <button class="admin-dash-btn" id="adminDashBtn" onclick="openAdminDash()" style="display:none">📊 管理</button>
     <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
   </div>
 
@@ -483,6 +490,16 @@
     </div>
   </footer>
 
+  <!-- Admin Dashboard Modal -->
+  <div class="modal-overlay" id="adminModal" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="modal" style="max-height:85vh;overflow-y:auto;padding-bottom:2.5rem;">
+      <div class="modal-handle"></div>
+      <p class="modal-title">📊 管理者ダッシュボード</p>
+      <div id="adminStats"><p style="color:var(--muted);text-align:center;padding:2rem 0">読み込み中...</p></div>
+      <button class="btn-cancel" onclick="document.getElementById('adminModal').classList.remove('show')">閉じる</button>
+    </div>
+  </div>
+
   <!-- Backup Modal -->
   <div class="modal-overlay" id="backupModal" onclick="if(event.target===this)closeBackupModal()">
     <div class="modal">
@@ -533,6 +550,39 @@
     var currentUser = null;
     var isPro = localStorage.getItem('isPro') === 'true';
     var ADMIN_CODES = ['ADMIN2024', 'MYLIFETOOLS'];
+    var ADMIN_EMAILS = ['kyouji.o.2@gmail.com', 'kyouji.o@gmail.com'];
+    function isAdmin() { return currentUser && ADMIN_EMAILS.indexOf(currentUser.email) !== -1; }
+    function updateAdminBtn() { var b = document.getElementById('adminDashBtn'); if (b) b.style.display = isAdmin() ? '' : 'none'; }
+    function openAdminDash() { document.getElementById('adminModal').classList.add('show'); loadAdminStats(); }
+    async function loadAdminStats() {
+      var el = document.getElementById('adminStats');
+      el.innerHTML = '<p style="color:var(--muted);text-align:center;padding:2rem 0">読み込み中...</p>';
+      try {
+        var res = await _sb.rpc('get_admin_stats');
+        if (res.error) throw new Error(res.error.message);
+        var s = res.data;
+        var appEmoji = {kakely:'💰',subly:'📱',medly:'💊',fitly:'💪',stockly:'📦',bookly:'📚',cookly:'🍳',renewly:'🔔',readly:'📝',learnly:'🎓',ownly:'🏠'};
+        function sc(label, val) {
+          return '<div class="admin-stat"><p class="admin-stat-label">'+label+'</p><p class="admin-stat-val">'+val+'</p></div>';
+        }
+        var ranking = (s.app_ranking || []).map(function(r, i) {
+          return '<div class="admin-rank-row">'
+            + '<span style="font-size:.85rem">' + (i+1) + '.&nbsp;' + (appEmoji[r.app]||'📱') + ' ' + r.app.charAt(0).toUpperCase() + r.app.slice(1) + '</span>'
+            + '<span style="font-size:.78rem;color:var(--muted)">' + r.users + '人 · ' + r.opens + '回</span>'
+            + '</div>';
+        }).join('');
+        var freeCount = (s.free_count !== undefined) ? s.free_count : (s.total_users - s.pro_count);
+        el.innerHTML =
+          '<p style="font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem">ユーザー数</p>'
+          + '<div class="admin-stat-grid">' + sc('👥 総数', s.total_users) + sc('💎 Pro', s.pro_count) + sc('🆓 無料', freeCount) + '</div>'
+          + '<p style="font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem">アクティブユーザー（ログインして起動）</p>'
+          + '<div class="admin-stat-grid">' + sc('📅 今日', s.today_active) + sc('📆 今週', s.week_active) + sc('🗓 今月', s.month_active) + '</div>'
+          + '<p style="font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem">アプリ別ランキング（ユニークユーザー数 / 起動回数）</p>'
+          + (ranking || '<p style="color:var(--muted);font-size:.82rem;text-align:center;padding:.75rem 0">まだデータがありません</p>');
+      } catch(e) {
+        el.innerHTML = '<p style="color:#ff7c6e;font-size:.85rem;text-align:center;padding:1rem 0">エラー: ' + e.message + '</p>';
+      }
+    }
 
     function updateProUI() {
       var card = document.getElementById('proCard');
@@ -628,6 +678,7 @@
       if (currentUser) { btn.textContent = currentUser.email.split('@')[0]; btn.classList.add('logged-in'); }
       else { btn.textContent = 'ログイン'; btn.classList.remove('logged-in'); }
       var n = document.getElementById('loginNotice'); if (n) n.style.display = currentUser ? 'none' : 'flex';
+      updateAdminBtn();
     }
 
     _sb.auth.onAuthStateChange(function(event, session) {

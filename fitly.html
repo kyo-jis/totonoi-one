@@ -3492,8 +3492,10 @@ function dbSave(key, data) {
     return r;
   });
 }
+function logAction(action){if(!currentUser)return;_sb.from('app_logs').insert({user_id:currentUser.id,app:_APP,action:action});}
 
 async function syncFromCloud() {
+  logAction('open');
   var res = await _sb.from('user_data').select('key,data,updated_at').eq('user_id', currentUser.id).eq('app', _APP);
   if (res.data && res.data.length > 0) {
     var localTime = parseInt(localStorage.getItem('fitly_updated_at')||'0');

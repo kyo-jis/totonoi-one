@@ -1443,7 +1443,9 @@ function dbSave(key,data){
     {onConflict:'user_id,app,key'}
   );
 }
+function logAction(action){if(!currentUser)return;_sb.from('app_logs').insert({user_id:currentUser.id,app:_APP,action:action});}
 async function syncFromCloud(){
+  logAction('open');
   var res=await _sb.from('user_data').select('key,data').eq('user_id',currentUser.id).eq('app',_APP);
   if (res.data && res.data.length > 0) {
     res.data.forEach(function(row){

@@ -1062,7 +1062,7 @@ var _sb = window.supabase.createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZva25wbXZwZ2Jrd2dwbWxnenJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyODc4NTksImV4cCI6MjA5NTg2Mzg1OX0.6KP9_m4Q6x0hs7IsinNhZsODmZCjrvAL1CxtbQ32-80'
 ,
   { auth: { flowType: 'implicit', detectSessionInUrl: true } });
-var currentUser = null; var _syncStatus = 'local';
+var currentUser = null; var _APP = 'learnly'; var _syncStatus = 'local';
 function syncBadgeHTML(){if(!currentUser)return'<span class="sync-badge sync-local">💾 ローカル</span>';if(_syncStatus==='syncing')return'<span class="sync-badge sync-syncing">🔄 同期中</span>';if(_syncStatus==='synced')return'<span class="sync-badge sync-synced">☁️</span>';return'<span class="sync-badge sync-failed" onclick="retrySync()">⚠️ 再同期</span>';}
 function updateSyncBadges(){var h=syncBadgeHTML();document.querySelectorAll('.sync-slot').forEach(function(el){el.innerHTML=h;});}
 function retrySync(){if(!currentUser)return;_syncStatus='syncing';updateSyncBadges();Promise.all([dbSave('subjects',subjects),dbSave('sessions',sessions)]).then(function(rs){_syncStatus=rs.every(function(r){return r&&!r.error;})?'synced':'failed';if(_syncStatus==='failed')showToast('⚠️ クラウド同期失敗');updateSyncBadges();});}
@@ -1071,8 +1071,10 @@ function dbSave(key, data) {
   if (!currentUser) return Promise.resolve(null);
   return _sb.from('user_data').upsert({ user_id:currentUser.id, app:'learnly', key:key, data:data, updated_at:new Date().toISOString() }, { onConflict:'user_id,app,key' });
 }
+function logAction(action){if(!currentUser)return;_sb.from('app_logs').insert({user_id:currentUser.id,app:_APP,action:action});}
 
 async function syncFromCloud() {
+  logAction('open');
   var res = await _sb.from('user_data').select('key,data,updated_at').eq('user_id',currentUser.id).eq('app','learnly');
   if (res.data && res.data.length > 0) {
     var localTime = parseInt(localStorage.getItem('learnly_updated_at')||'0');
