@@ -90,6 +90,12 @@
     .preset-chip { padding: .4rem .75rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; font-size: .78rem; color: var(--muted); cursor: pointer; display: flex; align-items: center; gap: .3rem; white-space: nowrap; font-family: var(--font); }
     .preset-chip:active { opacity: .7; }
     .fixed-day-badge { font-size: .68rem; color: var(--accent); background: rgba(245,166,35,.1); border-radius: 10px; padding: .15rem .5rem; margin-left: .4rem; }
+    .balance-badge { display: inline-flex; align-items: center; gap: .2rem; font-size: .62rem; border-radius: 10px; padding: .15rem .5rem; margin-left: .4rem; font-weight: 500; vertical-align: middle; }
+    .balance-badge.ok  { background: rgba(94,207,160,.15);  color: var(--green); }
+    .balance-badge.low { background: rgba(255,107,107,.15); color: var(--red); }
+    .balance-hint { font-size: .75rem; padding: .45rem .8rem; border-radius: 8px; margin-top: .4rem; }
+    .balance-hint.ok  { background: rgba(94,207,160,.08);  color: var(--green); border: 1px solid rgba(94,207,160,.2); }
+    .balance-hint.low { background: rgba(255,107,107,.08); color: var(--red);   border: 1px solid rgba(255,107,107,.25); }
     .empty-state { text-align: center; padding: 3rem 2rem; color: var(--muted); }
     .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: .75rem; }
     .empty-state p { font-size: .88rem; line-height: 1.6; }
@@ -331,9 +337,10 @@
     </div>
     <div class="form-group">
       <label class="form-label">支払い方法</label>
-      <select id="fPayMethod">
+      <select id="fPayMethod" onchange="updatePayBalanceHint()">
         <option value="">未設定</option>
       </select>
+      <div id="payBalanceHint" class="balance-hint" style="display:none"></div>
     </div>
     <div class="form-group">
       <label class="form-label">メモ（任意）</label>
@@ -849,10 +856,19 @@ function renderSettings() {
   var PAY_TYPE = { cash:'現金', card:'クレカ', emoney:'電子マネー', bank:'銀行口座' };
   var payEl = document.getElementById('payList');
   payEl.innerHTML = paymentMethods.map(function(p) {
+    var isCash = p.type === 'cash';
+    var hasBalance = isCash && p.balance != null;
+    var isLow = hasBalance && p.balance <= 1000;
+    var badge = hasBalance
+      ? '<span class="balance-badge ' + (isLow ? 'low' : 'ok') + '">'
+        + (isLow ? '⚠️' : '💰') + ' 残高管理中</span>'
+      : '';
     return '<div class="settings-row">'
       + '<span class="settings-icon">' + p.icon + '</span>'
-      + '<div><p class="settings-name">' + p.name + '</p>'
-      + '<p class="settings-sub">' + (PAY_TYPE[p.type]||p.type) + (p.withdrawal_date ? ' · ' + p.withdrawal_date + '日引き落とし' : '') + (p.type==='cash'&&p.balance!=null ? ' · 残高¥'+p.balance.toLocaleString() : '') + '</p></div>'
+      + '<div style="flex:1"><p class="settings-name">' + esc(p.name) + badge + '</p>'
+      + '<p class="settings-sub">' + (PAY_TYPE[p.type]||p.type)
+      + (p.withdrawal_date ? ' · ' + p.withdrawal_date + '日引き落とし' : '')
+      + (hasBalance ? '　¥' + p.balance.toLocaleString() : '') + '</p></div>'
       + '<button class="btn-sm-icon" onclick="openPayModal(\'' + p.id + '\')">✏️</button></div>';
   }).join('');
 }
@@ -899,6 +915,7 @@ function openTxnModal(id) {
     document.getElementById('fMemo').value = '';
     sel.value = '';
   }
+  updatePayBalanceHint();
   document.getElementById('txnModal').classList.add('show');
   setTimeout(function(){ document.getElementById('fAmount').focus(); }, 300);
 }
@@ -1106,6 +1123,19 @@ async function deletePay() {
   closeModal('payModal');
   renderSettings();
   showToast('削除しました');
+}
+
+function updatePayBalanceHint() {
+  var hint = document.getElementById('payBalanceHint');
+  if (!hint) return;
+  var payId = document.getElementById('fPayMethod').value;
+  if (!payId) { hint.style.display = 'none'; return; }
+  var p = paymentMethods.find(function(x){ return x.id === payId; });
+  if (!p || p.type !== 'cash' || p.balance == null) { hint.style.display = 'none'; return; }
+  var isLow = p.balance <= 1000;
+  hint.className = 'balance-hint ' + (isLow ? 'low' : 'ok');
+  hint.style.display = '';
+  hint.textContent = (isLow ? '⚠️ 残高不足注意：' : '💴 現在の残高：') + '¥' + p.balance.toLocaleString();
 }
 
 function quickDeleteTxn(id, event) {
