@@ -92,6 +92,11 @@
     .status-badge.backlog   { background:rgba(148,148,184,.2); color:var(--muted); }
     .status-badge.reading   { background:rgba(139,92,246,.2); color:var(--accent); }
     .status-badge.completed { background:rgba(94,207,160,.2); color:var(--green); }
+    .series-status-badge { font-size:.58rem; font-weight:500; padding:.1rem .38rem; border-radius:20px; white-space:nowrap; }
+    .series-status-badge.ongoing { background:rgba(108,142,255,.13); color:var(--blue); }
+    .series-status-badge.finished { background:rgba(94,207,160,.15); color:var(--green); }
+    .next-vol-line { font-size:.68rem; color:var(--muted); margin-top:.25rem; display:flex; align-items:center; gap:.3rem; }
+    .next-vol-line.soon { color:var(--orange); font-weight:500; }
 
     .format-badge { font-size:.6rem; padding:.1rem .38rem; border-radius:6px; font-weight:500; }
     .fmt-physical { background:rgba(94,207,160,.15); color:var(--green); }
@@ -473,6 +478,17 @@
           <div class="form-group"><label>読了巻数</label><input type="number" id="fReadVols" placeholder="0" min="0" step="1" style="width:100%;"></div>
           <div class="form-group"><label>全巻数（0=連載中）</label><input type="number" id="fTotalVols" placeholder="0" min="0" step="1" style="width:100%;"></div>
         </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:.5rem;">
+          <input type="checkbox" id="fIsCompleted" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">
+          <label for="fIsCompleted" style="font-size:.82rem;cursor:pointer;">完結済み</label>
+        </div>
+        <div class="form-group">
+          <label>次巻発売日（任意）</label>
+          <div style="display:flex;gap:.5rem;align-items:center;">
+            <input type="date" id="fNextVolDate" style="flex:1;">
+            <button type="button" onclick="searchNextVol()" style="white-space:nowrap;padding:.48rem .75rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:.78rem;cursor:pointer;font-family:var(--font);flex-shrink:0;">🔍 調べる</button>
+          </div>
+        </div>
       </div>
       <!-- 単巻用フィールド -->
       <div id="singleFields" style="display:none;">
@@ -534,6 +550,12 @@ var CAT_ICONS  = { manga:'📚', light_novel:'✨', novel:'📝', reference:'�
 var FORMAT_LABELS = { physical:'📚 物理本', digital:'📱 電子書籍', scanned:'🗂 自炊' };
 var FORMAT_CLS    = { physical:'fmt-physical', digital:'fmt-digital', scanned:'fmt-scanned' };
 
+function parseLocalDate(str) {
+  if (!str) return null;
+  var p = str.split('-');
+  return new Date(+p[0], +p[1]-1, +p[2]);
+}
+
 var items = JSON.parse(localStorage.getItem('bookly_items') || '[]');
 var editId = null;
 var currentCat = 'all';
@@ -584,6 +606,24 @@ function renderCard(item) {
     : (item.icon || CAT_ICONS[item.category] || '📖');
   var statusBadge = '<span class="status-badge ' + item.status + '">' + {backlog:'積読',reading:'読中',completed:'読了'}[item.status] + '</span>';
   var formatBadge = item.format && FORMAT_CLS[item.format] ? ' <span class="format-badge ' + FORMAT_CLS[item.format] + '">' + FORMAT_LABELS[item.format] + '</span>' : '';
+  var seriesBadge = '';
+  if (item.type === 'series') {
+    seriesBadge = item.isCompleted
+      ? ' <span class="series-status-badge finished">完結</span>'
+      : ' <span class="series-status-badge ongoing">連載中</span>';
+  }
+  var nextVolLine = '';
+  if (item.type === 'series' && item.nextVolDate && !item.isCompleted) {
+    var nvd = parseLocalDate(item.nextVolDate);
+    var today = new Date(); today.setHours(0,0,0,0);
+    var daysUntil = nvd ? Math.round((nvd - today) / (1000*60*60*24)) : null;
+    var isSoon = daysUntil !== null && daysUntil >= 0 && daysUntil <= 7;
+    var nvParts = item.nextVolDate.split('-');
+    var nvLabel = parseInt(nvParts[1]) + '月' + parseInt(nvParts[2]) + '日発売';
+    if (isSoon) nvLabel += daysUntil === 0 ? '（今日！）' : '（あと' + daysUntil + '日）';
+    nextVolLine = '<p class="next-vol-line' + (isSoon ? ' soon' : '') + '">'
+      + (isSoon ? '🔔' : '📅') + ' 次巻：' + nvLabel + '</p>';
+  }
   var progressBar = p.pct >= 0 ? '<div class="progress-bar-bg"><div class="progress-bar-fill' + (item.status==='completed'?' done':'') + '" style="width:' + p.pct + '%"></div></div>' : '';
   var volLabel = item.type === 'single'
     ? (p.pct >= 0 ? (item.readPages||0) + '/' + (item.totalPages||0) + 'P' : (item.readPages||0) + 'P')
@@ -598,9 +638,10 @@ function renderCard(item) {
       + '<div class="book-info">'
         + '<p class="book-name">' + item.name + '</p>'
         + (item.author ? '<p class="book-author">' + item.author + '</p>' : '')
-        + '<div class="book-meta">' + (CAT_LABELS[item.category]||'') + ' ' + statusBadge + formatBadge + '</div>'
+        + '<div class="book-meta">' + (CAT_LABELS[item.category]||'') + ' ' + statusBadge + formatBadge + seriesBadge + '</div>'
         + (ratingHtml ? '<div style="margin-top:.3rem;">' + ratingHtml + '</div>' : '')
         + dateLine
+        + nextVolLine
       + '</div>'
       + '<div class="book-right">'
         + '<p class="book-progress-text" id="vol-display-' + item.id + '" style="cursor:pointer;" onclick="startQuickEdit(\'' + item.id + '\')">' + (item.type==='single' ? (item.readPages||0)+'P' : (item.readVols||0)+'巻') + '</p>'
@@ -804,6 +845,7 @@ function openModal() {
   document.getElementById('fCategory').value='manga';
   document.getElementById('fFormat').value='';
   document.getElementById('fReadVols').value='0'; document.getElementById('fTotalVols').value='0';
+  document.getElementById('fIsCompleted').checked=false; document.getElementById('fNextVolDate').value='';
   document.getElementById('fReadPages').value='0'; document.getElementById('fTotalPages').value='';
   document.getElementById('fStatus').value='backlog';
   document.getElementById('fCompletedDate').value='';
@@ -861,6 +903,8 @@ function editItem(id) {
     document.getElementById('singleFields').style.display='none';
     document.getElementById('typeSeriesBtn').classList.add('active');
     document.getElementById('typeSingleBtn').classList.remove('active');
+    document.getElementById('fIsCompleted').checked=!!item.isCompleted;
+    document.getElementById('fNextVolDate').value=item.nextVolDate||'';
   }
   document.querySelectorAll('.star-input-btn').forEach(function(b,i){b.classList.toggle('on',i<currentRating);});
   switchModalTab('manual', document.querySelectorAll('.modal-tab')[3]);
@@ -882,6 +926,8 @@ function saveItem() {
   if (currentBookType==='single' && totalPages>0 && readPages>=totalPages) { status='completed'; readPages=totalPages; }
   var completedDate=document.getElementById('fCompletedDate').value;
   if (status==='completed' && !completedDate) completedDate=new Date().toISOString().split('T')[0];
+  var isCompleted = currentBookType==='series' ? document.getElementById('fIsCompleted').checked : false;
+  var nextVolDate = currentBookType==='series' ? document.getElementById('fNextVolDate').value : '';
   var entry={
     id:editId||Date.now().toString(), name:name,
     author:document.getElementById('fAuthor').value.trim(),
@@ -893,6 +939,8 @@ function saveItem() {
     readPages:readPages, totalPages:totalPages,
     status:status, rating:currentRating,
     completedDate:completedDate,
+    isCompleted:isCompleted,
+    nextVolDate:nextVolDate,
     memo:document.getElementById('fMemo').value.trim(),
     addedDate:prev.addedDate||new Date().toISOString().split('T')[0]
   };
@@ -901,6 +949,13 @@ function saveItem() {
   else items.push(entry);
   persist(); closeModal(); renderAll();
   if (!editId) showToast('✅ 登録しました: ' + name);
+}
+
+function searchNextVol() {
+  var name = document.getElementById('fName').value.trim();
+  if (!name && editId) name = (items.find(function(x){ return x.id===editId; })||{}).name||'';
+  if (!name) { showToast('タイトルを入力してください'); return; }
+  window.open('https://www.google.com/search?q=' + encodeURIComponent(name + ' 次巻 発売日'), '_blank');
 }
 
 function deleteItem(id) {
