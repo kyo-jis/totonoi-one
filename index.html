@@ -560,6 +560,7 @@
       try {
         var res = await _sb.rpc('get_admin_stats');
         if (res.error) throw new Error(res.error.message);
+        if (!res.data) throw new Error('データが取得できませんでした（app_logsテーブルが未作成の可能性があります）');
         var s = res.data;
         var appEmoji = {kakely:'💰',subly:'📱',medly:'💊',fitly:'💪',stockly:'📦',bookly:'📚',cookly:'🍳',renewly:'🔔',readly:'📝',learnly:'🎓',ownly:'🏠'};
         function sc(label, val) {
@@ -580,7 +581,10 @@
           + '<p style="font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.35rem">アプリ別ランキング（ユニークユーザー数 / 起動回数）</p>'
           + (ranking || '<p style="color:var(--muted);font-size:.82rem;text-align:center;padding:.75rem 0">まだデータがありません</p>');
       } catch(e) {
-        el.innerHTML = '<p style="color:#ff7c6e;font-size:.85rem;text-align:center;padding:1rem 0">エラー: ' + e.message + '</p>';
+        var msg = e.message || '不明なエラー';
+        var hint = msg.includes('does not exist') || msg.includes('未作成') ? '<br><span style="font-size:.75rem;color:var(--muted)">Supabaseでapp_logs.sqlを実行してください</span>' : '';
+        el.innerHTML = '<p style="color:#ff7c6e;font-size:.85rem;text-align:center;padding:1rem 0">エラー: ' + msg + hint + '</p>'
+          + '<p style="text-align:center"><button onclick="loadAdminStats()" style="background:rgba(155,109,255,.15);border:1px solid rgba(155,109,255,.3);border-radius:8px;padding:.4rem 1rem;font-size:.78rem;color:#c89aff;cursor:pointer;font-family:var(--font)">再試行</button></p>';
       }
     }
 
