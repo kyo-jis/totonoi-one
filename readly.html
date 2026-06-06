@@ -30,6 +30,7 @@
     .back-link { font-size:.75rem; color:var(--muted); text-decoration:none; letter-spacing:.1em; text-transform:uppercase; display:inline-flex; align-items:center; gap:.4rem; }
     .app-title { font-size:1.6rem; font-weight:500; letter-spacing:-.02em; }
     .app-title span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
+    .app-subtitle { font-size:.72rem; color:var(--muted); margin-top:.15rem; letter-spacing:.05em; }
     .auth-chip { background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); transition:all .2s; white-space:nowrap; }
     .auth-chip.logged-in { border-color:var(--accent); color:var(--accent); }
     /* Login Notice */
@@ -130,6 +131,7 @@
     <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
   </div>
   <h1 class="app-title">Read<span>ly</span></h1>
+  <p class="app-subtitle">メモ・日記</p>
 </div>
 <div id="loginNotice" class="login-notice" onclick="openAuthModal()" style="display:none">
   <span style="font-size:1rem">&#x2601;&#xFE0F;</span>

@@ -346,7 +346,7 @@
     <a class="bc medly" href="medly.html">
       <div>
         <span class="bc-icon">💊</span>
-        <span class="bc-tag">サプリ・薬</span>
+        <span class="bc-tag">サプリ・薬管理</span>
         <p class="bc-name">Medly</p>
         <p class="bc-desc">在庫・服用・相性を管理</p>
       </div>
@@ -356,7 +356,7 @@
     <a class="bc fitly" href="fitly.html">
       <div>
         <span class="bc-icon">🏋️</span>
-        <span class="bc-tag">ワークアウト記録</span>
+        <span class="bc-tag">トレーニング記録</span>
         <p class="bc-name">Fitly</p>
         <p class="bc-desc">筋トレ・有酸素を記録</p>
       </div>
@@ -378,7 +378,7 @@
     <a class="bc learnly" href="learnly.html">
       <div>
         <span class="bc-icon">📚</span>
-        <span class="bc-tag">スタディプランナー</span>
+        <span class="bc-tag">学習プランナー</span>
         <p class="bc-name">Learnly</p>
         <p class="bc-desc">科目別タイマーで学習を記録</p>
       </div>
@@ -388,7 +388,7 @@
     <a class="bc stockly" href="stockly.html">
       <div>
         <span class="bc-icon">📦</span>
-        <span class="bc-tag">備蓄・在庫</span>
+        <span class="bc-tag">在庫・備蓄管理</span>
         <p class="bc-name">Stockly</p>
         <p class="bc-desc">備蓄品の在庫を管理</p>
       </div>
@@ -409,7 +409,7 @@
     <a class="bc bookly" href="bookly.html">
       <div>
         <span class="bc-icon">📚</span>
-        <span class="bc-tag">本・読書管理</span>
+        <span class="bc-tag">読書管理</span>
         <p class="bc-name">Bookly</p>
         <p class="bc-desc">漫画・小説・参考書の読書記録</p>
       </div>
@@ -663,19 +663,19 @@
     updateProUI();
 
     // ── Bento Customization ──
-    var APP_KEYS = ['subly','medly','fitly','stockly','cookly','learnly','renewly','bookly','readly','ownly','kakely'];
+    var APP_KEYS = ['kakely','subly','medly','fitly','stockly','bookly','cookly','renewly','readly','learnly','ownly'];
     var APP_META = {
-      subly:   { name:'Subly',   icon:'💳', tag:'サブスク管理',     soon:false },
-      medly:   { name:'Medly',   icon:'💊', tag:'サプリ・薬',       soon:false },
-      fitly:   { name:'Fitly',   icon:'🏋️', tag:'ワークアウト記録', soon:false },
-      stockly: { name:'Stockly', icon:'📦', tag:'備蓄・在庫',       soon:false },
-      cookly:  { name:'Cookly',  icon:'🍳', tag:'レシピ管理',       soon:false },
-      learnly: { name:'Learnly', icon:'📚', tag:'学習記録',         soon:false },
-      renewly: { name:'Renewly', icon:'🔄', tag:'期限管理',         soon:false },
-      bookly:  { name:'Bookly',  icon:'📚', tag:'本・読書管理',     soon:false },
-      readly:  { name:'Readly',  icon:'📝', tag:'メモ・日記',       soon:false },
-      ownly:   { name:'Ownly',   icon:'🏠', tag:'持ち物管理',       soon:false },
-      kakely:  { name:'Kakely',  icon:'💰', tag:'家計簿',           soon:false },
+      subly:   { name:'Subly',   icon:'💳', tag:'サブスク管理',   soon:false },
+      medly:   { name:'Medly',   icon:'💊', tag:'サプリ・薬管理', soon:false },
+      fitly:   { name:'Fitly',   icon:'🏋️', tag:'トレーニング記録', soon:false },
+      stockly: { name:'Stockly', icon:'📦', tag:'在庫・備蓄管理', soon:false },
+      cookly:  { name:'Cookly',  icon:'🍳', tag:'レシピ管理',     soon:false },
+      learnly: { name:'Learnly', icon:'📚', tag:'学習プランナー', soon:false },
+      renewly: { name:'Renewly', icon:'🔄', tag:'期限管理',       soon:false },
+      bookly:  { name:'Bookly',  icon:'📚', tag:'読書管理',       soon:false },
+      readly:  { name:'Readly',  icon:'📝', tag:'メモ・日記',     soon:false },
+      ownly:   { name:'Ownly',   icon:'🏠', tag:'持ち物管理',     soon:false },
+      kakely:  { name:'Kakely',  icon:'💰', tag:'家計簿',         soon:false },
     };
     var APP_COLORS = {
       subly:'#3d6b8e', medly:'#7c5cbf', fitly:'#4a8c5a', stockly:'#7c9c3c',
