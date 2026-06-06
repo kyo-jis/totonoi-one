@@ -335,7 +335,10 @@
         <div class="chart-box" style="height:260px;position:relative"><canvas id="trendChart"></canvas></div>
       </div>
       <div class="graph-section graph-grid-wide" id="budgetSection">
-        <p class="graph-title">カテゴリ別 予算 vs 実績</p>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+          <p class="graph-title" style="margin-bottom:0">カテゴリ別 予算 vs 実績</p>
+          <span id="budgetSummaryBadge" style="font-size:.65rem;padding:.15rem .55rem;border-radius:99px;display:none"></span>
+        </div>
         <div class="chart-box" id="budgetList"></div>
       </div>
       <div class="graph-section graph-grid-wide">
@@ -844,6 +847,7 @@ function renderBudgetSection() {
   var budgetCats = categories.filter(function(c){ return c.budget && c.budget > 0; });
   var section = document.getElementById('budgetSection');
   var list = document.getElementById('budgetList');
+  var badge = document.getElementById('budgetSummaryBadge');
   if (!section || !list) return;
 
   var catTotals = {};
@@ -853,21 +857,33 @@ function renderBudgetSection() {
 
   if (!budgetCats.length) {
     list.innerHTML = '<p class="budget-empty">予算を設定したカテゴリが表示されます<br><small>設定 → カテゴリ → ✏️ で月予算を入力</small></p>';
+    if (badge) badge.style.display = 'none';
     return;
   }
 
-  var totalBudget = 0, totalActual = 0;
-  list.innerHTML = budgetCats.map(function(cat) {
+  var catData = budgetCats.map(function(cat) {
     var actual = catTotals[cat.id] || 0;
     var pct = Math.round(actual / cat.budget * 100);
+    return { cat: cat, actual: actual, pct: pct };
+  }).sort(function(a, b) { return b.pct - a.pct; });
+
+  var totalBudget = 0, totalActual = 0, overCount = 0;
+  list.innerHTML = catData.map(function(d) {
+    var cat = d.cat, actual = d.actual, pct = d.pct;
     var fillPct = Math.min(pct, 100);
     var fillClass = pct >= 100 ? ' over' : pct >= 80 ? ' warn' : '';
     var pctColor = pct >= 100 ? '#ff6b6b' : pct >= 80 ? '#f5a623' : 'var(--accent)';
+    var diff = cat.budget - actual;
+    var diffText = diff >= 0
+      ? '<span style="color:var(--muted)">残り¥' + diff.toLocaleString() + '</span>'
+      : '<span style="color:#ff6b6b">¥' + Math.abs(diff).toLocaleString() + '超過</span>';
     totalBudget += cat.budget;
     totalActual += actual;
+    if (pct >= 100) overCount++;
     return '<div class="budget-row">'
       + '<div class="budget-label"><span>' + cat.icon + '</span><span class="budget-name">' + cat.name + '</span></div>'
-      + '<div class="budget-bar-wrap"><div class="budget-track"><div class="budget-fill' + fillClass + '" style="width:' + fillPct + '%"></div></div></div>'
+      + '<div class="budget-bar-wrap"><div class="budget-track"><div class="budget-fill' + fillClass + '" style="width:' + fillPct + '%"></div></div>'
+      + '<div style="font-size:.62rem;margin-top:.2rem;text-align:right">' + diffText + '</div></div>'
       + '<div class="budget-meta"><span class="budget-pct" style="color:' + pctColor + '">' + pct + '%</span>'
       + '¥' + actual.toLocaleString() + ' / ¥' + cat.budget.toLocaleString() + '</div>'
       + '</div>';
@@ -875,12 +891,30 @@ function renderBudgetSection() {
 
   var totalPct = totalBudget ? Math.round(totalActual / totalBudget * 100) : 0;
   var totalColor = totalPct >= 100 ? '#ff6b6b' : totalPct >= 80 ? '#f5a623' : '#5ecfa0';
+  var totalDiff = totalBudget - totalActual;
+  var totalDiffText = totalDiff >= 0
+    ? '<span style="color:var(--muted)">残り¥' + totalDiff.toLocaleString() + '</span>'
+    : '<span style="color:#ff6b6b">¥' + Math.abs(totalDiff).toLocaleString() + '超過</span>';
   list.innerHTML += '<div class="budget-row" style="margin-top:.35rem;padding-top:.7rem;border-top:1px solid var(--border);border-bottom:none">'
     + '<div class="budget-label" style="font-weight:500">合計</div>'
-    + '<div class="budget-bar-wrap"><div class="budget-track"><div class="budget-fill" style="width:' + Math.min(totalPct, 100) + '%;background:' + totalColor + '"></div></div></div>'
+    + '<div class="budget-bar-wrap"><div class="budget-track"><div class="budget-fill" style="width:' + Math.min(totalPct, 100) + '%;background:' + totalColor + '"></div></div>'
+    + '<div style="font-size:.62rem;margin-top:.2rem;text-align:right">' + totalDiffText + '</div></div>'
     + '<div class="budget-meta"><span class="budget-pct" style="color:' + totalColor + '">' + totalPct + '%</span>'
     + '¥' + totalActual.toLocaleString() + ' / ¥' + totalBudget.toLocaleString() + '</div>'
     + '</div>';
+
+  if (badge) {
+    badge.style.display = '';
+    if (overCount > 0) {
+      badge.textContent = overCount + 'カテゴリ超過';
+      badge.style.background = 'rgba(255,107,107,.18)';
+      badge.style.color = '#ff6b6b';
+    } else {
+      badge.textContent = '全カテゴリ予算内';
+      badge.style.background = 'rgba(94,207,160,.15)';
+      badge.style.color = '#5ecfa0';
+    }
+  }
 }
 
 function renderPieChart(isPC) {
