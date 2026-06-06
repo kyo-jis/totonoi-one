@@ -224,6 +224,27 @@
     .compat-guide-type.synergy { background:rgba(94,207,160,.12); color:var(--green); }
     .compat-guide-combo { font-size:.88rem; font-weight:500; margin-bottom:.3rem; }
     .compat-guide-detail { font-size:.75rem; color:var(--muted); line-height:1.55; }
+    .pc-only { display:none; }
+    .stock-row { display:flex; align-items:center; gap:.6rem; margin-bottom:.6rem; }
+    .stock-row:last-child { margin-bottom:0; }
+    .stock-row-icon { font-size:1.1rem; width:1.5rem; text-align:center; flex-shrink:0; }
+    .stock-row-name { font-size:.78rem; width:5rem; flex-shrink:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .stock-row-bar-bg { flex:1; height:8px; background:var(--surface2); border-radius:4px; overflow:hidden; }
+    .stock-row-bar-fill { height:100%; border-radius:4px; transition:width .5s var(--spring); }
+    .stock-row-days { font-size:.7rem; color:var(--muted); width:3rem; text-align:right; flex-shrink:0; }
+    @media (min-width: 768px) {
+      body { padding-bottom:2rem; }
+      .app-header { max-width:1040px; margin-left:auto; margin-right:auto; padding-left:2rem; padding-right:2rem; }
+      .login-notice, .summary-card { max-width:1040px; margin-left:auto; margin-right:auto; }
+      .tabs { max-width:1040px; margin-left:auto; margin-right:auto; }
+      .cat-filter { max-width:1040px; margin-left:auto; margin-right:auto; }
+      .section-label { max-width:1040px; margin-left:auto; margin-right:auto; padding-left:2rem; padding-right:2rem; }
+      #itemList { max-width:1040px; margin-left:auto; margin-right:auto; padding-left:2rem; padding-right:2rem; }
+      #compatCheck { max-width:1040px; margin-left:auto; margin-right:auto; }
+      .pc-only { display:block; }
+      .ad-banner { display:none !important; }
+      .fab { bottom:2rem; right:2rem; }
+    }
   </style>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-E9Q0JQ0V92"></script>
@@ -302,6 +323,7 @@
   <p class="section-label">登録アイテム</p>
   <div id="itemList"></div>
   <div id="compatCheck"></div>
+  <div class="pc-only" id="stockChartPanel" style="max-width:1040px;margin:1rem auto 0;padding:0 2rem;"></div>
 </div>
 
 <!-- スケジュール -->
@@ -901,9 +923,11 @@ function renderList() {
   });
   if (!filtered.length) {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">💊</div><p>まだ登録がありません。<br>＋ボタンで追加してください。</p></div>';
+    renderStockChart([]);
     return;
   }
   renderCompatCheck();
+  if (window.innerWidth >= 768) renderStockChart(filtered);
   el.innerHTML = filtered.map(function(item) {
     var days = daysRemaining(item);
     var p = pct(item);
@@ -1083,6 +1107,29 @@ function renderCompatGuide() {
 function itemMatchesKeys(item, keys) {
   var name = item.name.toLowerCase();
   return keys.some(function(k){ return name.includes(k.toLowerCase()); });
+}
+
+function renderStockChart(filtered) {
+  var box = document.getElementById('stockChartPanel'); if (!box) return;
+  if (!filtered || !filtered.length) { box.innerHTML = ''; return; }
+  var withDays = filtered.filter(function(i){ return daysRemaining(i) !== null; });
+  if (!withDays.length) { box.innerHTML = ''; return; }
+  var maxDays = Math.max(1, Math.max.apply(null, withDays.map(function(i){ return daysRemaining(i); })));
+  box.innerHTML = '<p style="font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem;">在庫残日数</p>'
+    + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.25rem 1rem;">'
+    + withDays.map(function(item) {
+        var days = daysRemaining(item);
+        var cls = daysClass(days);
+        var color = cls === 'urgent' ? '#ff6b6b' : cls === 'warning' ? '#f5c842' : '#5ecfa0';
+        var pctW = Math.round(days / maxDays * 100);
+        return '<div class="stock-row">'
+          + '<span class="stock-row-icon">' + (item.icon || '💊') + '</span>'
+          + '<span class="stock-row-name">' + item.name + '</span>'
+          + '<div class="stock-row-bar-bg"><div class="stock-row-bar-fill" style="width:' + pctW + '%;background:' + color + ';"></div></div>'
+          + '<span class="stock-row-days">' + days + '日</span>'
+          + '</div>';
+      }).join('')
+    + '</div>';
 }
 
 function renderCompatCheck() {

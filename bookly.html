@@ -221,6 +221,27 @@
     .share-line { background:#06c755; color:#fff; }
     .share-copy { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
     .data-btn { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:.55rem .9rem; font-size:.8rem; color:var(--text); cursor:pointer; font-family:var(--font); }
+
+    /* PC layout */
+    .pc-only { display: none; }
+    .pace-wrap { display: flex; align-items: flex-end; gap: 5px; height: 90px; }
+    .pace-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+    .pace-fill { width: 100%; border-radius: 3px 3px 0 0; }
+    .pace-lbl { font-size: .56rem; color: var(--muted); text-align: center; overflow: hidden; width: 100%; }
+    .pace-cnt { font-size: .62rem; color: var(--accent); min-height: .9rem; }
+    @media (min-width: 768px) {
+      body { padding-bottom: 2rem; }
+      .app-header { max-width: 1040px; margin-left: auto; margin-right: auto; padding-left: 2rem; padding-right: 2rem; }
+      .login-notice { max-width: 1040px; margin-left: auto; margin-right: auto; }
+      .summary-card { max-width: 1040px; margin-left: auto; margin-right: auto; }
+      .tabs { max-width: 1040px; margin-left: auto; margin-right: auto; }
+      .view { max-width: 1040px; margin-left: auto; margin-right: auto; }
+      .ad-banner { display: none; }
+      .analytics-wrap { padding-left: 2rem; padding-right: 2rem; }
+      .analysis-grid { grid-template-columns: repeat(4, 1fr); }
+      .cat-row-bar { width: 140px; }
+      .pc-only { display: block; }
+    }
   </style>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-E9Q0JQ0V92"></script>
@@ -317,6 +338,10 @@
       <p class="analytics-title">統計</p>
       <div class="analysis-grid" id="statsGrid"></div>
       <div class="bar-chart" style="margin-top:.75rem;" id="catBreakdown"></div>
+    </div>
+    <div class="analytics-section pc-only" id="paceSection">
+      <p class="analytics-title">月別読了ペース（過去12ヶ月）</p>
+      <div class="bar-chart" id="paceBox" style="padding:1.25rem;"></div>
     </div>
     <div class="analytics-section">
       <p class="analytics-title">データ管理</p>
@@ -667,6 +692,31 @@ function renderStats() {
   var maxC=Math.max(1,Math.max.apply(null,counts));
   var catHTML=cats.map(function(cat,idx){var n=counts[idx];if(!n)return '';return '<div class="cat-row"><div class="cat-row-left"><span>'+CAT_ICONS[cat]+'</span><span>'+CAT_NAMES[cat]+'</span></div><div class="cat-row-right"><span class="cat-row-count">'+n+'冊</span><div class="cat-row-bar"><div class="cat-row-bar-fill" style="width:'+Math.round(n/maxC*100)+'%"></div></div></div></div>';}).filter(Boolean).join('');
   document.getElementById('catBreakdown').innerHTML=catHTML||'<p style="font-size:.82rem;color:var(--muted)">登録なし</p>';
+  if (window.innerWidth >= 768) renderPaceChart();
+}
+
+function renderPaceChart() {
+  var box = document.getElementById('paceBox'); if (!box) return;
+  var today = new Date();
+  var mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var months = [];
+  for (var i = 11; i >= 0; i--) {
+    var d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    var ym = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    var cnt = items.filter(function(x){ return x.status==='completed' && x.completedDate && x.completedDate.startsWith(ym); }).length;
+    months.push({ label: mn[d.getMonth()], cnt: cnt, isCur: i===0 });
+  }
+  var maxCnt = Math.max(1, Math.max.apply(null, months.map(function(m){ return m.cnt; })));
+  box.innerHTML = '<div class="pace-wrap">'
+    + months.map(function(m) {
+        var h = Math.round(m.cnt / maxCnt * 75);
+        var bg = m.isCur ? 'background:var(--accent)' : 'background:rgba(139,92,246,.38)';
+        return '<div class="pace-col">'
+          + '<span class="pace-cnt">' + (m.cnt || '') + '</span>'
+          + '<div class="pace-fill" style="height:' + (m.cnt ? Math.max(h,4) : 0) + 'px;' + bg + '"></div>'
+          + '<span class="pace-lbl">' + m.label + '</span></div>';
+      }).join('')
+    + '</div>';
 }
 
 // ── Progress update ──

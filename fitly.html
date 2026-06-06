@@ -385,6 +385,16 @@
     .sound-btn { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:.45rem .7rem; font-size:.75rem; color:var(--muted); cursor:pointer; font-family:var(--font); display:flex; align-items:center; gap:.35rem; transition:all .15s; }
     .sound-btn.active { border-color:var(--accent); color:var(--accent); background:rgba(94,207,160,.1); }
     .sound-preview { font-size:.65rem; color:var(--muted); background:none; border:none; cursor:pointer; padding:0; font-family:var(--font); }
+    .analysis-wrap-pc { padding:0 1.25rem; }
+    @media (min-width: 768px) {
+      body { padding-bottom:2rem; }
+      .app-header { max-width:1040px; margin-left:auto; margin-right:auto; padding-left:2rem; padding-right:2rem; }
+      .analysis-wrap-pc { max-width:1040px; margin:0 auto; padding:0 2rem; }
+      .analysis-pc-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; }
+      .analysis-pc-wide { grid-column:1 / -1; }
+      .analysis-card { margin-bottom:0; }
+      .ad-banner { display:none !important; }
+    }
   </style>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-E9Q0JQ0V92"></script>
@@ -3176,8 +3186,7 @@ function renderAnalysis() {
   };
   var doughnutColors = partKeys.map(function(k){ return partColorMap[k] || '#aaa'; });
 
-  el.innerHTML =
-    '<div class="analysis-card">'
+  var streakCard = '<div class="analysis-card">'
     +'<p class="analysis-title">🔥 連続日数 &amp; 今週</p>'
     +'<div style="display:flex;align-items:center;gap:1rem;margin-bottom:.75rem;">'
     +'<div style="position:relative;width:72px;height:72px;flex-shrink:0;">'
@@ -3198,21 +3207,25 @@ function renderAnalysis() {
     +'<div style="display:flex;gap:.75rem;margin-top:.75rem;">'
     +'<div><p style="font-size:1.2rem;font-weight:700;" id="anaWeekWo">0</p><p style="font-size:.65rem;color:var(--muted);">今週の回数</p></div>'
     +'<div><p style="font-size:1.2rem;font-weight:700;" id="anaWeekVol">0</p><p style="font-size:.65rem;color:var(--muted);">今週 kg</p></div>'
-    +'</div></div></div></div>'
+    +'</div></div></div></div>';
 
-    +(partKeys.length ? '<div class="analysis-card"><p class="analysis-title">💪 部位別ボリューム（今週）</p>'
-    +'<div style="max-width:220px;margin:0 auto;"><canvas id="chartPart"></canvas></div></div>' : '')
+  var partCard = partKeys.length ? '<div class="analysis-card"><p class="analysis-title">💪 部位別ボリューム（今週）</p>'
+    +'<div style="max-width:220px;margin:0 auto;"><canvas id="chartPart"></canvas></div></div>' : '';
 
-    +'<div class="analysis-card"><p class="analysis-title">📈 週間ボリューム推移（t）</p>'
-    +'<canvas id="chartWeek"></canvas></div>'
+  var weekCard = '<div class="analysis-card analysis-pc-wide"><p class="analysis-title">📈 週間ボリューム推移（t）</p>'
+    +'<canvas id="chartWeek"></canvas></div>';
 
-    +(Object.keys(personalRecords).length ? '<div class="analysis-card"><p class="analysis-title">🏆 自己ベスト (推定1RM)</p>'
+  var prCard = Object.keys(personalRecords).length ? '<div class="analysis-card analysis-pc-wide"><p class="analysis-title">🏆 自己ベスト (推定1RM)</p>'
     +Object.values(personalRecords).sort(function(a,b){return b.est1RM-a.est1RM;}).slice(0,5).map(function(p){
       return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem 0;border-bottom:1px solid var(--border);">'
         +'<span style="font-size:.88rem;">'+p.name+'</span>'
         +'<span style="font-size:.88rem;font-weight:700;color:var(--yellow);">'+p.est1RM+' kg</span>'
         +'</div>';
-    }).join('')+'</div>' : '');
+    }).join('')+'</div>' : '';
+
+  el.innerHTML = '<div class="analysis-wrap-pc"><div class="analysis-pc-grid">'
+    + streakCard + partCard + weekCard + prCard
+    + '</div></div>';
 
   // カウントアップ
   countUp(document.getElementById('streakNum'), streak, 800);

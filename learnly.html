@@ -217,6 +217,20 @@
     .share-line { background:#06c755; color:#fff; }
     .share-copy { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
     .data-btn { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:.55rem .9rem; font-size:.8rem; color:var(--text); cursor:pointer; font-family:var(--font); }
+    .pc-only { display:none; }
+    .heatmap-cell { width:13px; height:13px; border-radius:2px; flex-shrink:0; cursor:default; transition:opacity .15s; }
+    .heatmap-cell:hover { opacity:.7; }
+    .heatmap-dow-label { height:13px; font-size:.6rem; color:var(--muted); line-height:13px; text-align:right; padding-right:3px; }
+    @media (min-width: 768px) {
+      body { padding-bottom:2rem; }
+      .app-header { max-width:1040px; margin-left:auto; margin-right:auto; padding-left:2rem; padding-right:2rem; }
+      .login-notice, .summary-card, .month-nav { max-width:1040px; margin-left:auto; margin-right:auto; }
+      .tabs { max-width:1040px; margin-left:auto; margin-right:auto; }
+      .analytics-wrap { max-width:1040px; margin-left:auto; margin-right:auto; padding:0 2rem; }
+      .analysis-grid { grid-template-columns:repeat(4, 1fr); }
+      .pc-only { display:block; }
+      .ad-banner { display:none !important; }
+    }
   </style>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-E9Q0JQ0V92"></script>
@@ -305,6 +319,10 @@
       <p class="analytics-title">統計</p>
       <div class="analysis-grid" id="statsGrid"></div>
       <div class="bar-chart" style="margin-top:.75rem;" id="weeklyChart"></div>
+    </div>
+    <div class="analytics-section pc-only" id="heatmapSection">
+      <p class="analytics-title">年間学習ヒートマップ（過去52週）</p>
+      <div class="bar-chart" id="learnHeatmapBox" style="padding:1.25rem;overflow-x:auto;"></div>
     </div>
     <div class="analytics-section">
       <p class="analytics-title">プラン</p>
@@ -793,6 +811,38 @@ function renderSettingsStats() {
       + '<span class="week-row-min">' + (m ? m + '分' : '—') + '</span>'
       + '</div>';
   }).join('');
+  if (window.innerWidth >= 768) renderLearnHeatmap();
+}
+
+function renderLearnHeatmap() {
+  var box = document.getElementById('learnHeatmapBox'); if (!box) return;
+  var sessionMap = {};
+  sessions.forEach(function(s) { sessionMap[s.date] = (sessionMap[s.date] || 0) + (s.duration || 0); });
+  var maxMins = Math.max(1, Math.max.apply(null, Object.values(sessionMap).concat([0])));
+  var today = new Date();
+  var endDay = today.getDay();
+  var start = new Date(today);
+  start.setDate(start.getDate() - endDay - 7 * 51);
+  var DOW = ['','月','','水','','金',''];
+  var cols = [];
+  for (var w = 0; w < 52; w++) {
+    var cells = [];
+    for (var d = 0; d < 7; d++) {
+      var cur = new Date(start);
+      cur.setDate(start.getDate() + w * 7 + d);
+      var ds = cur.getFullYear() + '-' + String(cur.getMonth()+1).padStart(2,'0') + '-' + String(cur.getDate()).padStart(2,'0');
+      var mins = sessionMap[ds] || 0;
+      var alpha = mins ? Math.max(0.18, Math.min(1, mins / maxMins)) : 0;
+      var bg = mins ? 'rgba(60,140,191,' + alpha.toFixed(2) + ')' : 'rgba(60,140,191,0.07)';
+      var tip = mins ? ds + ' ' + mins + '分' : ds;
+      cells.push('<div class="heatmap-cell" style="background:' + bg + ';" title="' + tip + '"></div>');
+    }
+    cols.push('<div style="display:flex;flex-direction:column;gap:2px;">' + cells.join('') + '</div>');
+  }
+  var dowCol = DOW.map(function(l) { return '<div class="heatmap-dow-label">' + l + '</div>'; }).join('');
+  box.innerHTML = '<div style="display:flex;gap:2px;align-items:flex-start;">'
+    + '<div style="display:flex;flex-direction:column;gap:2px;margin-right:2px;">' + dowCol + '</div>'
+    + cols.join('') + '</div>';
 }
 
 /* ── Log Modal ── */
