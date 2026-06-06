@@ -586,6 +586,8 @@ var currentBookType = 'series';
 var _searchTimer = null;
 var _searchCache = {};
 var _searchData = [];
+var _searchSource = '';
+var RAKUTEN_APP_ID = '取得したAPIキーをここに貼り付け';
 var _isbnBookInfo = null;
 var _scanStream = null;
 var _scanInterval = null;
@@ -1133,37 +1135,83 @@ function onSearchInput() {
 }
 
 function searchBooks(q) {
-  if (_searchCache[q]) { renderSearchResults(_searchCache[q]); return; }
+  if (_searchCache[q]) { renderNormalizedResults(_searchCache[q].items, _searchCache[q].source); return; }
   fetch('https://www.googleapis.com/books/v1/volumes?q='+encodeURIComponent(q)+'&maxResults=8&orderBy=relevance',{cache:'no-store'})
     .then(function(r){return r.json();})
-    .then(function(data){ _searchCache[q]=data; renderSearchResults(data); })
-    .catch(function(){ document.getElementById('searchResults').innerHTML='<p style="text-align:center;color:var(--muted);font-size:.82rem;padding:1rem;">検索に失敗しました。手動入力をご利用ください。</p>'; });
+    .then(function(data){
+      if (data.items && data.items.length) {
+        var normalized = normalizeGoogleBooks(data.items);
+        _searchCache[q] = {items:normalized, source:'google'};
+        renderNormalizedResults(normalized, 'google');
+      } else {
+        document.getElementById('searchResults').innerHTML='<div class="search-loading">楽天ブックスで検索中...</div>';
+        searchRakuten(q);
+      }
+    })
+    .catch(function(){
+      document.getElementById('searchResults').innerHTML='<div class="search-loading">楽天ブックスで検索中...</div>';
+      searchRakuten(q);
+    });
 }
 
-function renderSearchResults(data) {
-  if (!data.items||!data.items.length) { document.getElementById('searchResults').innerHTML='<p style="text-align:center;color:var(--muted);font-size:.82rem;padding:1rem;">見つかりませんでした</p>'; return; }
-  _searchData=data.items;
-  document.getElementById('searchResults').innerHTML=data.items.map(function(item,idx){
+function normalizeGoogleBooks(items) {
+  return items.map(function(item){
     var vi=item.volumeInfo||{};
-    var title=(vi.title||'不明').replace(/</g,'&lt;');
-    var author=((vi.authors||[]).join(', ')).replace(/</g,'&lt;');
-    var thumb=vi.imageLinks&&vi.imageLinks.thumbnail?vi.imageLinks.thumbnail.replace('http:','https:'):'';
-    var pub=vi.publishedDate?vi.publishedDate.slice(0,4):'';
+    var isbn='';
+    if (vi.industryIdentifiers) {
+      var id13=vi.industryIdentifiers.filter(function(x){return x.type==='ISBN_13';})[0];
+      var id10=vi.industryIdentifiers.filter(function(x){return x.type==='ISBN_10';})[0];
+      isbn=(id13||id10||{}).identifier||'';
+    }
+    return {title:vi.title||'', author:(vi.authors||[]).join(', '), coverUrl:vi.imageLinks&&vi.imageLinks.thumbnail?vi.imageLinks.thumbnail.replace('http:','https:'):'', releaseDate:vi.publishedDate||'', isbn:isbn, category:guessCategory(vi), type:guessType(vi), _source:'google'};
+  });
+}
+
+function normalizeRakuten(item, isComic) {
+  var sd=item.salesDate||'', relDate='';
+  var dm=sd.match(/(\d{4})年(\d{2})月(\d{2})日/);
+  if (dm) relDate=dm[1]+'-'+dm[2]+'-'+dm[3];
+  else { var ym=sd.match(/(\d{4})年(\d{2})月/); if(ym) relDate=ym[1]+'-'+ym[2]+'-01'; }
+  var cover=(item.largeImageUrl||item.mediumImageUrl||item.smallImageUrl||'').replace(/\?_ex=\d+x\d+/,'?_ex=200x200');
+  return {title:item.title||'', author:item.author||'', coverUrl:cover, releaseDate:relDate, isbn:item.isbn||'', category:isComic?'manga':'other', type:isComic?'series':'single', _source:'rakuten'};
+}
+
+function searchRakuten(q) {
+  var base='https://app.rakuten.co.jp/services/api/Books';
+  var params='?applicationId='+RAKUTEN_APP_ID+'&title='+encodeURIComponent(q)+'&hits=6&formatVersion=2';
+  Promise.all([
+    fetch(base+'/Book/Search/20170404'+params,{cache:'no-store'}).then(function(r){return r.json();}).catch(function(){return {Items:[]};}),
+    fetch(base+'/Comic/Search/20170404'+params,{cache:'no-store'}).then(function(r){return r.json();}).catch(function(){return {Items:[]};})
+  ]).then(function(res){
+    var books  = (res[0].Items||[]).map(function(i){return normalizeRakuten(i,false);});
+    var comics = (res[1].Items||[]).map(function(i){return normalizeRakuten(i,true);});
+    var combined = comics.concat(books).slice(0,10);
+    if (combined.length) _searchCache[q]={items:combined,source:'rakuten'};
+    renderNormalizedResults(combined,'rakuten');
+  });
+}
+
+function renderNormalizedResults(items, source) {
+  _searchData=items; _searchSource=source;
+  var el=document.getElementById('searchResults');
+  if (!items.length) { el.innerHTML='<p style="text-align:center;color:var(--muted);font-size:.82rem;padding:1rem;">見つかりませんでした</p>'; return; }
+  var html=items.map(function(item,idx){
+    var title=item.title.replace(/</g,'&lt;');
+    var author=(item.author||'').replace(/</g,'&lt;');
+    var year=item.releaseDate?item.releaseDate.slice(0,4):'';
     return '<div class="search-result" onclick="applySearchByIdx('+idx+')">'
-      +'<div class="search-result-cover">'+(thumb?'<img src="'+thumb+'" loading="lazy" alt="">':'📖')+'</div>'
-      +'<div class="search-result-info"><p class="search-result-title">'+title+'</p><p class="search-result-meta">'+(author||'著者不明')+(pub?' · '+pub:'')+'</p></div>'
+      +'<div class="search-result-cover">'+(item.coverUrl?'<img src="'+item.coverUrl+'" loading="lazy" alt="">':'📖')+'</div>'
+      +'<div class="search-result-info"><p class="search-result-title">'+title+'</p>'
+      +'<p class="search-result-meta">'+(author||'著者不明')+(year?' · '+year:'')+'</p></div>'
       +'</div>';
   }).join('');
+  if (source==='rakuten') html+='<p style="text-align:right;font-size:.62rem;color:var(--muted);margin-top:.5rem;padding-top:.5rem;border-top:1px solid var(--border);">Powered by <a href="https://webservice.rakuten.co.jp/" target="_blank" rel="noopener" style="color:inherit;text-decoration:none;">楽天ウェブサービス</a></p>';
+  el.innerHTML=html;
 }
 
 function applySearchByIdx(idx) {
   var item=_searchData[idx]; if(!item) return;
-  var vi=item.volumeInfo||{};
-  applyBookInfo({
-    title:vi.title||'', author:(vi.authors||[]).join(', '),
-    coverUrl:vi.imageLinks&&vi.imageLinks.thumbnail?vi.imageLinks.thumbnail.replace('http:','https:'):'',
-    category:guessCategory(vi), type:guessType(vi)
-  });
+  applyBookInfo({title:item.title, author:item.author, coverUrl:item.coverUrl, category:item.category, type:item.type, releaseDate:item.releaseDate||''});
   switchModalTab('manual', document.querySelectorAll('.modal-tab')[3]);
 }
 
@@ -1177,6 +1225,9 @@ function applyBookInfo(info) {
   var type=info.type||'single';
   var typeBtn=document.getElementById(type==='series'?'typeSeriesBtn':'typeSingleBtn');
   setBookType(type, typeBtn);
+  if (info.releaseDate && type==='single') {
+    var rd=document.getElementById('fReleaseDate'); if(rd) rd.value=info.releaseDate;
+  }
   showToast('✅ ' + (info.title||'') + ' を選択しました');
 }
 
