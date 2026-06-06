@@ -587,7 +587,7 @@ var _searchTimer = null;
 var _searchCache = {};
 var _searchData = [];
 var _searchSource = '';
-var RAKUTEN_APP_ID = '取得したAPIキーをここに貼り付け';
+var RAKUTEN_APP_ID = 'pk_m9pBl8adXseUBXWekuEU3yzR0ixBcN6JwXvEtADqSFz';
 var _isbnBookInfo = null;
 var _scanStream = null;
 var _scanInterval = null;
@@ -1252,7 +1252,9 @@ function importCSV(input) {
     });
     if(!isPro&&items.length>FREE_LIMIT)items=items.slice(0,FREE_LIMIT);
     persist();renderAll();closeModal();
-    showToast('✅ '+imported+'件インポートしました');
+    showToast(currentUser
+      ? '✅ '+imported+'件インポート・クラウド同期しました'
+      : '✅ '+imported+'件インポートしました（ログインするとクラウド同期されます）');
   };
   reader.readAsText(file,'UTF-8');
   input.value='';
@@ -1292,12 +1294,29 @@ var _sb=window.supabase.createClient('https://foknpmvpgbkwgpmlgzrn.supabase.co',
   { auth: { flowType: 'implicit', detectSessionInUrl: true } });
 var currentUser=null;var _APP='bookly';
 function dbSave(key,data){if(!currentUser)return;_sb.from('user_data').upsert({user_id:currentUser.id,app:_APP,key:key,data:data,updated_at:new Date().toISOString()},{onConflict:'user_id,app,key'});}
-async function syncFromCloud(){var res=await _sb.from('user_data').select('key,data').eq('user_id',currentUser.id).eq('app',_APP);if (res.data && res.data.length > 0) {
-    res.data.forEach(function(row){if(row.key==='items'){items=row.data;localStorage.setItem('bookly_items',JSON.stringify(items));}});
+async function syncFromCloud(){
+  var res=await _sb.from('user_data').select('key,data').eq('user_id',currentUser.id).eq('app',_APP);
+  if (res.data && res.data.length > 0) {
+    res.data.forEach(function(row){
+      if(row.key==='items'){
+        var cloudItems=row.data||[];
+        // クラウドに存在しないローカルアイテム（オフライン追加・CSVインポート等）をマージ
+        var cloudIds={}; cloudItems.forEach(function(i){cloudIds[i.id]=true;});
+        var localOnly=items.filter(function(i){return !cloudIds[i.id];});
+        items = localOnly.length ? cloudItems.concat(localOnly) : cloudItems;
+        localStorage.setItem('bookly_items',JSON.stringify(items));
+        if(localOnly.length) dbSave('items',items); // マージ結果をクラウドへ保存
+      }
+    });
   } else {
     // 初回ログイン: ローカルデータをSupabaseへアップロード
     if (items.length > 0) dbSave('items', items);
-  }var p=await _sb.from('profiles').select('is_pro').eq('id',currentUser.id).maybeSingle();if(p.data){isPro=p.data.is_pro;localStorage.setItem('isPro',String(isPro));} if(currentUser.email==='kyouji.o@gmail.com'){isPro=true;localStorage.setItem('isPro','true');}renderAll();updateProUI();showToast('☁️ データを同期しました');}
+  }
+  var p=await _sb.from('profiles').select('is_pro').eq('id',currentUser.id).maybeSingle();
+  if(p.data){isPro=p.data.is_pro;localStorage.setItem('isPro',String(isPro));}
+  if(currentUser.email==='kyouji.o@gmail.com'){isPro=true;localStorage.setItem('isPro','true');}
+  renderAll();updateProUI();showToast('☁️ データを同期しました');
+}
 var _authMode='login';
 function setAuthMode(mode){_authMode=mode;var tl=document.getElementById('tabLogin'),ts=document.getElementById('tabSignup'),sb=document.getElementById('authSubmitBtn');if(mode==='login'){tl.style.cssText+=';background:var(--surface3);color:var(--text);font-weight:500;';ts.style.cssText+=';background:none;color:var(--muted);font-weight:300;';sb.textContent='ログイン';}else{ts.style.cssText+=';background:var(--surface3);color:var(--text);font-weight:500;';tl.style.cssText+=';background:none;color:var(--muted);font-weight:300;';sb.textContent='アカウントを作成';}}
 function openAuthModal(){if(currentUser){if(confirm(currentUser.email+'\nログアウトしますか？'))_sb.auth.signOut();return;}document.getElementById('authModal').classList.add('show');}
