@@ -496,6 +496,10 @@
           <div class="form-group"><label>読了ページ</label><input type="number" id="fReadPages" placeholder="0" min="0" step="1" style="width:100%;"></div>
           <div class="form-group"><label>総ページ数</label><input type="number" id="fTotalPages" placeholder="300" min="0" step="1" style="width:100%;"></div>
         </div>
+        <div class="form-group">
+          <label>発売日（任意）</label>
+          <input type="date" id="fReleaseDate" style="width:100%;">
+        </div>
       </div>
       <div class="form-group"><label>ステータス</label>
         <select id="fStatus" style="width:100%;">
@@ -533,7 +537,7 @@
       <input type="file" id="csvFile" accept=".csv" style="display:none;" onchange="importCSV(this)">
       <div style="margin-top:1rem;background:var(--surface2);border-radius:10px;padding:.875rem;font-size:.75rem;color:var(--muted);line-height:1.7;">
         <p style="font-weight:500;color:var(--text);margin-bottom:.3rem;">CSV形式（1行目ヘッダーはスキップ）</p>
-        <p>タイトル, 著者, カテゴリ, タイプ(series/single), 読了巻/ページ, 全巻/ページ, ステータス, 形態, 評価(1-5), 読了日, メモ</p>
+        <p>タイトル, 著者, カテゴリ, タイプ(series/single), 読了巻/ページ, 全巻/ページ, ステータス, 形態, 評価(1-5), 読了日, メモ, 完結済み(true/false), 次巻発売日(YYYY-MM-DD), 発売日(YYYY-MM-DD)</p>
         <button onclick="downloadCsvTemplate()" style="margin-top:.6rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.4rem .75rem;font-size:.72rem;color:var(--accent);cursor:pointer;font-family:var(--font);">📥 テンプレートをダウンロード</button>
       </div>
     </div>
@@ -624,6 +628,11 @@ function renderCard(item) {
     nextVolLine = '<p class="next-vol-line' + (isSoon ? ' soon' : '') + '">'
       + (isSoon ? '🔔' : '📅') + ' 次巻：' + nvLabel + '</p>';
   }
+  var releaseDateLine = '';
+  if (item.type === 'single' && item.releaseDate) {
+    var rdParts = item.releaseDate.split('-');
+    releaseDateLine = '<p class="next-vol-line">📅 発売：' + parseInt(rdParts[1]) + '月' + parseInt(rdParts[2]) + '日（' + rdParts[0] + '）</p>';
+  }
   var progressBar = p.pct >= 0 ? '<div class="progress-bar-bg"><div class="progress-bar-fill' + (item.status==='completed'?' done':'') + '" style="width:' + p.pct + '%"></div></div>' : '';
   var volLabel = item.type === 'single'
     ? (p.pct >= 0 ? (item.readPages||0) + '/' + (item.totalPages||0) + 'P' : (item.readPages||0) + 'P')
@@ -642,6 +651,7 @@ function renderCard(item) {
         + (ratingHtml ? '<div style="margin-top:.3rem;">' + ratingHtml + '</div>' : '')
         + dateLine
         + nextVolLine
+        + releaseDateLine
       + '</div>'
       + '<div class="book-right">'
         + '<p class="book-progress-text" id="vol-display-' + item.id + '" style="cursor:pointer;" onclick="startQuickEdit(\'' + item.id + '\')">' + (item.type==='single' ? (item.readPages||0)+'P' : (item.readVols||0)+'巻') + '</p>'
@@ -846,6 +856,7 @@ function openModal() {
   document.getElementById('fFormat').value='';
   document.getElementById('fReadVols').value='0'; document.getElementById('fTotalVols').value='0';
   document.getElementById('fIsCompleted').checked=false; document.getElementById('fNextVolDate').value='';
+  document.getElementById('fReleaseDate').value='';
   document.getElementById('fReadPages').value='0'; document.getElementById('fTotalPages').value='';
   document.getElementById('fStatus').value='backlog';
   document.getElementById('fCompletedDate').value='';
@@ -892,6 +903,7 @@ function editItem(id) {
   if (currentBookType==='single') {
     document.getElementById('fReadPages').value=item.readPages||0;
     document.getElementById('fTotalPages').value=item.totalPages||'';
+    document.getElementById('fReleaseDate').value=item.releaseDate||'';
     document.getElementById('seriesFields').style.display='none';
     document.getElementById('singleFields').style.display='';
     document.getElementById('typeSingleBtn').classList.add('active');
@@ -928,6 +940,7 @@ function saveItem() {
   if (status==='completed' && !completedDate) completedDate=new Date().toISOString().split('T')[0];
   var isCompleted = currentBookType==='series' ? document.getElementById('fIsCompleted').checked : false;
   var nextVolDate = currentBookType==='series' ? document.getElementById('fNextVolDate').value : '';
+  var releaseDate = currentBookType==='single' ? document.getElementById('fReleaseDate').value : '';
   var entry={
     id:editId||Date.now().toString(), name:name,
     author:document.getElementById('fAuthor').value.trim(),
@@ -941,6 +954,7 @@ function saveItem() {
     completedDate:completedDate,
     isCompleted:isCompleted,
     nextVolDate:nextVolDate,
+    releaseDate:releaseDate,
     memo:document.getElementById('fMemo').value.trim(),
     addedDate:prev.addedDate||new Date().toISOString().split('T')[0]
   };
@@ -1120,7 +1134,7 @@ function importCSV(input) {
       var rv=parseInt(c[4])||0, tv=parseInt(c[5])||0;
       if(type==='series'&&tv>0&&rv>=tv)status='completed';
       if(type==='single'&&tv>0&&rv>=tv)status='completed';
-      items.push({id:Date.now().toString()+Math.random().toString(36).slice(2,5),name:name,author:c[1]||'',category:c[2]||'other',type:type,readVols:type==='series'?rv:0,totalVols:type==='series'?tv:0,readPages:type==='single'?rv:0,totalPages:type==='single'?tv:0,status:status,format:c[7]||'',rating:parseInt(c[8])||0,completedDate:c[9]||'',memo:c[10]||'',icon:CAT_ICONS[c[2]]||'📖',coverUrl:'',addedDate:new Date().toISOString().split('T')[0]});
+      items.push({id:Date.now().toString()+Math.random().toString(36).slice(2,5),name:name,author:c[1]||'',category:c[2]||'other',type:type,readVols:type==='series'?rv:0,totalVols:type==='series'?tv:0,readPages:type==='single'?rv:0,totalPages:type==='single'?tv:0,status:status,format:c[7]||'',rating:parseInt(c[8])||0,completedDate:c[9]||'',memo:c[10]||'',isCompleted:c[11]==='true'||c[11]==='1',nextVolDate:c[12]||'',releaseDate:c[13]||'',icon:CAT_ICONS[c[2]]||'📖',coverUrl:'',addedDate:new Date().toISOString().split('T')[0]});
       imported++;
     });
     if(!isPro&&items.length>FREE_LIMIT)items=items.slice(0,FREE_LIMIT);
@@ -1132,9 +1146,10 @@ function importCSV(input) {
 }
 
 function downloadCsvTemplate() {
-  var h='タイトル,著者,カテゴリ,タイプ,読了巻/P,全巻/P,ステータス,形態,評価,読了日,メモ';
-  var s='"鬼滅の刃","吾峠呼世晴",manga,series,23,23,completed,physical,5,2020-12-04,全23巻。名作。"';
-  var blob=new Blob(['﻿'+h+'\n'+s],{type:'text/csv'});
+  var h='タイトル,著者,カテゴリ,タイプ,読了巻/P,全巻/P,ステータス,形態,評価,読了日,メモ,完結済み,次巻発売日,発売日';
+  var s1='"鬼滅の刃","吾峠呼世晴",manga,series,23,23,completed,physical,5,2020-12-04,"全23巻。名作。",true,,';
+  var s2='"夜は短し歩けよ乙女","森見登美彦",novel,single,320,320,completed,physical,4,2021-03-10,,,,2006-11-30';
+  var blob=new Blob(['﻿'+h+'\n'+s1+'\n'+s2],{type:'text/csv'});
   var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bookly_template.csv';a.click();
 }
 
@@ -1142,7 +1157,7 @@ function downloadCsvTemplate() {
 function exportData(fmt) {
   if(!isPro){showToast('エクスポートは有料プランの機能です');return;}
   if(fmt==='json'){var blob=new Blob([JSON.stringify({items:items},null,2)],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bookly_'+new Date().toISOString().split('T')[0]+'.json';a.click();}
-  else{var rows=[['タイトル','著者','カテゴリ','タイプ','読了巻/P','全巻/P','ステータス','形態','評価','読了日','メモ'].join(',')];items.forEach(function(i){var r=i.type==='series'?i.readVols:i.readPages,t=i.type==='series'?i.totalVols:i.totalPages;rows.push(['"'+i.name+'"','"'+(i.author||'')+'"',i.category,i.type||'series',r,t,i.status,i.format||'',i.rating||0,i.completedDate||'','"'+(i.memo||'')+'"'].join(','));});var blob=new Blob(['﻿'+rows.join('\n')],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bookly_'+new Date().toISOString().split('T')[0]+'.csv';a.click();}
+  else{var rows=[['タイトル','著者','カテゴリ','タイプ','読了巻/P','全巻/P','ステータス','形態','評価','読了日','メモ','完結済み','次巻発売日','発売日'].join(',')];items.forEach(function(i){var r=i.type==='series'?i.readVols:i.readPages,t=i.type==='series'?i.totalVols:i.totalPages;rows.push(['"'+i.name+'"','"'+(i.author||'')+'"',i.category,i.type||'series',r,t,i.status,i.format||'',i.rating||0,i.completedDate||'','"'+(i.memo||'')+'"',i.type==='series'?(i.isCompleted?'true':'false'):'',i.type==='series'?(i.nextVolDate||''):'',i.type==='single'?(i.releaseDate||''):''].join(','));});var blob=new Blob(['﻿'+rows.join('\n')],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bookly_'+new Date().toISOString().split('T')[0]+'.csv';a.click();}
 }
 
 // ── Misc ──
