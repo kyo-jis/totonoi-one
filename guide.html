@@ -154,6 +154,7 @@
     <a class="toc-item" href="#readly"><span class="toc-icon">📝</span> Readly</a>
     <a class="toc-item" href="#ownly"><span class="toc-icon">🏠</span> Ownly</a>
     <a class="toc-item" href="#kakely"><span class="toc-icon">💰</span> Kakely</a>
+    <a class="toc-item" href="#common" style="grid-column:1/-1"><span class="toc-icon">☁️</span> 全アプリ共通</a>
   </div>
 </nav>
 
@@ -223,7 +224,7 @@
     <p class="card-title">できること</p>
     <div class="feature-list">
       <div class="feature-item"><span class="feature-icon">💪</span><p class="feature-text"><strong>200種以上の種目DB</strong> <span>— 筋トレ・有酸素・ストレッチ・マインドフルネスを網羅。部位・カテゴリで検索できます</span></p></div>
-      <div class="feature-item"><span class="feature-icon">⏱</span><p class="feature-text"><strong>休憩タイマー自動起動</strong> <span>— セットを完了するたびに休憩タイマーが自動でスタート。アプリを離れても完了通知が届きます</span></p></div>
+      <div class="feature-item"><span class="feature-icon">⏱</span><p class="feature-text"><strong>種目別休憩タイマー</strong> <span>— セットを完了するたびに休憩タイマーが自動でスタート。種目ごとに休憩秒数を個別設定でき、アプリを離れても完了通知が届きます</span></p></div>
       <div class="feature-item"><span class="feature-icon">🏆</span><p class="feature-text"><strong>自己ベスト（PR）を自動検出</strong> <span>— 重量×回数から推定1RM（最大筋力）を計算し、更新したときに通知します</span></p></div>
       <div class="feature-item"><span class="feature-icon">💬</span><p class="feature-text"><strong>種目メモ</strong> <span>— 各種目にメモを残せます。次回セッションで同じ種目を追加したときに「前回メモ」として表示されます</span></p></div>
       <div class="feature-item"><span class="feature-icon">📊</span><p class="feature-text"><strong>分析ダッシュボード</strong><span class="badge-pro">Pro</span> <span>— 連続記録・部位別ボリューム・週次トレンドをチャートで確認できます</span></p></div>
@@ -351,16 +352,20 @@
     <div class="feature-list">
       <div class="feature-item"><span class="feature-icon">📖</span><p class="feature-text"><strong>漫画・小説・参考書を管理</strong> <span>— シリーズ・単巻どちらにも対応。ジャンル別に整理できます</span></p></div>
       <div class="feature-item"><span class="feature-icon">📷</span><p class="feature-text"><strong>バーコードスキャン・ISBN検索</strong> <span>— 本の裏面のバーコードをスキャン、またはISBN番号で書籍情報を自動取得できます</span></p></div>
-      <div class="feature-item"><span class="feature-icon">📌</span><p class="feature-text"><strong>読中・積読・読了で管理</strong> <span>— ステータスで整理。星評価・読了日も記録できます</span></p></div>
-      <div class="feature-item"><span class="feature-icon">📈</span><p class="feature-text"><strong>進捗トラッキング</strong> <span>— シリーズは読了巻数、単巻はページ数で進捗を管理します</span></p></div>
+      <div class="feature-item"><span class="feature-icon">📌</span><p class="feature-text"><strong>5種類のステータス管理</strong> <span>— 読中・積読・ほしい（ウィッシュリスト）・読了・一時停止で整理。星評価・読了日も記録できます</span></p></div>
+      <div class="feature-item"><span class="feature-icon">⭐</span><p class="feature-text"><strong>ウィッシュリスト</strong><span class="badge-new">New</span> <span>— 「ほしい」ステータスで購入候補を管理。「今すぐ買う」ボタンで積読に一発変換できます</span></p></div>
+      <div class="feature-item"><span class="feature-icon">🗓</span><p class="feature-text"><strong>次巻発売日・完結フラグ</strong><span class="badge-new">New</span> <span>— 次巻の発売予定日を登録しておくと発売日にバッジで通知。完結済みフラグで連載中/完結を区別できます</span></p></div>
+      <div class="feature-item"><span class="feature-icon">📊</span><p class="feature-text"><strong>進捗トラッキング</strong> <span>— シリーズは読了巻数、単巻はページ数で進捗を管理します</span></p></div>
+      <div class="feature-item"><span class="feature-icon">📥</span><p class="feature-text"><strong>CSVインポート</strong><span class="badge-new">New</span> <span>— 設定タブからCSVファイルで一括登録できます。既存の管理データを移行するときに便利です</span></p></div>
+      <div class="feature-item"><span class="feature-icon">🗑</span><p class="feature-text"><strong>一括削除</strong><span class="badge-new">New</span> <span>— 全削除・複数選択削除・ステータス別削除（読了まとめて削除など）の3種類から選べます</span></p></div>
     </div>
   </div>
   <div class="card">
     <p class="card-title">使い方</p>
     <div class="steps">
-      <div class="step"><div class="step-num">1</div><div class="step-body"><p class="step-title">本を登録</p><p class="step-desc">バーコードスキャン・ISBN検索・手動入力で登録。シリーズか単巻かを選んでステータスを設定します。</p></div></div>
-      <div class="step"><div class="step-num">2</div><div class="step-body"><p class="step-title">読み進めたら進捗を更新</p><p class="step-desc">シリーズは＋ボタンで読了巻数を更新。単巻はページ数を入力。読了すると🎉コンフェッティが出ます。</p></div></div>
-      <div class="step"><div class="step-num">3</div><div class="step-body"><p class="step-title">積読タブで未読を管理</p><p class="step-desc">「積読」タブで読んでいない本を把握。「読中」タブで現在進行中の本を確認できます。</p></div></div>
+      <div class="step"><div class="step-num">1</div><div class="step-body"><p class="step-title">本を登録</p><p class="step-desc">バーコードスキャン・ISBN検索・手動入力で登録。シリーズか単巻かを選んでステータスを設定します。まだ買っていないなら「ほしい」で登録してウィッシュリスト管理も可能です。</p></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><p class="step-title">読み進めたら進捗を更新</p><p class="step-desc">シリーズは＋ボタンで読了巻数を更新。単巻はページ数を入力。読了すると🎉コンフェッティが出ます。次巻発売日も登録しておくと発売日にバッジが付きます。</p></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><p class="step-title">積読タブで未読を管理</p><p class="step-desc">「積読」タブで読んでいない本を把握。「読中」タブで現在進行中の本を確認。設定タブから一括削除やCSVインポートも使えます。</p></div></div>
     </div>
   </div>
 </div>
@@ -424,19 +429,51 @@
   <div class="card">
     <p class="card-title">できること</p>
     <div class="feature-list">
-      <div class="feature-item"><span class="feature-icon">📒</span><p class="feature-text"><strong>収支を記録・管理</strong> <span>— 支出・収入をカテゴリ別に記録。今月の収支バランスをサマリーカードで確認できます</span></p></div>
+      <div class="feature-item"><span class="feature-icon">📒</span><p class="feature-text"><strong>収支を記録・管理</strong> <span>— 支出・収入をカテゴリ別に記録。今月の収支バランスをサマリーカードで確認できます。記録はタップで編集・削除できます</span></p></div>
       <div class="feature-item"><span class="feature-icon">📋</span><p class="feature-text"><strong>まとめ入力</strong><span class="badge-new">New</span> <span>— スーパーで食料品と日用品を一括購入した場合など、合計金額を複数カテゴリに分割して記録できます</span></p></div>
-      <div class="feature-item"><span class="feature-icon">💴</span><p class="feature-text"><strong>財布残高管理</strong> <span>— 現金の残高を登録しておくと、現金で支払うたびに自動で減算・加算されます</span></p></div>
+      <div class="feature-item"><span class="feature-icon">💴</span><p class="feature-text"><strong>支払い方法の残高管理</strong> <span>— 現金・各種カードの残高を登録。支払いのたびに残高が自動で増減し、今の手元資金を把握できます</span></p></div>
+      <div class="feature-item"><span class="feature-icon">📌</span><p class="feature-text"><strong>固定費の登録</strong><span class="badge-new">New</span> <span>— 家賃・光熱費などの固定費を登録しておくと、毎月の引き落とし日に自動で家計簿へ追加されます</span></p></div>
       <div class="feature-item"><span class="feature-icon">🔗</span><p class="feature-text"><strong>Subly連携</strong><span class="badge-new">New</span> <span>— サブスクの請求日当日に、Sublyに登録したサービスが家計簿へ自動追加されます</span></p></div>
-      <div class="feature-item"><span class="feature-icon">📊</span><p class="feature-text"><strong>グラフ分析</strong> <span>— カテゴリ別ドーナツグラフと月別棒グラフで支出の傾向を把握できます</span></p></div>
+      <div class="feature-item"><span class="feature-icon">📊</span><p class="feature-text"><strong>予算vs実績グラフ</strong><span class="badge-new">New</span> <span>— カテゴリごとに予算を設定し、実際の支出との差分をバーグラフで確認。使いすぎは赤で警告されます</span></p></div>
+      <div class="feature-item"><span class="feature-icon">📈</span><p class="feature-text"><strong>月別推移グラフ</strong> <span>— カテゴリ別ドーナツグラフと過去6ヶ月の棒グラフで支出の傾向を把握できます</span></p></div>
     </div>
   </div>
   <div class="card">
     <p class="card-title">使い方</p>
     <div class="steps">
-      <div class="step"><div class="step-num">1</div><div class="step-body"><p class="step-title">＋ボタンで収支を記録</p><p class="step-desc">金額・日付・カテゴリ・支払い方法を入力して記録。支出と収入はタブで切り替えます。</p></div></div>
+      <div class="step"><div class="step-num">1</div><div class="step-body"><p class="step-title">＋ボタンで収支を記録</p><p class="step-desc">金額・日付・カテゴリ・支払い方法を入力して記録。支出と収入はタブで切り替えます。記録をタップすると編集・削除できます。</p></div></div>
       <div class="step"><div class="step-num">2</div><div class="step-body"><p class="step-title">まとめ入力でまとめ買いを分割</p><p class="step-desc">「📋 まとめ入力」ボタンから合計金額を入力し、食料品・日用品などのカテゴリに分けて記録できます。残りが¥0になると保存できます。</p></div></div>
-      <div class="step"><div class="step-num">3</div><div class="step-body"><p class="step-title">グラフで家計を振り返る</p><p class="step-desc">「グラフ」タブでカテゴリ別の支出割合と過去6ヶ月の推移を確認。使いすぎているカテゴリを発見できます。</p></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><p class="step-title">固定費を登録して自動記録</p><p class="step-desc">設定タブから家賃・電気代などの固定費を登録。毎月の引き落とし日に自動で家計簿へ追加されるので入力忘れを防げます。</p></div></div>
+      <div class="step"><div class="step-num">4</div><div class="step-body"><p class="step-title">グラフで家計を振り返る</p><p class="step-desc">「グラフ」タブでカテゴリ別の予算vs実績・支出割合・月別推移を確認。予算超過のカテゴリは赤く表示されます。</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Common Features -->
+<span class="section-anchor" id="common"></span>
+<div class="section">
+  <div class="section-header">
+    <div class="section-app-icon" style="background:linear-gradient(135deg,#1a2a4a,#2e3d6a)">☁️</div>
+    <div>
+      <p class="section-name">全アプリ共通</p>
+      <p class="section-tag">クラウド同期・データ保護</p>
+    </div>
+  </div>
+  <div class="card">
+    <p class="card-title">保存状態バッジ</p>
+    <div class="feature-list">
+      <div class="feature-item"><span class="feature-icon">💾</span><p class="feature-text"><strong>ローカル保存</strong> <span>— ログインしていない場合、データはこの端末にのみ保存されます（グレーバッジ）</span></p></div>
+      <div class="feature-item"><span class="feature-icon">🔄</span><p class="feature-text"><strong>同期中</strong> <span>— データをクラウドへ送信中です（ブルーバッジ）。通常は数秒で完了します</span></p></div>
+      <div class="feature-item"><span class="feature-icon">☁️</span><p class="feature-text"><strong>クラウド同期済</strong> <span>— データが安全にクラウドへ保存されています（グリーンバッジ）</span></p></div>
+      <div class="feature-item"><span class="feature-icon">⚠️</span><p class="feature-text"><strong>同期失敗・再同期</strong> <span>— 通信エラーなどで同期できなかった場合はレッドバッジが表示されます。バッジをタップすると再試行します</span></p></div>
+    </div>
+  </div>
+  <div class="card">
+    <p class="card-title">マルチデバイス同期</p>
+    <div class="steps">
+      <div class="step"><div class="step-num">1</div><div class="step-body"><p class="step-title">Googleアカウントでログイン</p><p class="step-desc">各アプリ右上の「ログイン」ボタンからGoogleアカウントで認証します。一度ログインすると、以降は自動でクラウド同期が有効になります。</p></div></div>
+      <div class="step"><div class="step-num">2</div><div class="step-body"><p class="step-title">データが自動でクラウドへ保存</p><p class="step-desc">追加・編集・削除のたびに即座にSupabaseへ保存されます。各カードの右下に同期状態が表示されます。</p></div></div>
+      <div class="step"><div class="step-num">3</div><div class="step-body"><p class="step-title">別端末でも同じデータが見られる</p><p class="step-desc">スマホ・タブレット・PCなど複数の端末で同じGoogleアカウントにログインすれば、どこからでも最新データにアクセスできます。ログイン時はlocalStorageとクラウドを自動で比較し、新しい方を優先して同期します。</p></div></div>
     </div>
   </div>
 </div>
