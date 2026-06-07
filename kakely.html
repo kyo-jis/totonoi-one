@@ -1559,7 +1559,11 @@ async function savePay() {
     paymentMethods.push(newPay);
     if (currentUser) {
       var res = await _sb.from('kakely_payment_methods').insert(Object.assign({ user_id: currentUser.id }, payload)).select().single();
-      if (res.data) newPay.id = res.data.id;
+      if (res.error) {
+        showToast('⚠️ クラウド保存失敗: ' + res.error.message);
+      } else if (res.data) {
+        newPay.id = res.data.id;
+      }
     }
   }
   localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
@@ -1701,13 +1705,24 @@ async function syncFromCloud() {
       var pr2 = await _sb.from('kakely_payment_methods').select('*').eq('user_id', currentUser.id).order('created_at');
       paymentMethods = pr2.data || [];
     } else {
-      // ローカルのbalanceをSupabaseのnullで上書きしない
       var localPays = JSON.parse(localStorage.getItem('kakely_pays') || '[]');
+      // Supabase側のIDセット
+      var cloudIds = payRes.data.map(function(p){ return p.id; });
+      // ローカルにあってSupabaseに未保存の項目（tmp_プレフィックスまたはIDがクラウドにない）
+      var localOnly = localPays.filter(function(p){ return cloudIds.indexOf(p.id) === -1; });
+      // ローカルのbalanceをSupabaseのnullで上書きしない（IDで一致）
       paymentMethods = payRes.data.map(function(p) {
         if (p.balance != null) return p;
-        var local = localPays.find(function(l){ return l.name === p.name && l.type === p.type; });
+        var local = localPays.find(function(l){ return l.id === p.id; });
         return (local && local.balance != null) ? Object.assign({}, p, { balance: local.balance }) : p;
       });
+      // ローカルのみの項目をSupabaseにアップロード
+      for (var li = 0; li < localOnly.length; li++) {
+        var lp = localOnly[li];
+        var lpPayload = { icon: lp.icon, name: lp.name, type: lp.type, withdrawal_date: lp.withdrawal_date || null, balance: lp.balance || null };
+        var upr = await _sb.from('kakely_payment_methods').insert(Object.assign({ user_id: currentUser.id }, lpPayload)).select().single();
+        if (upr.data) paymentMethods.push(upr.data);
+      }
     }
     localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
   }
