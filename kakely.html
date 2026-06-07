@@ -48,7 +48,7 @@
     .summary-amount sup { font-size: 1.1rem; font-weight: 400; }
     .summary-sub { font-size: .78rem; color: var(--muted); margin-top: .3rem; }
     .summary-income { font-size: .82rem; color: var(--green); margin-top: .25rem; }
-    .wallet-balance { font-size: .78rem; color: rgba(245,166,35,.75); margin-top: .4rem; display: none; }
+    .wallet-balance { font-size: .78rem; color: rgba(245,166,35,.75); margin-top: .4rem; display: none; flex-wrap: wrap; gap: .4rem; }
     .card-deco { position: absolute; right: 1rem; bottom: -.75rem; font-size: 8rem; font-weight: 700; line-height: 1; color: rgba(255,255,255,.04); pointer-events: none; user-select: none; }
     .cat-bar { display: flex; gap: .5rem; margin-top: 1rem; flex-wrap: wrap; }
     .cat-bar-item { display: flex; align-items: center; gap: .4rem; font-size: .72rem; color: var(--muted); }
@@ -95,6 +95,8 @@
     .balance-badge { display: inline-flex; align-items: center; gap: .2rem; font-size: .62rem; border-radius: 10px; padding: .15rem .5rem; margin-left: .4rem; font-weight: 500; vertical-align: middle; }
     .balance-badge.ok  { background: rgba(94,207,160,.15);  color: var(--green); }
     .balance-badge.low { background: rgba(255,107,107,.15); color: var(--red); }
+    .btn-charge { font-size: .72rem; padding: .3rem .75rem; border-radius: 8px; background: rgba(245,166,35,.12); color: var(--accent); border: 1px solid rgba(245,166,35,.25); cursor: pointer; font-family: inherit; white-space: nowrap; }
+    .btn-charge:active { opacity: .7; }
     .balance-hint { font-size: .75rem; padding: .45rem .8rem; border-radius: 8px; margin-top: .4rem; }
     .balance-hint.ok  { background: rgba(94,207,160,.08);  color: var(--green); border: 1px solid rgba(94,207,160,.2); }
     .balance-hint.low { background: rgba(255,107,107,.08); color: var(--red);   border: 1px solid rgba(255,107,107,.25); }
@@ -517,6 +519,24 @@
   </div>
 </div>
 
+<!-- Charge Modal -->
+<div class="modal-overlay" id="chargeModal" onclick="if(event.target===this)closeModal('chargeModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <p class="modal-title" id="chargeTitle">チャージ</p>
+    <div class="form-group">
+      <label class="form-label">移動元（現金 / 銀行口座）</label>
+      <select id="chargeFrom"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">チャージ金額（円）</label>
+      <input type="number" id="chargeAmount" placeholder="3000" min="1" inputmode="numeric">
+    </div>
+    <button class="btn-primary" onclick="handleCharge()">チャージする</button>
+    <button class="btn-cancel" onclick="closeModal('chargeModal')">キャンセル</button>
+  </div>
+</div>
+
 <!-- Fixed Cost Modal -->
 <div class="modal-overlay" id="fixedModal" onclick="if(event.target===this)closeModal('fixedModal')">
   <div class="modal">
@@ -625,7 +645,7 @@ var paymentMethods = JSON.parse(localStorage.getItem('kakely_pays') || '[]');
 var transactions = [];
 var now = new Date();
 var viewYear = now.getFullYear(), viewMonth = now.getMonth();
-var editTxnId = null, editCatId = null, editPayId = null;
+var editTxnId = null, editCatId = null, editPayId = null, chargePayId = null;
 var txnIsIncome = false;
 var txnIsTransfer = false;
 var selectedCatId = null;
@@ -1211,11 +1231,15 @@ function renderSettings() {
   var payEl = document.getElementById('payList');
   payEl.innerHTML = paymentMethods.map(function(p) {
     var isCash = p.type === 'cash';
-    var hasBalance = isCash && p.balance != null;
+    var isEmoney = p.type === 'emoney';
+    var hasBalance = (isCash || isEmoney) && p.balance != null;
     var isLow = hasBalance && p.balance <= 1000;
     var badge = hasBalance
       ? '<span class="balance-badge ' + (isLow ? 'low' : 'ok') + '">'
         + (isLow ? '⚠️' : '💰') + ' 残高管理中</span>'
+      : '';
+    var chargeBtn = isEmoney && hasBalance
+      ? '<button class="btn-charge" onclick="openChargeModal(\'' + p.id + '\')">チャージ</button>'
       : '';
     return '<div class="settings-row">'
       + '<span class="settings-icon">' + p.icon + '</span>'
@@ -1223,6 +1247,7 @@ function renderSettings() {
       + '<p class="settings-sub">' + (PAY_TYPE[p.type]||p.type)
       + (p.withdrawal_date ? ' · ' + p.withdrawal_date + '日引き落とし' : '')
       + (hasBalance ? '　¥' + p.balance.toLocaleString() : '') + '</p></div>'
+      + chargeBtn
       + '<button class="btn-sm-icon" onclick="openPayModal(\'' + p.id + '\')">✏️</button></div>';
   }).join('');
 }
@@ -1521,9 +1546,10 @@ function openPayModal(id) {
     document.getElementById('fPayName').value = p.name;
     document.getElementById('fPayType').value = p.type;
     document.getElementById('fWithdrawal').value = p.withdrawal_date || '';
-    document.getElementById('fBalance').value     = p.type === 'cash' && p.balance != null ? p.balance : '';
+    var hasBalType = p.type === 'cash' || p.type === 'emoney';
+    document.getElementById('fBalance').value     = hasBalType && p.balance != null ? p.balance : '';
     document.getElementById('withdrawalWrap').style.display = p.type === 'card' ? '' : 'none';
-    document.getElementById('balanceWrap').style.display    = p.type === 'cash' ? '' : 'none';
+    document.getElementById('balanceWrap').style.display    = hasBalType ? '' : 'none';
   } else {
     document.getElementById('fPayIcon').value = '';
     document.getElementById('fPayName').value = '';
@@ -1538,7 +1564,7 @@ function openPayModal(id) {
 
 document.getElementById('fPayType').addEventListener('change', function() {
   document.getElementById('withdrawalWrap').style.display = this.value === 'card' ? '' : 'none';
-  document.getElementById('balanceWrap').style.display   = this.value === 'cash' ? '' : 'none';
+  document.getElementById('balanceWrap').style.display   = (this.value === 'cash' || this.value === 'emoney') ? '' : 'none';
 });
 
 async function savePay() {
@@ -1548,7 +1574,7 @@ async function savePay() {
   var wd   = parseInt(document.getElementById('fWithdrawal').value) || null;
   if (!name) { showToast('名前を入力してください'); return; }
 
-  var bal = type === 'cash' ? (document.getElementById('fBalance').value !== '' ? parseInt(document.getElementById('fBalance').value) : null) : null;
+  var bal = (type === 'cash' || type === 'emoney') ? (document.getElementById('fBalance').value !== '' ? parseInt(document.getElementById('fBalance').value) : null) : null;
 
   // null値を除外したペイロード（カラム不一致エラーを防ぐ）
   var payload = { icon: icon, name: name, type: type };
@@ -1598,17 +1624,66 @@ async function deletePay() {
   showToast('削除しました');
 }
 
+function openChargeModal(payId) {
+  chargePayId = payId;
+  var p = paymentMethods.find(function(x){ return x.id === payId; });
+  if (!p) return;
+  document.getElementById('chargeTitle').textContent = p.icon + ' ' + p.name + ' チャージ';
+  var sel = document.getElementById('chargeFrom');
+  sel.innerHTML = paymentMethods
+    .filter(function(m){ return m.type === 'cash' || m.type === 'bank'; })
+    .map(function(m){ return '<option value="' + m.id + '">' + m.icon + ' ' + esc(m.name) + '</option>'; })
+    .join('');
+  document.getElementById('chargeAmount').value = '';
+  document.getElementById('chargeModal').classList.add('show');
+}
+
+async function handleCharge() {
+  var amount = parseInt(document.getElementById('chargeAmount').value);
+  var fromId = document.getElementById('chargeFrom').value;
+  if (!amount || amount <= 0) { showToast('チャージ金額を入力してください'); return; }
+  if (!fromId) { showToast('移動元を選択してください'); return; }
+  var to   = paymentMethods.find(function(x){ return x.id === chargePayId; });
+  var from = paymentMethods.find(function(x){ return x.id === fromId; });
+  if (!to || !from) return;
+  var gid = 'charge_' + Date.now();
+  var today = localDateStr(new Date());
+  var outTxn = { id: 'tmp_' + Date.now() + '_out', amount: amount, date: today, is_income: false, is_transfer: true, group_id: gid, payment_method_id: fromId,      memo: 'チャージ→' + to.name };
+  var inTxn  = { id: 'tmp_' + Date.now() + '_in',  amount: amount, date: today, is_income: true,  is_transfer: true, group_id: gid, payment_method_id: chargePayId, memo: 'チャージ←' + from.name };
+  transactions.push(outTxn, inTxn);
+  updateCashBalance(fromId,      -amount);
+  updateCashBalance(chargePayId,  amount);
+  saveMonthCache();
+  if (currentUser) {
+    var rows = [outTxn, inTxn].map(function(t) {
+      return { user_id: currentUser.id, amount: t.amount, date: t.date, is_income: t.is_income, is_transfer: t.is_transfer, group_id: t.group_id, payment_method_id: t.payment_method_id, memo: t.memo };
+    });
+    var sbRes = await _sb.from('kakely_transactions').insert(rows).select();
+    if (sbRes.data) {
+      var tmpIds = [outTxn.id, inTxn.id];
+      sbRes.data.forEach(function(row, i) {
+        transactions = transactions.map(function(t){ return t.id === tmpIds[i] ? row : t; });
+      });
+      saveMonthCache();
+    }
+  }
+  closeModal('chargeModal');
+  renderAll();
+  showToast(to.icon + ' ' + to.name + ' ¥' + amount.toLocaleString() + ' チャージしました ✓');
+}
+
 function updatePayBalanceHint() {
   var hint = document.getElementById('payBalanceHint');
   if (!hint) return;
   var payId = document.getElementById('fPayMethod').value;
   if (!payId) { hint.style.display = 'none'; return; }
   var p = paymentMethods.find(function(x){ return x.id === payId; });
-  if (!p || p.type !== 'cash' || p.balance == null) { hint.style.display = 'none'; return; }
+  if (!p || (p.type !== 'cash' && p.type !== 'emoney') || p.balance == null) { hint.style.display = 'none'; return; }
   var isLow = p.balance <= 1000;
   hint.className = 'balance-hint ' + (isLow ? 'low' : 'ok');
   hint.style.display = '';
-  hint.textContent = (isLow ? '⚠️ 残高不足注意：' : '💴 現在の残高：') + '¥' + p.balance.toLocaleString();
+  var ico = p.type === 'emoney' ? '📱' : '💴';
+  hint.textContent = (isLow ? '⚠️ 残高不足注意：' : ico + ' 現在の残高：') + '¥' + p.balance.toLocaleString();
 }
 
 async function quickDeleteTxn(id, event) {
@@ -1636,7 +1711,7 @@ async function deleteGroupTxns(groupId, event) {
 function updateCashBalance(payId, delta) {
   if (!payId) return;
   var p = paymentMethods.find(function(x){ return x.id === payId; });
-  if (!p || p.type !== 'cash' || p.balance == null) return;
+  if (!p || (p.type !== 'cash' && p.type !== 'emoney') || p.balance == null) return;
   p.balance = p.balance + delta;
   localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
   if (currentUser) _sb.from('kakely_payment_methods').update({ balance: p.balance }).eq('id', payId);
@@ -1647,11 +1722,15 @@ function updateCashBalance(payId, delta) {
 function updateBalanceDisplay() {
   var el = document.getElementById('walletBalance');
   if (!el) return;
-  var cashPays = paymentMethods.filter(function(p){ return p.type === 'cash' && p.balance != null; });
-  if (cashPays.length === 0) { el.style.display = 'none'; return; }
-  var total = cashPays.reduce(function(s,p){ return s + p.balance; }, 0);
-  el.textContent = '💴 財布残高 ¥' + total.toLocaleString();
-  el.style.display = 'block';
+  var managed = paymentMethods.filter(function(p){ return (p.type === 'cash' || p.type === 'emoney') && p.balance != null; });
+  if (managed.length === 0) { el.style.display = 'none'; return; }
+  var parts = managed.map(function(p) {
+    var isLow = p.balance <= 1000;
+    var color = isLow ? 'color:#ff6b6b' : '';
+    return '<span style="' + color + '">' + (isLow ? '⚠️' : p.icon) + ' ' + esc(p.name) + ' ¥' + p.balance.toLocaleString() + '</span>';
+  });
+  el.innerHTML = parts.join('<span style="opacity:.4"> / </span>');
+  el.style.display = 'flex';
 }
 
 // ── Cache ──
