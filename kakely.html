@@ -87,6 +87,7 @@
     .txn-btn-del:active { color: var(--red); }
     .group-badge { display: inline-block; font-size: .58rem; background: rgba(108,142,255,.18); color: #a0c4ff; border-radius: 4px; padding: 1px 4px; margin-left: .3rem; vertical-align: middle; }
     .fixed-badge { display: inline-block; font-size: .58rem; background: rgba(245,166,35,.15); color: var(--accent); border-radius: 4px; padding: 1px 4px; margin-left: .3rem; vertical-align: middle; }
+    .transfer-badge { display: inline-block; font-size: .58rem; background: rgba(108,142,255,.15); color: #6c8eff; border-radius: 4px; padding: 1px 4px; margin-left: .3rem; vertical-align: middle; }
     .preset-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1rem; }
     .preset-chip { padding: .4rem .75rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; font-size: .78rem; color: var(--muted); cursor: pointer; display: flex; align-items: center; gap: .3rem; white-space: nowrap; font-family: var(--font); }
     .preset-chip:active { opacity: .7; }
@@ -189,7 +190,7 @@
     input:checked + .toggle-slider::before { transform: translateX(20px); }
 
     /* Type selector */
-    .type-selector { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-bottom: 1rem; }
+    .type-selector { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .4rem; margin-bottom: 1rem; }
     .type-btn { padding: .65rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; font-family: var(--font); font-size: .82rem; color: var(--muted); cursor: pointer; text-align: center; transition: all .15s; }
     .type-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(245,166,35,.1); }
 
@@ -396,35 +397,58 @@
     <div class="modal-handle"></div>
     <p class="modal-title" id="txnModalTitle">支出を記録</p>
     <div class="type-selector">
-      <button class="type-btn active" id="typeExpense" onclick="setTxnType(false)">📤 支出</button>
-      <button class="type-btn" id="typeIncome" onclick="setTxnType(true)">📥 収入</button>
+      <button class="type-btn active" id="typeExpense" onclick="setTxnType('expense')">📤 支出</button>
+      <button class="type-btn" id="typeIncome" onclick="setTxnType('income')">📥 収入</button>
+      <button class="type-btn" id="typeTransfer" onclick="setTxnType('transfer')">💸 移動</button>
     </div>
-    <div class="form-group">
-      <label class="form-label">金額（円）</label>
-      <input type="number" id="fAmount" placeholder="1,200" min="1" inputmode="numeric">
-    </div>
-    <div class="form-group">
-      <label class="form-label">日付</label>
-      <input type="date" id="fDate">
-    </div>
-    <div class="form-group" id="catSelectWrap">
-      <label class="form-label">カテゴリ</label>
-      <div class="cat-scroll">
-        <div class="cat-grid" id="catSelectGrid"></div>
+    <!-- 通常フォーム -->
+    <div id="normalTxnWrap">
+      <div class="form-group">
+        <label class="form-label">金額（円）</label>
+        <input type="number" id="fAmount" placeholder="1,200" min="1" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label class="form-label">日付</label>
+        <input type="date" id="fDate">
+      </div>
+      <div class="form-group" id="catSelectWrap">
+        <label class="form-label">カテゴリ</label>
+        <div class="cat-scroll">
+          <div class="cat-grid" id="catSelectGrid"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" id="payMethodLabel">支払い方法</label>
+        <select id="fPayMethod" onchange="updatePayBalanceHint()">
+          <option value="">未設定</option>
+        </select>
+        <div id="payBalanceHint" class="balance-hint" style="display:none"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">メモ（任意）</label>
+        <input type="text" id="fMemo" placeholder="スーパーマーケット">
       </div>
     </div>
-    <div class="form-group">
-      <label class="form-label">支払い方法</label>
-      <select id="fPayMethod" onchange="updatePayBalanceHint()">
-        <option value="">未設定</option>
-      </select>
-      <div id="payBalanceHint" class="balance-hint" style="display:none"></div>
+    <!-- 資金移動フォーム -->
+    <div id="transferTxnWrap" style="display:none">
+      <div class="form-group">
+        <label class="form-label">移動元</label>
+        <select id="fTransferFrom"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">移動先</label>
+        <select id="fTransferTo"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">金額（円）</label>
+        <input type="number" id="fTransferAmount" placeholder="10,000" min="1" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label class="form-label">日付</label>
+        <input type="date" id="fTransferDate">
+      </div>
     </div>
-    <div class="form-group">
-      <label class="form-label">メモ（任意）</label>
-      <input type="text" id="fMemo" placeholder="スーパーマーケット">
-    </div>
-    <button class="btn-primary" onclick="saveTxn()">記録する</button>
+    <button class="btn-primary" id="saveTxnBtn" onclick="handleSaveTxn()">記録する</button>
     <button class="btn-danger" id="deleteTxnBtn" onclick="deleteTxn()" style="display:none">削除する</button>
     <button class="btn-cancel" onclick="closeModal('txnModal')">キャンセル</button>
   </div>
@@ -603,6 +627,7 @@ var now = new Date();
 var viewYear = now.getFullYear(), viewMonth = now.getMonth();
 var editTxnId = null, editCatId = null, editPayId = null;
 var txnIsIncome = false;
+var txnIsTransfer = false;
 var selectedCatId = null;
 var isPro = localStorage.getItem('isPro') === 'true';
 var fixedCosts = JSON.parse(localStorage.getItem('kakely_fixed') || '[]');
@@ -716,8 +741,8 @@ function changeMonth(dir) {
 
 // ── Summary ──
 function updateSummary() {
-  var expenses = transactions.filter(function(t){ return !t.is_income; });
-  var incomes  = transactions.filter(function(t){ return t.is_income; });
+  var expenses = transactions.filter(function(t){ return !t.is_income && !t.is_transfer; });
+  var incomes  = transactions.filter(function(t){ return t.is_income  && !t.is_transfer; });
   var totalExp = expenses.reduce(function(s,t){ return s+t.amount; }, 0);
   var totalInc = incomes.reduce(function(s,t){ return s+t.amount; }, 0);
 
@@ -764,7 +789,7 @@ function renderList() {
   var dates = Object.keys(grouped).sort(function(a,b){ return b.localeCompare(a); });
   el.innerHTML = dates.map(function(date) {
     var txns = grouped[date];
-    var dayTotal = txns.reduce(function(s,t){ return s + (t.is_income ? 0 : t.amount); }, 0);
+    var dayTotal = txns.reduce(function(s,t){ return s + (!t.is_income && !t.is_transfer ? t.amount : 0); }, 0);
     var todayStr = localDateStr(new Date());
     var label = date === todayStr ? '今日 ' + fmtDate(date) : fmtDate(date);
     return '<div class="day-group">'
@@ -773,26 +798,37 @@ function renderList() {
       + txns.map(function(t) {
           var cat = categories.find(function(c){ return c.id===t.category_id; });
           var pay = paymentMethods.find(function(p){ return p.id===t.payment_method_id; });
-          var isGroup = !!t.group_id;
-          var isFixed = !!(t.memo && t.memo.indexOf('固定費:') === 0);
-          var nameLine = esc(cat ? cat.name : '未分類') + (pay ? ' · ' + pay.icon + esc(pay.name) : '');
-          if (isGroup) nameLine += ' <span class="group-badge">まとめ</span>';
-          if (isFixed) nameLine += ' <span class="fixed-badge">固定費</span>';
-          var memoTxt = (t.memo && !isFixed) ? esc(t.memo) : '';
-          var delFn = isGroup
-            ? 'deleteGroupTxns(\'' + t.group_id + '\',event)'
-            : 'quickDeleteTxn(\'' + t.id + '\',event)';
+          var isGroup    = !!t.group_id && !t.is_transfer;
+          var isFixed    = !!(t.memo && t.memo.indexOf('固定費:') === 0);
+          var isTransfer = !!t.is_transfer;
+          var nameLine;
+          if (isTransfer) {
+            nameLine = '💸 資金移動' + (pay ? ' · ' + pay.icon + esc(pay.name) : '') + ' <span class="transfer-badge">移動</span>';
+          } else {
+            nameLine = esc(cat ? cat.name : '未分類') + (pay ? ' · ' + pay.icon + esc(pay.name) : '');
+            if (isGroup) nameLine += ' <span class="group-badge">まとめ</span>';
+            if (isFixed) nameLine += ' <span class="fixed-badge">固定費</span>';
+          }
+          var memoTxt = (!isFixed && !isTransfer && t.memo) ? esc(t.memo) : '';
+          var delFn = isTransfer
+            ? 'openTxnModal(\'' + t.id + '\')'
+            : isGroup
+              ? 'deleteGroupTxns(\'' + t.group_id + '\',event)'
+              : 'quickDeleteTxn(\'' + t.id + '\',event)';
+          var amtPrefix = isTransfer ? (t.is_income ? '↙' : '↗') : (t.is_income ? '+' : '−');
           return '<div class="txn-row" style="animation:slideIn .25s ease">'
-            + '<div class="txn-icon" onclick="openTxnModal(\'' + t.id + '\')" style="cursor:pointer">' + (cat ? cat.icon : '❓') + '</div>'
+            + '<div class="txn-icon" onclick="openTxnModal(\'' + t.id + '\')" style="cursor:pointer">' + (isTransfer ? '💸' : (cat ? cat.icon : '❓')) + '</div>'
             + '<div class="txn-info" onclick="openTxnModal(\'' + t.id + '\')" style="cursor:pointer">'
             + '<p class="txn-name">' + nameLine + '</p>'
             + (memoTxt ? '<p class="txn-memo">' + memoTxt + '</p>' : '') + '</div>'
             + '<div class="txn-right">'
-            + '<span class="txn-amount' + (t.is_income ? ' income' : '') + '">'
-            + (t.is_income ? '+' : '−') + '¥' + t.amount.toLocaleString() + '</span>'
+            + '<span class="txn-amount' + (t.is_income ? ' income' : '') + '" style="' + (isTransfer ? 'color:#6c8eff' : '') + '">'
+            + amtPrefix + '¥' + t.amount.toLocaleString() + '</span>'
             + '<div class="txn-btns">'
             + '<button class="txn-btn" onclick="openTxnModal(\'' + t.id + '\')">✏️</button>'
-            + '<button class="txn-btn-del" onclick="' + delFn + '">🗑</button>'
+            + (isTransfer
+              ? '<button class="txn-btn-del" onclick="editTxnId=\'' + t.id + '\';deleteTxn()">🗑</button>'
+              : '<button class="txn-btn-del" onclick="' + delFn + '">🗑</button>')
             + '</div></div>'
             + '<div class="sync-slot"></div>'
             + '</div>';
@@ -811,7 +847,7 @@ function renderCalendar() {
   // Build date totals
   var dateTotals = {};
   transactions.forEach(function(t) {
-    if (!t.is_income) dateTotals[t.date] = (dateTotals[t.date] || 0) + t.amount;
+    if (!t.is_income && !t.is_transfer) dateTotals[t.date] = (dateTotals[t.date] || 0) + t.amount;
   });
 
   for (var i = 0; i < firstDay; i++) html += '<div class="cal-day empty"></div>';
@@ -861,7 +897,7 @@ function renderBudgetSection() {
   if (!section || !list) return;
 
   var catTotals = {};
-  transactions.filter(function(t){ return !t.is_income; }).forEach(function(t) {
+  transactions.filter(function(t){ return !t.is_income && !t.is_transfer; }).forEach(function(t) {
     catTotals[t.category_id || 'none'] = (catTotals[t.category_id || 'none'] || 0) + t.amount;
   });
 
@@ -928,7 +964,7 @@ function renderBudgetSection() {
 }
 
 function renderPieChart(isPC) {
-  var expenses = transactions.filter(function(t){ return !t.is_income; });
+  var expenses = transactions.filter(function(t){ return !t.is_income && !t.is_transfer; });
   var catTotals = {};
   expenses.forEach(function(t) {
     var key = t.category_id || 'none';
@@ -975,8 +1011,8 @@ function renderBarChart(isPC) {
     var d = new Date(viewYear, viewMonth - i, 1);
     var y = d.getFullYear(), m = d.getMonth();
     var cached = JSON.parse(localStorage.getItem('kakely_txn_' + y + '_' + (m+1)) || '[]');
-    var exp = cached.filter(function(t){ return !t.is_income; }).reduce(function(s,t){ return s+t.amount; }, 0);
-    var inc = cached.filter(function(t){ return !!t.is_income; }).reduce(function(s,t){ return s+t.amount; }, 0);
+    var exp = cached.filter(function(t){ return !t.is_income && !t.is_transfer; }).reduce(function(s,t){ return s+t.amount; }, 0);
+    var inc = cached.filter(function(t){ return !!t.is_income && !t.is_transfer; }).reduce(function(s,t){ return s+t.amount; }, 0);
     months.push({ label: mn[m], exp: exp, inc: inc, isCur: (y===viewYear && m===viewMonth) });
   }
   if (_barChart) _barChart.destroy();
@@ -1037,7 +1073,7 @@ function renderTrendChart() {
   var daysInPrev = new Date(prevY, prevM + 1, 0).getDate();
   function buildCumulative(cached, days) {
     var daily = new Array(days).fill(0);
-    cached.filter(function(t){ return !t.is_income; }).forEach(function(t) {
+    cached.filter(function(t){ return !t.is_income && !t.is_transfer; }).forEach(function(t) {
       var day = parseInt((t.date || '').split('-')[2] || '0', 10) - 1;
       if (day >= 0 && day < days) daily[day] += t.amount;
     });
@@ -1090,7 +1126,7 @@ function renderHeatmap() {
     var d = new Date(today.getFullYear(), today.getMonth() - mi, 1);
     var y = d.getFullYear(), mo = d.getMonth();
     var cached = JSON.parse(localStorage.getItem('kakely_txn_' + y + '_' + (mo + 1)) || '[]');
-    cached.filter(function(t){ return !t.is_income; }).forEach(function(t) {
+    cached.filter(function(t){ return !t.is_income && !t.is_transfer; }).forEach(function(t) {
       if (t.date) spendMap[t.date] = (spendMap[t.date] || 0) + t.amount;
     });
   }
@@ -1205,33 +1241,41 @@ function switchTab(name, btn) {
 function openTxnModal(id) {
   editTxnId = id || null;
   txnIsIncome = false;
+  txnIsTransfer = false;
   selectedCatId = null;
   document.getElementById('txnModalTitle').textContent = id ? '記録を編集' : '支出を記録';
   document.getElementById('deleteTxnBtn').style.display = id ? '' : 'none';
-  setTxnType(false);
 
-  // Populate category grid
-  buildCatGrid();
-  // Populate payment method select
-  var sel = document.getElementById('fPayMethod');
-  sel.innerHTML = '<option value="">未設定</option>'
+  var payOpts = '<option value="">未設定</option>'
     + paymentMethods.map(function(p){ return '<option value="' + p.id + '">' + p.icon + ' ' + p.name + '</option>'; }).join('');
+  document.getElementById('fPayMethod').innerHTML = payOpts;
+
+  var transferOpts = paymentMethods.map(function(p){ return '<option value="' + p.id + '">' + p.icon + ' ' + p.name + '</option>'; }).join('');
+  document.getElementById('fTransferFrom').innerHTML = transferOpts;
+  document.getElementById('fTransferTo').innerHTML   = transferOpts;
 
   if (id) {
     var t = transactions.find(function(x){ return x.id === id; });
     if (!t) return;
-    setTxnType(t.is_income || false);
+    if (t.is_transfer) {
+      setTxnType('transfer');
+    } else {
+      setTxnType(t.is_income ? 'income' : 'expense');
+    }
     document.getElementById('fAmount').value = t.amount;
     document.getElementById('fDate').value = t.date;
-    document.getElementById('fMemo').value = t.memo || '';
-    sel.value = t.payment_method_id || '';
+    document.getElementById('fMemo').value = t.is_transfer ? '' : (t.memo || '');
+    document.getElementById('fPayMethod').value = t.payment_method_id || '';
     selectedCatId = t.category_id || null;
     buildCatGrid();
   } else {
+    setTxnType('expense');
     document.getElementById('fAmount').value = '';
     document.getElementById('fDate').value = localDateStr(new Date());
     document.getElementById('fMemo').value = '';
-    sel.value = '';
+    document.getElementById('fTransferAmount').value = '';
+    document.getElementById('fTransferDate').value = localDateStr(new Date());
+    buildCatGrid();
   }
   updatePayBalanceHint();
   document.getElementById('txnModal').classList.add('show');
@@ -1251,11 +1295,63 @@ function selectCat(id) {
   buildCatGrid();
 }
 
-function setTxnType(isIncome) {
-  txnIsIncome = isIncome;
-  document.getElementById('typeExpense').classList.toggle('active', !isIncome);
-  document.getElementById('typeIncome').classList.toggle('active', isIncome);
-  document.getElementById('catSelectWrap').style.display = isIncome ? 'none' : '';
+function setTxnType(type) {
+  txnIsTransfer = (type === 'transfer');
+  txnIsIncome   = (type === 'income');
+  document.getElementById('typeExpense').classList.toggle('active',  type === 'expense');
+  document.getElementById('typeIncome').classList.toggle('active',   type === 'income');
+  document.getElementById('typeTransfer').classList.toggle('active', type === 'transfer');
+  document.getElementById('normalTxnWrap').style.display   = txnIsTransfer ? 'none' : '';
+  document.getElementById('transferTxnWrap').style.display = txnIsTransfer ? '' : 'none';
+  if (!txnIsTransfer) {
+    document.getElementById('catSelectWrap').style.display = txnIsIncome ? 'none' : '';
+  }
+  document.getElementById('saveTxnBtn').textContent = txnIsTransfer ? '移動を記録する' : '記録する';
+}
+
+function handleSaveTxn() {
+  if (txnIsTransfer) saveTransfer();
+  else saveTxn();
+}
+
+async function saveTransfer() {
+  var fromId = document.getElementById('fTransferFrom').value;
+  var toId   = document.getElementById('fTransferTo').value;
+  var amount = parseInt(document.getElementById('fTransferAmount').value);
+  var date   = document.getElementById('fTransferDate').value;
+  if (!fromId || !toId || !amount || !date) { showToast('すべての項目を入力してください'); return; }
+  if (fromId === toId) { showToast('移動元と移動先が同じです'); return; }
+
+  var groupId = 'tf_' + Date.now();
+  var fromPay = { id: groupId + '_from', amount: amount, date: date,
+    is_income: false, is_transfer: true, group_id: groupId,
+    payment_method_id: fromId, category_id: null, memo: null };
+  var toPay   = { id: groupId + '_to',   amount: amount, date: date,
+    is_income: true,  is_transfer: true, group_id: groupId,
+    payment_method_id: toId,   category_id: null, memo: null };
+
+  transactions.unshift(toPay);
+  transactions.unshift(fromPay);
+
+  if (currentUser) {
+    var fromPayload = { user_id: currentUser.id, amount: amount, date: date,
+      is_income: false, is_transfer: true, group_id: groupId,
+      payment_method_id: fromId, category_id: null, memo: null };
+    var toPayload   = { user_id: currentUser.id, amount: amount, date: date,
+      is_income: true,  is_transfer: true, group_id: groupId,
+      payment_method_id: toId,   category_id: null, memo: null };
+    var r1 = await _sb.from('kakely_transactions').insert(fromPayload).select().single();
+    var r2 = await _sb.from('kakely_transactions').insert(toPayload).select().single();
+    if (r1.data) fromPay.id = r1.data.id;
+    if (r2.data) toPay.id   = r2.data.id;
+  }
+
+  updateCashBalance(fromId, -amount);
+  updateCashBalance(toId,    amount);
+  saveMonthCache();
+  closeModal('txnModal');
+  renderAll();
+  showToast('資金移動を記録しました ✓');
 }
 
 async function saveTxn() {
@@ -1305,6 +1401,20 @@ async function saveTxn() {
 async function deleteTxn() {
   if (!editTxnId || !confirm('この記録を削除しますか？')) return;
   var del = transactions.find(function(t){ return t.id === editTxnId; });
+
+  if (del && del.is_transfer && del.group_id) {
+    // 資金移動は pair を両方削除
+    var grp = transactions.filter(function(t){ return t.group_id === del.group_id; });
+    grp.forEach(function(t) {
+      updateCashBalance(t.payment_method_id, t.is_income ? -t.amount : t.amount);
+    });
+    var gid = del.group_id;
+    transactions = transactions.filter(function(t){ return t.group_id !== gid; });
+    if (currentUser) await _sb.from('kakely_transactions').delete().eq('group_id', gid);
+    saveMonthCache(); closeModal('txnModal'); renderAll(); showToast('資金移動を削除しました');
+    return;
+  }
+
   if (del && del.payment_method_id) {
     var undoDelta = del.is_income ? -del.amount : del.amount;
     updateCashBalance(del.payment_method_id, undoDelta);
