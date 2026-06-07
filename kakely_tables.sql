@@ -23,6 +23,7 @@ create table if not exists kakely_payment_methods (
   name text not null,
   type text not null default 'cash',
   withdrawal_date integer,
+  balance integer,
   created_at timestamptz default now()
 );
 alter table kakely_payment_methods enable row level security;
@@ -36,9 +37,11 @@ create table if not exists kakely_transactions (
   amount integer not null,
   date date not null,
   is_income boolean not null default false,
+  is_transfer boolean not null default false,
   category_id uuid references kakely_categories(id) on delete set null,
   payment_method_id uuid references kakely_payment_methods(id) on delete set null,
   memo text,
+  group_id text,
   created_at timestamptz default now()
 );
 alter table kakely_transactions enable row level security;
