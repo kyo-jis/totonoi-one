@@ -1549,28 +1549,43 @@ async function savePay() {
   if (!name) { showToast('名前を入力してください'); return; }
 
   var bal = type === 'cash' ? (document.getElementById('fBalance').value !== '' ? parseInt(document.getElementById('fBalance').value) : null) : null;
-  var payload = { icon: icon, name: name, type: type, withdrawal_date: wd, balance: bal };
+
+  // null値を除外したペイロード（カラム不一致エラーを防ぐ）
+  var payload = { icon: icon, name: name, type: type };
+  if (wd != null) payload.withdrawal_date = wd;
+  if (bal != null) payload.balance = bal;
+
   if (editPayId) {
     var idx = paymentMethods.findIndex(function(p){ return p.id === editPayId; });
     if (idx !== -1) paymentMethods[idx] = Object.assign(paymentMethods[idx], payload);
-    if (currentUser) await _sb.from('kakely_payment_methods').update(payload).eq('id', editPayId);
+    if (currentUser) {
+      var upRes = await _sb.from('kakely_payment_methods').update(payload).eq('id', editPayId);
+      if (upRes.error) { showToast('⚠️ 更新失敗: ' + upRes.error.message); return; }
+    }
   } else {
     var newPay = Object.assign({ id: 'tmp_' + Date.now() }, payload);
     paymentMethods.push(newPay);
     if (currentUser) {
-      var res = await _sb.from('kakely_payment_methods').insert(Object.assign({ user_id: currentUser.id }, payload)).select().single();
+      var res = await _sb.from('kakely_payment_methods')
+        .insert(Object.assign({ user_id: currentUser.id }, payload))
+        .select().single();
       if (res.error) {
-        showToast('⚠️ クラウド保存失敗: ' + res.error.message);
-      } else if (res.data) {
-        newPay.id = res.data.id;
+        // ローカルから巻き戻す
+        paymentMethods = paymentMethods.filter(function(p){ return p.id !== newPay.id; });
+        localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
+        showToast('⚠️ 保存失敗: ' + res.error.message);
+        return;
       }
+      if (res.data) newPay.id = res.data.id;
+    } else {
+      showToast('ℹ️ ログインしていないためデバイス内にのみ保存されます');
     }
   }
   localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
   closeModal('payModal');
   renderSettings();
   updateBalanceDisplay();
-  showToast('保存しました');
+  showToast('保存しました ✓');
 }
 
 async function deletePay() {
