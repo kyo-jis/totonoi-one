@@ -1455,9 +1455,11 @@ async function syncFromCloud() {
   var p = await _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle();
   if (p.data) { isPro = p.data.is_pro; localStorage.setItem('isPro', String(isPro)); }
   if (currentUser.email === 'kyouji.o@gmail.com') { isPro = true; localStorage.setItem('isPro', 'true'); }
-  // kakely の支払い方法を取得して決済方法セレクトに反映
-  var pm = await _sb.from('kakely_payment_methods').select('*').eq('user_id', currentUser.id).order('created_at');
-  if (pm.data && pm.data.length > 0) populateSublyPaymentSelect(pm.data);
+  // kakely の支払い方法を取得（失敗しても他の処理を止めない）
+  try {
+    var pm = await _sb.from('kakely_payment_methods').select('*').eq('user_id', currentUser.id).order('created_at');
+    if (pm.data && pm.data.length > 0) populateSublyPaymentSelect(pm.data);
+  } catch(e) { /* kakely未使用ユーザーは無視 */ }
   renderList(); renderCalendar(); updateProUI(); updateSummary(); updateSyncBadges();
   showAuthToast('☁️ データを同期しました');
 }
