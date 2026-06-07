@@ -319,14 +319,14 @@
 </div>
 
 <div class="tabs">
-  <button class="tab active" onclick="switchTab('list',this)">一覧</button>
-  <button class="tab" onclick="switchTab('schedule',this)">服用</button>
+  <button class="tab active" onclick="switchTab('schedule',this)">服用</button>
+  <button class="tab" onclick="switchTab('list',this)">一覧</button>
   <button class="tab" onclick="switchTab('history',this)">購入履歴</button>
   <button class="tab" onclick="switchTab('encyc',this)">辞典</button>
 </div>
 
 <!-- 一覧 -->
-<div class="view active" id="view-list">
+<div class="view" id="view-list">
   <div class="cat-filter" id="catFilter"></div>
   <p class="section-label">登録アイテム</p>
   <div id="itemList"></div>
@@ -335,7 +335,7 @@
 </div>
 
 <!-- スケジュール -->
-<div class="view" id="view-schedule">
+<div class="view active" id="view-schedule">
   <p class="section-label">今日の摂取スケジュール</p>
   <div id="scheduleList"></div>
 </div>
@@ -968,12 +968,11 @@ function renderList() {
       +'<div class="progress-bar"><div class="'+fillCls+'" style="width:'+p+'%"></div></div>'
       +'</div>'
       +'<div class="days-row">'
+      +(days!==null?'<span class="days-badge '+cls+'">'+badgeText+'</span>':'<span></span>')
       +'<div style="display:flex;gap:.5rem;">'
       +'<button class="btn-take" onclick="takeItem(\''+item.id+'\')">服用 −'+item.daily+item.unit+'</button>'
       +'<button class="btn-restock" onclick="openRestock(\''+item.id+'\')">補充</button>'
-      +'</div>'
-      +(days!==null?'<span class="days-badge '+cls+'">'+badgeText+'</span>':'<span></span>')
-      +'</div>'
+      +'</div></div>'
       +costFooter(item)
       +(item.expiry?'<div style="margin-top:.5rem;">'+expiryBadge(item)+'</div>':'')
       +timingHTML
@@ -1006,17 +1005,17 @@ function renderSchedule() {
         var key = item.id + '_' + t.id;
         var taken = !!dailyTaken.taken[key];
         return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.75rem 1rem;margin-bottom:.4rem;display:flex;align-items:center;justify-content:space-between;'+(taken?'opacity:.6;':'') +'">'
-          +(taken
-            ? '<div style="display:flex;align-items:center;gap:.4rem;">'
-              +'<button class="btn-undo" onclick="undoTake(\''+item.id+'\',\''+t.id+'\')">取り消し</button>'
-              +'<span style="font-size:.8rem;color:var(--green);font-weight:500;">✓ 服用済み</span>'
-              +'</div>'
-            : '<button class="btn-take" onclick="takeFromSchedule(\''+item.id+'\',\''+t.id+'\')">服用</button>')
           +'<div style="display:flex;align-items:center;gap:.75rem;">'
           +'<span style="font-size:1.2rem;">'+(item.icon||'💊')+'</span>'
-          +'<div style="text-align:right;"><p style="font-size:.88rem;font-weight:400;">'+item.name+'</p>'
+          +'<div><p style="font-size:.88rem;font-weight:400;">'+item.name+'</p>'
           +'<p style="font-size:.7rem;color:var(--muted);">'+item.daily+item.unit+'</p></div>'
           +'</div>'
+          +(taken
+            ? '<div style="display:flex;align-items:center;gap:.4rem;">'
+              +'<span style="font-size:.8rem;color:var(--green);font-weight:500;">✓ 服用済み</span>'
+              +'<button class="btn-undo" onclick="undoTake(\''+item.id+'\',\''+t.id+'\')">取り消し</button>'
+              +'</div>'
+            : '<button class="btn-take" onclick="takeFromSchedule(\''+item.id+'\',\''+t.id+'\')">服用</button>')
           +'</div>';
       }).join('')
       +'</div>';
@@ -1028,12 +1027,12 @@ function renderSchedule() {
       +'<p style="font-size:.85rem;font-weight:500;margin-bottom:.5rem;color:var(--yellow);">🆘 頓服（必要な時）</p>'
       +prnItems.map(function(item){
         return '<div style="background:var(--surface);border:1px solid rgba(245,200,66,.3);border-radius:12px;padding:.75rem 1rem;margin-bottom:.4rem;display:flex;align-items:center;justify-content:space-between;">'
-          +'<button class="btn-take" onclick="takeItem(\''+item.id+'\')">服用</button>'
           +'<div style="display:flex;align-items:center;gap:.75rem;">'
-          +'<div style="text-align:right;"><p style="font-size:.88rem;font-weight:400;">'+item.name+'</p>'
-          +'<p style="font-size:.7rem;color:var(--muted);">'+item.daily+item.unit+' / 残'+item.current+item.unit+'</p></div>'
           +'<span style="font-size:1.2rem;">'+(item.icon||'💊')+'</span>'
+          +'<div><p style="font-size:.88rem;font-weight:400;">'+item.name+'</p>'
+          +'<p style="font-size:.7rem;color:var(--muted);">'+item.daily+item.unit+' / 残'+item.current+item.unit+'</p></div>'
           +'</div>'
+          +'<button class="btn-take" onclick="takeItem(\''+item.id+'\')">服用</button>'
           +'</div>';
       }).join('')
       +'</div>';
