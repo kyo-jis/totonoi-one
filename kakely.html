@@ -1259,15 +1259,25 @@ function openTxnModal(id) {
     if (!t) return;
     if (t.is_transfer) {
       setTxnType('transfer');
+      var partner = transactions.find(function(x){ return x.group_id === t.group_id && x.id !== t.id; });
+      var fromTxn = t.is_income ? partner : t;
+      var toTxn   = t.is_income ? t       : partner;
+      document.getElementById('fTransferFrom').value   = fromTxn ? (fromTxn.payment_method_id || '') : '';
+      document.getElementById('fTransferTo').value     = toTxn   ? (toTxn.payment_method_id   || '') : '';
+      document.getElementById('fTransferAmount').value = t.amount;
+      document.getElementById('fTransferDate').value   = t.date;
+      document.getElementById('saveTxnBtn').textContent = '移動を更新する';
+      document.getElementById('deleteTxnBtn').textContent = '資金移動を削除する';
     } else {
       setTxnType(t.is_income ? 'income' : 'expense');
+      document.getElementById('fAmount').value = t.amount;
+      document.getElementById('fDate').value = t.date;
+      document.getElementById('fMemo').value = t.memo || '';
+      document.getElementById('fPayMethod').value = t.payment_method_id || '';
+      selectedCatId = t.category_id || null;
+      buildCatGrid();
+      document.getElementById('deleteTxnBtn').textContent = '削除する';
     }
-    document.getElementById('fAmount').value = t.amount;
-    document.getElementById('fDate').value = t.date;
-    document.getElementById('fMemo').value = t.is_transfer ? '' : (t.memo || '');
-    document.getElementById('fPayMethod').value = t.payment_method_id || '';
-    selectedCatId = t.category_id || null;
-    buildCatGrid();
   } else {
     setTxnType('expense');
     document.getElementById('fAmount').value = '';
@@ -1275,6 +1285,7 @@ function openTxnModal(id) {
     document.getElementById('fMemo').value = '';
     document.getElementById('fTransferAmount').value = '';
     document.getElementById('fTransferDate').value = localDateStr(new Date());
+    document.getElementById('deleteTxnBtn').textContent = '削除する';
     buildCatGrid();
   }
   updatePayBalanceHint();
@@ -1321,6 +1332,19 @@ async function saveTransfer() {
   var date   = document.getElementById('fTransferDate').value;
   if (!fromId || !toId || !amount || !date) { showToast('すべての項目を入力してください'); return; }
   if (fromId === toId) { showToast('移動元と移動先が同じです'); return; }
+
+  // 編集の場合: 既存ペアを残高ロールバックして削除してから再作成
+  if (editTxnId) {
+    var existing = transactions.find(function(t){ return t.id === editTxnId; });
+    if (existing && existing.group_id) {
+      var oldGid = existing.group_id;
+      var grp = transactions.filter(function(t){ return t.group_id === oldGid; });
+      grp.forEach(function(t){ updateCashBalance(t.payment_method_id, t.is_income ? -t.amount : t.amount); });
+      transactions = transactions.filter(function(t){ return t.group_id !== oldGid; });
+      if (currentUser) await _sb.from('kakely_transactions').delete().eq('group_id', oldGid);
+    }
+    editTxnId = null;
+  }
 
   var groupId = 'tf_' + Date.now();
   var fromPay = { id: groupId + '_from', amount: amount, date: date,
