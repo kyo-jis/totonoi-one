@@ -68,6 +68,11 @@
     .cat-filter::-webkit-scrollbar { display:none; }
     .cat-chip { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:.3rem .8rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); white-space:nowrap; transition:all .2s; flex-shrink:0; }
     .cat-chip.active { background:var(--surface2); border-color:var(--accent); color:var(--accent); }
+    .kana-filter { display:flex; gap:.3rem; padding:0 1.25rem .75rem; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+    .kana-filter::-webkit-scrollbar { display:none; }
+    .kana-chip { flex-shrink:0; min-width:2rem; padding:.28rem .5rem; border-radius:8px; background:var(--surface); border:1px solid var(--border); color:var(--muted); font-size:.78rem; font-weight:500; cursor:pointer; font-family:var(--font); text-align:center; transition:all .15s; }
+    .kana-chip.active { background:var(--accent); color:#1a1a24; border-color:var(--accent); }
+    .kana-chip:active { opacity:.7; }
     .list-section { padding:0 1.25rem; }
     .section-label { font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:.75rem; }
 
@@ -344,6 +349,20 @@
     <button class="cat-chip" onclick="filterCat('novel',this)">📝 小説</button>
     <button class="cat-chip" onclick="filterCat('reference',this)">📖 参考書</button>
     <button class="cat-chip" onclick="filterCat('other',this)">📦 その他</button>
+  </div>
+  <div class="kana-filter" id="kanaFilter">
+    <button class="kana-chip active" onclick="filterKana('all',this)">全て</button>
+    <button class="kana-chip" onclick="filterKana('あ',this)">あ</button>
+    <button class="kana-chip" onclick="filterKana('か',this)">か</button>
+    <button class="kana-chip" onclick="filterKana('さ',this)">さ</button>
+    <button class="kana-chip" onclick="filterKana('た',this)">た</button>
+    <button class="kana-chip" onclick="filterKana('な',this)">な</button>
+    <button class="kana-chip" onclick="filterKana('は',this)">は</button>
+    <button class="kana-chip" onclick="filterKana('ま',this)">ま</button>
+    <button class="kana-chip" onclick="filterKana('や',this)">や</button>
+    <button class="kana-chip" onclick="filterKana('ら',this)">ら</button>
+    <button class="kana-chip" onclick="filterKana('わ',this)">わ</button>
+    <button class="kana-chip" onclick="filterKana('other',this)">他</button>
   </div>
   <div class="select-bar" id="selectBar">
     <span id="selectCount" style="font-size:.82rem;font-weight:500;">0件選択中</span>
@@ -625,6 +644,7 @@ function parseLocalDate(str) {
 var items = JSON.parse(localStorage.getItem('bookly_items') || '[]');
 var editId = null;
 var currentCat = 'all';
+var currentKana = 'all';
 var currentRating = 0;
 var currentBookType = 'series';
 var _searchTimer = null;
@@ -649,6 +669,33 @@ function filterCat(cat, btn) {
   document.querySelectorAll('.cat-chip').forEach(function(c){ c.classList.remove('active'); });
   btn.classList.add('active');
   renderList();
+}
+
+var _KANA_ROWS = {
+  'あ': /^[あいうえおアイウエオ]/,
+  'か': /^[かきくけこがぎぐげごカキクケコガギグゲゴ]/,
+  'さ': /^[さしすせそざじずぜぞサシスセソザジズゼゾ]/,
+  'た': /^[たちつてとだぢづでどタチツテトダヂヅデド]/,
+  'な': /^[なにぬねのナニヌネノ]/,
+  'は': /^[はひふへほばびぶべぼぱぴぷぺぽハヒフヘホバビブベボパピプペポ]/,
+  'ま': /^[まみむめもマミムメモ]/,
+  'や': /^[やゆよヤユヨ]/,
+  'ら': /^[らりるれろラリルレロ]/,
+  'わ': /^[わをんヮワヲン]/,
+};
+function getKanaRow(title) {
+  if (!title) return 'other';
+  var first = title.charAt(0);
+  for (var row in _KANA_ROWS) {
+    if (_KANA_ROWS[row].test(first)) return row;
+  }
+  return 'other';
+}
+function filterKana(row, btn) {
+  currentKana = row;
+  document.querySelectorAll('.kana-chip').forEach(function(c){ c.classList.remove('active'); });
+  btn.classList.add('active');
+  renderList(); renderReadingList(); renderBacklogList(); renderDoneList(); renderWishlistList();
 }
 
 // ── Render Card ──
@@ -764,38 +811,59 @@ function renderCard(item) {
     + '</div>';
 }
 
+function _applyKana(list) {
+  if (currentKana === 'all') return list;
+  return list.filter(function(i){ return getKanaRow(i.name) === currentKana; });
+}
+function _kanaSort(list) {
+  if (currentKana === 'all') return list;
+  return list.slice().sort(function(a,b){ return (a.name||'').localeCompare(b.name||'', 'ja'); });
+}
 function renderList() {
   var el = document.getElementById('itemList');
-  var list = currentCat === 'all' ? items : items.filter(function(i){ return i.category === currentCat; });
-  if (!list.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">📚</div><p>' + (currentCat==='all'?'まだ登録がありません。<br>＋ボタンで追加してください。':'このカテゴリに本がありません') + '</p></div>'; return; }
-  var order = {reading:0,wishlist:1,backlog:2,completed:3};
-  list = list.slice().sort(function(a,b){ return order[a.status]-order[b.status]; });
+  var list = _applyKana(currentCat === 'all' ? items : items.filter(function(i){ return i.category === currentCat; }));
+  if (!list.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">📚</div><p>' + (currentKana!=='all'?'この行の本はありません':currentCat==='all'?'まだ登録がありません。<br>＋ボタンで追加してください。':'このカテゴリに本がありません') + '</p></div>'; return; }
+  if (currentKana !== 'all') {
+    list = _kanaSort(list);
+  } else {
+    var order = {reading:0,wishlist:1,backlog:2,completed:3};
+    list = list.slice().sort(function(a,b){ return order[a.status]-order[b.status]; });
+  }
   el.innerHTML = list.map(renderCard).join('');
 }
 function renderReadingList() {
   var el = document.getElementById('readingList');
-  var list = items.filter(function(i){ return i.status==='reading'; });
+  var list = _kanaSort(_applyKana(items.filter(function(i){ return i.status==='reading'; })));
   el.innerHTML = list.length ? list.map(renderCard).join('') : '<div class="empty-state"><div class="empty-icon">📖</div><p>読中の本はありません</p></div>';
 }
 function renderBacklogList() {
   var el = document.getElementById('backlogList');
-  var list = items.filter(function(i){ return i.status==='backlog'; });
+  var list = _kanaSort(_applyKana(items.filter(function(i){ return i.status==='backlog'; })));
   el.innerHTML = list.length ? list.map(renderCard).join('') : '<div class="empty-state"><div class="empty-icon">📚</div><p>積読リストは空です</p></div>';
 }
 function renderDoneList() {
   var el = document.getElementById('doneList');
-  var list = items.filter(function(i){ return i.status==='completed'; }).sort(function(a,b){ return (b.completedDate||'').localeCompare(a.completedDate||''); });
+  var list = _applyKana(items.filter(function(i){ return i.status==='completed'; }));
+  if (currentKana !== 'all') {
+    list = _kanaSort(list);
+  } else {
+    list = list.slice().sort(function(a,b){ return (b.completedDate||'').localeCompare(a.completedDate||''); });
+  }
   el.innerHTML = list.length ? list.map(renderCard).join('') : '<div class="empty-state"><div class="empty-icon">🏆</div><p>読了した本はありません</p></div>';
 }
 function renderWishlistList() {
   var el = document.getElementById('wishlistList'); if (!el) return;
-  var list = items.filter(function(i){ return i.status==='wishlist'; });
+  var list = _applyKana(items.filter(function(i){ return i.status==='wishlist'; }));
   if (!list.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">🛒</div><p>ほしいリストは空です<br>気になる本を「ほしい」で登録しましょう</p></div>'; return; }
-  list = list.slice().sort(function(a, b) {
-    var da = (a.releaseDate || a.nextVolDate || ''), db = (b.releaseDate || b.nextVolDate || '');
-    if (!da && !db) return 0; if (!da) return 1; if (!db) return -1;
-    return da.localeCompare(db);
-  });
+  if (currentKana !== 'all') {
+    list = _kanaSort(list);
+  } else {
+    list = list.slice().sort(function(a, b) {
+      var da = (a.releaseDate || a.nextVolDate || ''), db = (b.releaseDate || b.nextVolDate || '');
+      if (!da && !db) return 0; if (!da) return 1; if (!db) return -1;
+      return da.localeCompare(db);
+    });
+  }
   el.innerHTML = list.map(renderCard).join('');
 }
 function renderAll() { renderList(); renderReadingList(); renderBacklogList(); renderDoneList(); renderWishlistList(); updateSummary(); updateTabBadges(); }
