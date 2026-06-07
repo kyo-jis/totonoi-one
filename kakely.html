@@ -803,7 +803,7 @@ function renderList() {
           var isTransfer = !!t.is_transfer;
           var nameLine;
           if (isTransfer) {
-            nameLine = '💸 資金移動' + (pay ? ' · ' + pay.icon + esc(pay.name) : '') + ' <span class="transfer-badge">移動</span>';
+            nameLine = '資金移動' + (pay ? ' · ' + pay.icon + esc(pay.name) : '') + ' <span class="transfer-badge">移動</span>';
           } else {
             nameLine = esc(cat ? cat.name : '未分類') + (pay ? ' · ' + pay.icon + esc(pay.name) : '');
             if (isGroup) nameLine += ' <span class="group-badge">まとめ</span>';
