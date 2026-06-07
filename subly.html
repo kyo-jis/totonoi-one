@@ -939,9 +939,7 @@ function renderList() {
         ? '<p class="sub-amount">'+amtStr+'</p><p class="sub-cycle">買い切り</p>'
         : '<p class="sub-amount">'+amtStr+'<span class="sub-cycle">/'+cycleLabel(s)+'</span></p>'
           + (cycleToMonths(s)!==1&&me>0?'<p class="sub-monthly-small">¥'+me.toLocaleString()+'/月換算</p>':'');
-      var _km = _kakelyPayMethods.find(function(m){ return m.id === s.payment; });
-      var _payLabel = _km ? (_km.icon + ' ' + _km.name) : (PAYMENT_LABELS[s.payment] || s.payment);
-      var payBadge = s.payment ? '<span class="payment-badge">' + _payLabel + '</span>' : '';
+      var payBadge = s.payment ? '<span class="payment-badge">' + (PAYMENT_LABELS[s.payment] || s.payment) + '</span>' : '';
       return '<div class="sub-card">'
         + '<div class="sub-card-top">'
         + iconHTML(s)
@@ -1157,8 +1155,7 @@ function renderPaymentAnalysis() {
   });
   var rows=Object.keys(map).sort(function(a,b){ return map[b].total-map[a].total; });
   document.getElementById('paymentAnalysis').innerHTML=rows.map(function(k){
-    var _km2 = _kakelyPayMethods.find(function(m){ return m.id === k; });
-    var label = _km2 ? (_km2.icon + ' ' + _km2.name) : (PAYMENT_LABELS[k] || (k || '未設定'));
+    var label = PAYMENT_LABELS[k] || (k || '未設定');
     return '<div class="payment-row"><span class="payment-name">'+label+'<span class="payment-count">'+map[k].count+'件</span></span>'
       +'<span class="payment-amount">¥'+map[k].total.toLocaleString()+'/月</span></div>';
   }).join('');
@@ -1415,7 +1412,6 @@ var _sb = window.supabase.createClient(
   { auth: { flowType: 'implicit', detectSessionInUrl: true } });
 var currentUser = null;
 var _APP = 'subly'; var _syncStatus = 'local';
-var _kakelyPayMethods = [];
 function syncBadgeHTML(){if(!currentUser)return'<span class="sync-badge sync-local">💾 ローカル</span>';if(_syncStatus==='syncing')return'<span class="sync-badge sync-syncing">🔄 同期中</span>';if(_syncStatus==='synced')return'<span class="sync-badge sync-synced">☁️</span>';return'<span class="sync-badge sync-failed" onclick="retrySync()">⚠️ 再同期</span>';}
 function updateSyncBadges(){var h=syncBadgeHTML();document.querySelectorAll('.sync-slot').forEach(function(el){el.innerHTML=h;});}
 function retrySync(){if(!currentUser)return;_syncStatus='syncing';updateSyncBadges();Promise.all([dbSave('subs',subs),dbSave('history',payHistory)]).then(function(rs){_syncStatus=rs.every(function(r){return r&&!r.error;})?'synced':'failed';if(_syncStatus==='failed')showAuthToast('⚠️ クラウド同期失敗');updateSyncBadges();});}
@@ -1455,39 +1451,8 @@ async function syncFromCloud() {
   var p = await _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle();
   if (p.data) { isPro = p.data.is_pro; localStorage.setItem('isPro', String(isPro)); }
   if (currentUser.email === 'kyouji.o@gmail.com') { isPro = true; localStorage.setItem('isPro', 'true'); }
-  // kakely の支払い方法を取得（失敗しても他の処理を止めない）
-  try {
-    var pm = await _sb.from('kakely_payment_methods').select('*').eq('user_id', currentUser.id).order('created_at');
-    if (pm.data && pm.data.length > 0) populateSublyPaymentSelect(pm.data);
-  } catch(e) { /* kakely未使用ユーザーは無視 */ }
   renderList(); renderCalendar(); updateProUI(); updateSummary(); updateSyncBadges();
   showAuthToast('☁️ データを同期しました');
-}
-
-function populateSublyPaymentSelect(methods) {
-  _kakelyPayMethods = methods;
-  var sel = document.getElementById('fPayment');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">未設定</option>';
-  var groups = { cash: '現金', bank: '銀行口座', card: 'クレジットカード', emoney: '電子マネー' };
-  var grouped = {};
-  methods.forEach(function(m) {
-    var g = m.type || 'emoney';
-    if (!grouped[g]) grouped[g] = [];
-    grouped[g].push(m);
-  });
-  Object.keys(groups).forEach(function(type) {
-    if (!grouped[type] || !grouped[type].length) return;
-    var og = document.createElement('optgroup');
-    og.label = groups[type];
-    grouped[type].forEach(function(m) {
-      var opt = document.createElement('option');
-      opt.value = m.id;
-      opt.textContent = m.icon + ' ' + m.name;
-      og.appendChild(opt);
-    });
-    sel.appendChild(og);
-  });
 }
 
 function showAuthToast(msg) {
