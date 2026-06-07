@@ -939,9 +939,7 @@ function renderList() {
         ? '<p class="sub-amount">'+amtStr+'</p><p class="sub-cycle">買い切り</p>'
         : '<p class="sub-amount">'+amtStr+'<span class="sub-cycle">/'+cycleLabel(s)+'</span></p>'
           + (cycleToMonths(s)!==1&&me>0?'<p class="sub-monthly-small">¥'+me.toLocaleString()+'/月換算</p>':'');
-      var _km = _kakelyPayMethods.find(function(m){ return m.id === s.payment; });
-      var _payLabel = _km ? (_km.icon + ' ' + _km.name) : (PAYMENT_LABELS[s.payment] || s.payment);
-      var payBadge = s.payment ? '<span class="payment-badge">' + _payLabel + '</span>' : '';
+      var payBadge = s.payment ? '<span class="payment-badge">' + (PAYMENT_LABELS[s.payment] || s.payment) + '</span>' : '';
       return '<div class="sub-card">'
         + '<div class="sub-card-top">'
         + iconHTML(s)
@@ -1157,8 +1155,7 @@ function renderPaymentAnalysis() {
   });
   var rows=Object.keys(map).sort(function(a,b){ return map[b].total-map[a].total; });
   document.getElementById('paymentAnalysis').innerHTML=rows.map(function(k){
-    var _km2 = _kakelyPayMethods.find(function(m){ return m.id === k; });
-    var label = _km2 ? (_km2.icon + ' ' + _km2.name) : (PAYMENT_LABELS[k] || (k || '未設定'));
+    var label = PAYMENT_LABELS[k] || (k || '未設定');
     return '<div class="payment-row"><span class="payment-name">'+label+'<span class="payment-count">'+map[k].count+'件</span></span>'
       +'<span class="payment-amount">¥'+map[k].total.toLocaleString()+'/月</span></div>';
   }).join('');
@@ -1204,7 +1201,7 @@ function selectPreset(btn,name,icon,amount,cycle,domain) {
 }
 
 // ── Modal ──
-async function openModal() {
+function openModal() {
   editId=null;
   document.getElementById('modalTitle').textContent='サービスを追加';
   ['fName','fIcon','fAmount'].forEach(function(id){ document.getElementById(id).value=''; });
@@ -1216,13 +1213,12 @@ async function openModal() {
   document.getElementById('customCycleWrap').className='custom-cycle-wrap';
   document.querySelectorAll('.preset-btn').forEach(function(b){ b.classList.remove('selected'); });
   showIconCustom(); syncEmojiPalette();
-  await _loadKakelyPayMethods();
   document.getElementById('modalOverlay').classList.add('show');
 }
 function closeModal(){ document.getElementById('modalOverlay').classList.remove('show'); }
 function closeModalOutside(e){ if(e.target===document.getElementById('modalOverlay')) closeModal(); }
 
-async function editSub(id) {
+function editSub(id) {
   var s=subs.find(function(x){ return x.id===id; }); if (!s) return;
   editId=id;
   document.getElementById('modalTitle').textContent='編集';
@@ -1231,6 +1227,7 @@ async function editSub(id) {
   document.getElementById('fAmount').value=s.amount;
 
   document.getElementById('fCycle').value=s.cycle;
+  document.getElementById('fPayment').value=s.payment||'';
   document.getElementById('fStartDate').value=s.startDate||'';
   document.getElementById('fDate').value=s.nextBillingDate||'';
   document.getElementById('nextBillHint').textContent=s.startDate?'→ 自動計算':'';
@@ -1243,8 +1240,6 @@ async function editSub(id) {
   }
   if (s.domain) showIconPreview(s.icon||'💳', s.domain, s.name);
   else { showIconCustom(); syncEmojiPalette(); }
-  await _loadKakelyPayMethods();
-  document.getElementById('fPayment').value=s.payment||'';
   document.getElementById('modalOverlay').classList.add('show');
 }
 
@@ -1417,7 +1412,6 @@ var _sb = window.supabase.createClient(
   { auth: { flowType: 'implicit', detectSessionInUrl: true } });
 var currentUser = null;
 var _APP = 'subly'; var _syncStatus = 'local';
-var _kakelyPayMethods = []; var _kakelyPayFetched = false;
 function syncBadgeHTML(){if(!currentUser)return'<span class="sync-badge sync-local">💾 ローカル</span>';if(_syncStatus==='syncing')return'<span class="sync-badge sync-syncing">🔄 同期中</span>';if(_syncStatus==='synced')return'<span class="sync-badge sync-synced">☁️</span>';return'<span class="sync-badge sync-failed" onclick="retrySync()">⚠️ 再同期</span>';}
 function updateSyncBadges(){var h=syncBadgeHTML();document.querySelectorAll('.sync-slot').forEach(function(el){el.innerHTML=h;});}
 function retrySync(){if(!currentUser)return;_syncStatus='syncing';updateSyncBadges();Promise.all([dbSave('subs',subs),dbSave('history',payHistory)]).then(function(rs){_syncStatus=rs.every(function(r){return r&&!r.error;})?'synced':'failed';if(_syncStatus==='failed')showAuthToast('⚠️ クラウド同期失敗');updateSyncBadges();});}
@@ -1459,34 +1453,6 @@ async function syncFromCloud() {
   if (currentUser.email === 'kyouji.o@gmail.com') { isPro = true; localStorage.setItem('isPro', 'true'); }
   renderList(); renderCalendar(); updateProUI(); updateSummary(); updateSyncBadges();
   showAuthToast('☁️ データを同期しました');
-}
-
-async function _loadKakelyPayMethods() {
-  if (!currentUser) return;
-  if (_kakelyPayFetched) { _updateKakelySelect(); return; }
-  try {
-    var pm = await _sb.from('kakely_payment_methods').select('*').eq('user_id', currentUser.id).order('created_at');
-    if (!pm.error && pm.data) { _kakelyPayMethods = pm.data; }
-    _kakelyPayFetched = true;
-  } catch(e) {}
-  _updateKakelySelect();
-}
-function _updateKakelySelect() {
-  var sel = document.getElementById('fPayment');
-  if (!sel) return;
-  Array.from(sel.querySelectorAll('[data-kakely]')).forEach(function(el){ el.remove(); });
-  if (!_kakelyPayMethods.length) return;
-  var og = document.createElement('optgroup');
-  og.label = 'カスタム（家計簿連携）';
-  og.setAttribute('data-kakely', '1');
-  _kakelyPayMethods.forEach(function(m) {
-    var opt = document.createElement('option');
-    opt.value = m.id;
-    opt.textContent = m.icon + ' ' + m.name;
-    opt.setAttribute('data-kakely', '1');
-    og.appendChild(opt);
-  });
-  sel.appendChild(og);
 }
 
 function showAuthToast(msg) {
