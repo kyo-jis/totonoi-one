@@ -532,6 +532,7 @@
         </div>
       </div>
       <div class="form-group"><label>タイトル</label><input type="text" id="fName" placeholder="例：鬼滅の刃" style="width:100%;"></div>
+      <div class="form-group"><label>フリガナ <span style="font-size:.7rem;color:var(--muted);">任意・50音順に使用</span></label><input type="text" id="fReading" placeholder="例：きめつのやいば" style="width:100%;"></div>
       <div class="form-group"><label>著者名</label><input type="text" id="fAuthor" placeholder="例：吾峠呼世晴" style="width:100%;"></div>
       <div class="form-row">
         <div class="form-group"><label>カテゴリ</label>
@@ -618,7 +619,8 @@
       <input type="file" id="csvFile" accept=".csv" style="display:none;" onchange="importCSV(this)">
       <div style="margin-top:1rem;background:var(--surface2);border-radius:10px;padding:.875rem;font-size:.75rem;color:var(--muted);line-height:1.7;">
         <p style="font-weight:500;color:var(--text);margin-bottom:.3rem;">CSV形式（1行目ヘッダーはスキップ）</p>
-        <p>タイトル, 著者, カテゴリ, タイプ(series/single), 読了巻/ページ, 全巻/ページ, ステータス, 形態, 評価(1-5), 読了日, メモ, 完結済み(true/false), 次巻発売日(YYYY-MM-DD), 発売日(YYYY-MM-DD)</p>
+        <p>タイトル, フリガナ, 著者, カテゴリ, タイプ(series/single), 読了巻/ページ, 全巻/ページ, ステータス, 形態, 評価(1-5), 読了日, メモ, 完結済み(true/false), 次巻発売日(YYYY-MM-DD), 発売日(YYYY-MM-DD)</p>
+        <p style="margin-top:.25rem;font-size:.7rem;">※ フリガナ列は省略可（旧フォーマットとの互換あり）</p>
         <button onclick="downloadCsvTemplate()" style="margin-top:.6rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:.4rem .75rem;font-size:.72rem;color:var(--accent);cursor:pointer;font-family:var(--font);">📥 テンプレートをダウンロード</button>
       </div>
     </div>
@@ -683,9 +685,10 @@ var _KANA_ROWS = {
   'ら': /^[らりるれろラリルレロ]/,
   'わ': /^[わをんヮワヲン]/,
 };
-function getKanaRow(title) {
-  if (!title) return 'other';
-  var first = title.charAt(0);
+function getKanaRow(title, reading) {
+  var str = (reading && reading.trim()) ? reading.trim() : (title || '');
+  if (!str) return 'other';
+  var first = str.charAt(0);
   for (var row in _KANA_ROWS) {
     if (_KANA_ROWS[row].test(first)) return row;
   }
@@ -813,11 +816,15 @@ function renderCard(item) {
 
 function _applyKana(list) {
   if (currentKana === 'all') return list;
-  return list.filter(function(i){ return getKanaRow(i.name) === currentKana; });
+  return list.filter(function(i){ return getKanaRow(i.name, i.reading) === currentKana; });
 }
 function _kanaSort(list) {
   if (currentKana === 'all') return list;
-  return list.slice().sort(function(a,b){ return (a.name||'').localeCompare(b.name||'', 'ja'); });
+  return list.slice().sort(function(a,b){
+    var ra = (a.reading && a.reading.trim()) ? a.reading : a.name;
+    var rb = (b.reading && b.reading.trim()) ? b.reading : b.name;
+    return (ra||'').localeCompare(rb||'', 'ja');
+  });
 }
 function renderList() {
   var el = document.getElementById('itemList');
@@ -1030,7 +1037,7 @@ function openModal() {
   editId=null; currentRating=0; currentBookType='series';
   document.getElementById('modalTitle').textContent='本を追加';
   document.getElementById('saveBtn').textContent='追加する';
-  ['fName','fAuthor','fMemo'].forEach(function(id){document.getElementById(id).value='';});
+  ['fName','fReading','fAuthor','fMemo'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('fCategory').value='manga';
   document.getElementById('fFormat').value='';
   document.getElementById('fReadVols').value='0'; document.getElementById('fTotalVols').value='0';
@@ -1072,6 +1079,7 @@ function editItem(id) {
   document.getElementById('modalTitle').textContent='編集';
   document.getElementById('saveBtn').textContent='保存する';
   document.getElementById('fName').value=item.name;
+  document.getElementById('fReading').value=item.reading||'';
   document.getElementById('fAuthor').value=item.author||'';
   document.getElementById('fCategory').value=item.category||'manga';
   document.getElementById('fFormat').value=item.format||'';
@@ -1124,6 +1132,7 @@ function saveItem() {
   var releaseDate = currentBookType==='single' ? document.getElementById('fReleaseDate').value : '';
   var entry={
     id:editId||Date.now().toString(), name:name,
+    reading:document.getElementById('fReading').value.trim(),
     author:document.getElementById('fAuthor').value.trim(),
     category:document.getElementById('fCategory').value,
     format:document.getElementById('fFormat').value,
@@ -1436,15 +1445,20 @@ function importCSV(input) {
     var lines=e.target.result.split(/\r?\n/).filter(function(l){return l.trim();});
     if(lines.length<=1){showToast('データが見つかりません');return;}
     var imported=0;
+    // ヘッダー行からカラム位置を動的に判定（フリガナ列の有無で旧/新フォーマット対応）
+    var hdr=lines[0].split(',').map(function(s){return s.replace(/^"|"$/g,'').trim().replace(/^﻿/,'');});
+    var hasReading=hdr.indexOf('フリガナ')!==-1;
+    var O={name:0,reading:hasReading?1:-1,author:hasReading?2:1,cat:hasReading?3:2,type:hasReading?4:3,rv:hasReading?5:4,tv:hasReading?6:5,status:hasReading?7:6,fmt:hasReading?8:7,rating:hasReading?9:8,done:hasReading?10:9,memo:hasReading?11:10,comp:hasReading?12:11,next:hasReading?13:12,rel:hasReading?14:13};
     lines.slice(1).forEach(function(line){
       var c=line.split(',').map(function(s){return s.replace(/^"|"$/g,'').trim();});
-      var name=c[0]; if(!name)return;
+      var name=c[O.name]; if(!name)return;
       if(items.some(function(i){return i.name===name;}))return;
-      var status=c[6]||'backlog', type=c[3]||'series';
-      var rv=parseInt(c[4])||0, tv=parseInt(c[5])||0;
+      var cat=c[O.cat]||'other';
+      var status=c[O.status]||'backlog', type=c[O.type]||'series';
+      var rv=parseInt(c[O.rv])||0, tv=parseInt(c[O.tv])||0;
       if(type==='series'&&tv>0&&rv>=tv)status='completed';
       if(type==='single'&&tv>0&&rv>=tv)status='completed';
-      items.push({id:Date.now().toString()+Math.random().toString(36).slice(2,5),name:name,author:c[1]||'',category:c[2]||'other',type:type,readVols:type==='series'?rv:0,totalVols:type==='series'?tv:0,readPages:type==='single'?rv:0,totalPages:type==='single'?tv:0,status:status,format:c[7]||'',rating:parseInt(c[8])||0,completedDate:c[9]||'',memo:c[10]||'',isCompleted:c[11]==='true'||c[11]==='1',nextVolDate:c[12]||'',releaseDate:c[13]||'',icon:CAT_ICONS[c[2]]||'📖',coverUrl:'',addedDate:new Date().toISOString().split('T')[0]});
+      items.push({id:Date.now().toString()+Math.random().toString(36).slice(2,5),name:name,reading:O.reading>=0?(c[O.reading]||''):'',author:c[O.author]||'',category:cat,type:type,readVols:type==='series'?rv:0,totalVols:type==='series'?tv:0,readPages:type==='single'?rv:0,totalPages:type==='single'?tv:0,status:status,format:c[O.fmt]||'',rating:parseInt(c[O.rating])||0,completedDate:c[O.done]||'',memo:c[O.memo]||'',isCompleted:c[O.comp]==='true'||c[O.comp]==='1',nextVolDate:c[O.next]||'',releaseDate:c[O.rel]||'',icon:CAT_ICONS[cat]||'📖',coverUrl:'',addedDate:new Date().toISOString().split('T')[0]});
       imported++;
     });
     if(!isPro&&items.length>FREE_LIMIT)items=items.slice(0,FREE_LIMIT);
@@ -1469,9 +1483,9 @@ function importCSV(input) {
 }
 
 function downloadCsvTemplate() {
-  var h='タイトル,著者,カテゴリ,タイプ,読了巻/P,全巻/P,ステータス,形態,評価,読了日,メモ,完結済み,次巻発売日,発売日';
-  var s1='"鬼滅の刃","吾峠呼世晴",manga,series,23,23,completed,physical,5,2020-12-04,"全23巻。名作。",true,,';
-  var s2='"夜は短し歩けよ乙女","森見登美彦",novel,single,320,320,completed,physical,4,2021-03-10,,,,2006-11-30';
+  var h='タイトル,フリガナ,著者,カテゴリ,タイプ,読了巻/P,全巻/P,ステータス,形態,評価,読了日,メモ,完結済み,次巻発売日,発売日';
+  var s1='"鬼滅の刃","きめつのやいば","吾峠呼世晴",manga,series,23,23,completed,physical,5,2020-12-04,"全23巻。名作。",true,,';
+  var s2='"夜は短し歩けよ乙女","よるはみじかしあるけよおとめ","森見登美彦",novel,single,320,320,completed,physical,4,2021-03-10,,,,2006-11-30';
   var blob=new Blob(['﻿'+h+'\n'+s1+'\n'+s2],{type:'text/csv'});
   var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bookly_template.csv';a.click();
 }
