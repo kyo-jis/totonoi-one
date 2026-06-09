@@ -972,6 +972,42 @@ function editResourceInline(id) {
   _detailSubjId = r.subjectId;
   editResource(id);
 }
+function openExamModalForSubj(subjId) {
+  _detailSubjId = subjId;
+  openExamModal();
+}
+function editExamInline(id) {
+  var e = exams.find(function(x){ return x.id===id; });
+  if (!e) return;
+  _detailSubjId = e.subjectId;
+  editExam(id);
+}
+function renderExamItemHtml(exam) {
+  var today = new Date(); today.setHours(0,0,0,0);
+  var examD = parseLocalDate(exam.examDate);
+  var days = examD ? Math.ceil((examD-today)/86400000) : null;
+  var dStr = days!==null ? (days>=0 ? days+'日後' : Math.abs(days)+'日経過') : '';
+  var color = days!==null ? (days<=7?'var(--red)':days<=30?'var(--yellow)':'var(--accent)') : 'var(--muted)';
+  var dlRow='';
+  if (exam.appDeadline) {
+    var dl=parseLocalDate(exam.appDeadline);
+    var dlD=Math.ceil((dl-today)/86400000);
+    var isAlert=dlD>=0&&dlD<=14;
+    dlRow='<div class="exam-date-row'+(isAlert?' exam-date-alert-text':'')+'"><span class="exam-date-label">申込締切</span><span>'+exam.appDeadline+(isAlert?' ⚠️ あと'+dlD+'日':'')+'</span></div>';
+  }
+  return '<div class="exam-item">'
+    +'<div class="exam-item-top">'
+      +'<p class="exam-name-text">'+exam.name+'</p>'
+      +(days!==null?'<span class="exam-days-badge" style="color:'+color+';">'+dStr+'</span>':'')
+    +'</div>'
+    +'<div class="exam-dates-meta">'
+      +(exam.appStart?'<div class="exam-date-row"><span class="exam-date-label">申込開始</span><span>'+exam.appStart+'</span></div>':'')
+      +dlRow
+      +'<div class="exam-date-row"><span class="exam-date-label">試験日</span><span>'+exam.examDate+'</span></div>'
+    +'</div>'
+    +'<button class="btn-edit-inline" onclick="event.stopPropagation();editExamInline(\''+exam.id+'\')">✏️ 編集</button>'
+    +'</div>';
+}
 function renderResourceCardHtml(r) {
   var icon = r.rtype==='youtube'?'▶️':r.rtype==='pdf'?'📄':r.rtype==='site'?'🌐':'🔗';
   var thumb = (r.rtype==='youtube'&&r.ytThumb)
@@ -1036,8 +1072,17 @@ function renderSubjects() {
       var resHtml = res.length
         ? res.map(function(r) { return renderResourceCardHtml(r); }).join('')
         : '<p style="font-size:.8rem;color:var(--muted);padding:.35rem 0 .5rem;">まだリソースが登録されていません</p>';
+      var subjExams = exams.filter(function(e) { return e.subjectId === subj.id; });
+      var examsHtml = subjExams.length
+        ? subjExams.map(function(e) { return renderExamItemHtml(e); }).join('')
+        : '<p style="font-size:.8rem;color:var(--muted);padding:.35rem 0 .5rem;">まだ試験日が登録されていません</p>';
       expandedSection = '<div class="subject-expand-body" onclick="event.stopPropagation()">'
         + '<div class="subject-expand-section-header">'
+          + '<span class="subject-expand-label">📅 試験日・申込期間</span>'
+          + '<button class="btn-add-sm" onclick="openExamModalForSubj(\'' + subj.id + '\')">＋ 追加</button>'
+        + '</div>'
+        + examsHtml
+        + '<div class="subject-expand-section-header" style="margin-top:.85rem;border-top:1px solid var(--border);padding-top:.75rem;">'
           + '<span class="subject-expand-label">📚 教材</span>'
           + '<button class="btn-add-sm" onclick="openMaterialModalForSubj(\'' + subj.id + '\')">＋ 追加</button>'
         + '</div>'
@@ -1359,32 +1404,7 @@ function renderSDExams() {
   var list = exams.filter(function(e){ return e.subjectId===_detailSubjId; });
   var el = document.getElementById('sdExamList');
   if (!list.length) { el.innerHTML='<p style="font-size:.8rem;color:var(--muted);padding:.4rem 0;">まだ登録されていません</p>'; return; }
-  var today = new Date(); today.setHours(0,0,0,0);
-  el.innerHTML = list.map(function(exam){
-    var examD = parseLocalDate(exam.examDate);
-    var days = examD ? Math.ceil((examD-today)/86400000) : null;
-    var dStr = days!==null?(days>=0?days+'日後':Math.abs(days)+'日経過'):'';
-    var color = days!==null?(days<=7?'var(--red)':days<=30?'var(--yellow)':'var(--accent)'):'var(--muted)';
-    var dlRow='';
-    if(exam.appDeadline){
-      var dl=parseLocalDate(exam.appDeadline);
-      var dlD=Math.ceil((dl-today)/86400000);
-      var isAlert=dlD>=0&&dlD<=14;
-      dlRow='<div class="exam-date-row'+(isAlert?' exam-date-alert-text':'')+'"><span class="exam-date-label">申込締切</span><span>'+exam.appDeadline+(isAlert?' ⚠️ あと'+dlD+'日':'')+'</span></div>';
-    }
-    return '<div class="exam-item">'
-      +'<div class="exam-item-top">'
-        +'<p class="exam-name-text">'+exam.name+'</p>'
-        +(days!==null?'<span class="exam-days-badge" style="color:'+color+';">'+dStr+'</span>':'')
-      +'</div>'
-      +'<div class="exam-dates-meta">'
-        +(exam.appStart?'<div class="exam-date-row"><span class="exam-date-label">申込開始</span><span>'+exam.appStart+'</span></div>':'')
-        +dlRow
-        +'<div class="exam-date-row"><span class="exam-date-label">試験日</span><span>'+exam.examDate+'</span></div>'
-      +'</div>'
-      +'<button class="btn-edit-inline" onclick="editExam(\''+exam.id+'\')">✏️ 編集</button>'
-      +'</div>';
-  }).join('');
+  el.innerHTML = list.map(function(exam){ return renderExamItemHtml(exam); }).join('');
 }
 function renderSDMaterials() {
   var list = materials.filter(function(m){ return m.subjectId===_detailSubjId; });
