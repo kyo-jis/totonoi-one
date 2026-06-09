@@ -280,6 +280,14 @@
     .exam-date-alert-text { color:var(--yellow); }
     .btn-edit-inline { background:none; border:none; color:var(--muted); font-size:.72rem; cursor:pointer; font-family:var(--font); padding:.3rem 0 0; }
 
+    /* Subject inline expand */
+    .subject-card-wrap { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:.625rem; cursor:pointer; transition:border-color .15s; }
+    .subject-card-wrap.expanded { border-color:rgba(60,140,191,.38); background:rgba(60,140,191,.03); }
+    .subject-card-header { display:flex; align-items:center; gap:.9rem; }
+    .subject-expand-body { border-top:1px solid var(--border); margin-top:.85rem; padding-top:.75rem; }
+    .subject-expand-section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:.5rem; }
+    .subject-expand-label { font-size:.65rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+
     @media (min-width: 768px) {
       body { padding-bottom:2rem; }
       .app-header { max-width:1040px; margin-left:auto; margin-right:auto; padding-left:2rem; padding-right:2rem; }
@@ -939,6 +947,50 @@ function renderToday() {
 }
 
 /* ── Subjects Tab ── */
+function toggleSubjectExpand(id) {
+  _expandedSubjId = (_expandedSubjId === id) ? null : id;
+  if (_expandedSubjId) _detailSubjId = _expandedSubjId;
+  renderSubjects();
+}
+function openMaterialModalForSubj(subjId) {
+  _detailSubjId = subjId;
+  openMaterialModal();
+}
+function editMaterialInline(id) {
+  var m = materials.find(function(x){ return x.id===id; });
+  if (!m) return;
+  _detailSubjId = m.subjectId;
+  editMaterial(id);
+}
+function renderMaterialCardHtml(m) {
+  var isBook = m.type==='book';
+  var badge = isBook
+    ? '<span class="material-type-badge material-type-book">参考書</span>'
+    : '<span class="material-type-badge material-type-past">過去問</span>';
+  var meta = isBook
+    ? (m.author||'') + (m.totalPages ? ' · '+m.currentPage+'/'+m.totalPages+'p' : '')
+    : (m.year||'') + (m.correctRate!=null&&m.correctRate!=='' ? ' · 正解率'+m.correctRate+'%' : '');
+  var progressHtml='';
+  if (isBook && m.totalPages && m.totalPages>0) {
+    var pct=Math.min(100,Math.round((m.currentPage/m.totalPages)*100));
+    progressHtml='<div class="material-progress"><div class="material-progress-bg"><div class="material-progress-fill" style="width:'+pct+'%;"></div></div><div class="material-progress-meta"><span>'+m.currentPage+'/'+m.totalPages+'ページ</span><span>'+pct+'%</span></div></div>';
+  } else if (!isBook && m.correctRate!=null && m.correctRate!=='') {
+    var cr=parseInt(m.correctRate);
+    var crColor=cr>=80?'var(--green)':cr>=60?'var(--yellow)':'var(--red)';
+    progressHtml='<div class="material-progress"><div class="material-progress-bg"><div class="material-progress-fill" style="width:'+cr+'%;background:'+crColor+';"></div></div><div class="material-progress-meta"><span>正解率</span><span style="color:'+crColor+';">'+cr+'%</span></div></div>';
+  }
+  return '<div class="material-card">'
+    +'<div class="material-card-top">'
+      +'<div style="flex:1;min-width:0;">'
+        +'<p class="material-title">'+m.title+'</p>'
+        +(meta?'<span class="material-meta-text">'+meta+'</span>':'')
+      +'</div>'
+      +badge
+      +'<button onclick="event.stopPropagation();editMaterialInline(\''+m.id+'\')" style="background:none;border:none;color:var(--muted);font-size:.85rem;cursor:pointer;flex-shrink:0;padding-left:.4rem;">✏️</button>'
+    +'</div>'
+    +progressHtml
+    +'</div>';
+}
 function renderSubjects() {
   var el = document.getElementById('subjectsList');
   if (!subjects.length) {
@@ -949,17 +1001,35 @@ function renderSubjects() {
     var total = sessions.filter(function(s) { return s.subjectId === subj.id; })
       .reduce(function(sum, s) { return sum + (s.duration || 0); }, 0);
     var cnt = sessions.filter(function(s) { return s.subjectId === subj.id; }).length;
-    return '<div class="subject-item">'
-      + '<div class="subj-icon" style="background:' + (subj.color || '#3c8cbf') + '22;">' + (subj.icon || '📘') + '</div>'
-      + '<div class="subject-item-info">'
-        + '<p class="subject-item-name">' + subj.name + '</p>'
-        + '<p class="subject-item-meta">合計 ' + formatMin(total) + ' · ' + cnt + 'セッション' + (subj.dailyGoal ? ' · 目標 ' + subj.dailyGoal + '分/日' : '') + '</p>'
+    var isExpanded = _expandedSubjId === subj.id;
+    var expandedSection = '';
+    if (isExpanded) {
+      var mats = materials.filter(function(m) { return m.subjectId === subj.id; });
+      var matsHtml = mats.length
+        ? mats.map(function(m) { return renderMaterialCardHtml(m); }).join('')
+        : '<p style="font-size:.8rem;color:var(--muted);padding:.35rem 0 .5rem;">まだ教材が登録されていません</p>';
+      expandedSection = '<div class="subject-expand-body" onclick="event.stopPropagation()">'
+        + '<div class="subject-expand-section-header">'
+          + '<span class="subject-expand-label">📚 教材</span>'
+          + '<button class="btn-add-sm" onclick="openMaterialModalForSubj(\'' + subj.id + '\')">＋ 追加</button>'
+        + '</div>'
+        + matsHtml
+        + '</div>';
+    }
+    return '<div class="subject-card-wrap' + (isExpanded ? ' expanded' : '') + '" onclick="toggleSubjectExpand(\'' + subj.id + '\')">'
+      + '<div class="subject-card-header">'
+        + '<div class="subj-icon" style="background:' + (subj.color || '#3c8cbf') + '22;">' + (subj.icon || '📘') + '</div>'
+        + '<div class="subject-item-info">'
+          + '<p class="subject-item-name">' + subj.name + '</p>'
+          + '<p class="subject-item-meta">合計 ' + formatMin(total) + ' · ' + cnt + 'セッション' + (subj.dailyGoal ? ' · 目標 ' + subj.dailyGoal + '分/日' : '') + '</p>'
+        + '</div>'
+        + '<div style="display:flex;gap:.4rem;flex-shrink:0;">'
+          + '<button class="btn-icon-sm" onclick="event.stopPropagation();openLogModal(\'' + subj.id + '\')">＋</button>'
+          + '<button class="btn-icon-sm" onclick="event.stopPropagation();editSubject(\'' + subj.id + '\')" title="編集">✏️</button>'
+          + '<button class="btn-icon-sm" onclick="event.stopPropagation();toggleSubjectExpand(\'' + subj.id + '\')" title="' + (isExpanded?'閉じる':'教材を表示') + '" style="color:' + (isExpanded?'var(--accent)':'var(--muted)') + ';">' + (isExpanded ? '▲' : '▼') + '</button>'
+        + '</div>'
       + '</div>'
-      + '<div style="display:flex;gap:.4rem;flex-shrink:0;">'
-        + '<button class="btn-icon-sm" onclick="openLogModal(\'' + subj.id + '\')">＋</button>'
-        + '<button class="btn-icon-sm" onclick="openSubjectDetail(\'' + subj.id + '\')" title="詳細">📋</button>'
-        + '<button class="btn-icon-sm" onclick="editSubject(\'' + subj.id + '\')">✏️</button>'
-      + '</div>'
+      + expandedSection
       + '</div>';
   }).join('');
 }
@@ -1127,6 +1197,7 @@ function deleteSession(id) {
 
 /* ── Subject Modal ── */
 var _editSubjId = null, _selColor = SUBJECT_COLORS[0], _selIcon = ICON_PRESETS[0];
+var _expandedSubjId = null;
 
 function openSubjModal(subjId) {
   _editSubjId = subjId || null;
@@ -1286,31 +1357,7 @@ function renderSDMaterials() {
   var list = materials.filter(function(m){ return m.subjectId===_detailSubjId; });
   var el = document.getElementById('sdMaterialList');
   if (!list.length) { el.innerHTML='<p style="font-size:.8rem;color:var(--muted);padding:.4rem 0;">まだ登録されていません</p>'; return; }
-  el.innerHTML = list.map(function(m){
-    var isBook = m.type==='book';
-    var badge = isBook?'<span class="material-type-badge material-type-book">参考書</span>':'<span class="material-type-badge material-type-past">過去問</span>';
-    var meta = isBook?(m.author||'')+(m.totalPages?' · '+m.currentPage+'/'+m.totalPages+'p':''):((m.year||'')+(m.correctRate!=null&&m.correctRate!==''?' · 正解率'+m.correctRate+'%':''));
-    var pct=0, progressHtml='';
-    if(isBook&&m.totalPages&&m.totalPages>0){
-      pct=Math.min(100,Math.round((m.currentPage/m.totalPages)*100));
-      progressHtml='<div class="material-progress"><div class="material-progress-bg"><div class="material-progress-fill" style="width:'+pct+'%;"></div></div><div class="material-progress-meta"><span>'+m.currentPage+'/'+m.totalPages+'ページ</span><span>'+pct+'%</span></div></div>';
-    } else if(!isBook&&m.correctRate!=null&&m.correctRate!==''){
-      var cr=parseInt(m.correctRate);
-      var crColor=cr>=80?'var(--green)':cr>=60?'var(--yellow)':'var(--red)';
-      progressHtml='<div class="material-progress"><div class="material-progress-bg"><div class="material-progress-fill" style="width:'+cr+'%;background:'+crColor+';"></div></div><div class="material-progress-meta"><span>正解率</span><span>'+cr+'%</span></div></div>';
-    }
-    return '<div class="material-card">'
-      +'<div class="material-card-top">'
-        +'<div style="flex:1;min-width:0;">'
-          +'<p class="material-title">'+m.title+'</p>'
-          +(meta?'<span class="material-meta-text">'+meta+'</span>':'')
-        +'</div>'
-        +badge
-        +'<button onclick="editMaterial(\''+m.id+'\')" style="background:none;border:none;color:var(--muted);font-size:.85rem;cursor:pointer;flex-shrink:0;padding-left:.4rem;">✏️</button>'
-      +'</div>'
-      +progressHtml
-      +'</div>';
-  }).join('');
+  el.innerHTML = list.map(function(m){ return renderMaterialCardHtml(m); }).join('');
 }
 function renderSDResources() {
   var list = resources.filter(function(r){ return r.subjectId===_detailSubjId; });
