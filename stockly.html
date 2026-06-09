@@ -282,6 +282,10 @@
   <div class="alert-section">
     <p class="section-label" style="padding:0 0 .75rem">要補充リスト</p>
     <div id="alertList"></div>
+    <div id="expirySection" style="margin-top:1.25rem;">
+      <p class="section-label" style="padding:0 0 .75rem">期限アラート</p>
+      <div id="expiryAlertList"></div>
+    </div>
   </div>
 
 <!-- Shopping List -->
@@ -455,6 +459,16 @@
         </select>
       </div>
     </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>購入日</label>
+        <input type="date" id="fPurchaseDate">
+      </div>
+      <div class="form-group">
+        <label>賞味期限・使用期限</label>
+        <input type="date" id="fExpiryDate">
+      </div>
+    </div>
     <button class="btn-primary" id="saveBtn" onclick="saveItem()">追加する</button>
     <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
   </div>
@@ -463,6 +477,15 @@
 <script>
 var FREE_LIMIT = 10;
 var isPro = localStorage.getItem('isPro') === 'true';
+
+function parseLocalDate(str) {
+  if (!str) return null;
+  var p = str.split('-');
+  return new Date(+p[0], +p[1]-1, +p[2]);
+}
+function localDateStr(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
 
 var CAT_LABELS = { all:'すべて', daily:'🏠 日用品', food:'🍱 食品・飲料', medicine:'💊 医薬品・衛生', emergency:'⚡ 防災備蓄', other:'📦 その他' };
 var CAT_NAMES  = { daily:'日用品', food:'食品・飲料', medicine:'医薬品・衛生', emergency:'防災備蓄', other:'その他' };
@@ -535,6 +558,19 @@ function stockBadge(item) {
   return '<span class="stock-badge ok">在庫OK</span>';
 }
 
+function expiryBadge(item) {
+  if (!item.expiryDate) return '';
+  var today = new Date(); today.setHours(0,0,0,0);
+  var exp = parseLocalDate(item.expiryDate);
+  if (!exp) return '';
+  var diff = Math.round((exp - today) / (1000*60*60*24));
+  if (diff < 0) return '<span class="stock-badge critical">期限切れ</span>';
+  if (diff === 0) return '<span class="stock-badge critical">本日期限</span>';
+  if (diff <= 7)  return '<span class="stock-badge critical">期限 ' + diff + '日前</span>';
+  if (diff <= 30) return '<span class="stock-badge warning">期限 ' + diff + '日前</span>';
+  return '<span style="font-size:.65rem;color:var(--muted);">' + item.expiryDate + '迄</span>';
+}
+
 function stockBarPct(item) {
   var max = item.maxStock || Math.max(item.minStock * 3, item.quantity, 1);
   return Math.min(100, Math.round((item.quantity / max) * 100));
@@ -559,7 +595,7 @@ function renderList() {
       + '<div class="item-icon">' + (item.icon || '📦') + '</div>'
       + '<div class="item-info">'
         + '<p class="item-name">' + item.name + '</p>'
-        + '<div class="item-meta">' + CAT_LABELS[item.category] + ' ' + stockBadge(item) + '</div>'
+        + '<div class="item-meta">' + CAT_LABELS[item.category] + ' ' + stockBadge(item) + ' ' + expiryBadge(item) + '</div>'
       + '</div>'
       + '<div class="item-right">'
         + '<div class="quantity-display">' + item.quantity + '<span class="quantity-unit">' + item.unit + '</span></div>'
@@ -585,32 +621,62 @@ function renderAlert() {
   var alerts = items.filter(function(i){ return stockLevel(i) !== 'ok'; })
     .sort(function(a,b){ return a.quantity - b.quantity; });
 
+  var today = new Date(); today.setHours(0,0,0,0);
+  var expiryAlerts = items.filter(function(i) {
+    if (!i.expiryDate) return false;
+    var exp = parseLocalDate(i.expiryDate);
+    if (!exp) return false;
+    return Math.round((exp - today) / (1000*60*60*24)) <= 30;
+  }).sort(function(a,b) { return parseLocalDate(a.expiryDate) - parseLocalDate(b.expiryDate); });
+
   var tabAlert = document.getElementById('tabAlert');
   var existing = tabAlert.querySelector('.tab-badge');
-  if (alerts.length) {
+  var totalCount = alerts.length + expiryAlerts.length;
+  if (totalCount) {
     if (!existing) { var b = document.createElement('span'); b.className = 'tab-badge'; tabAlert.appendChild(b); }
-    tabAlert.querySelector('.tab-badge').textContent = alerts.length;
+    tabAlert.querySelector('.tab-badge').textContent = totalCount;
   } else {
     if (existing) existing.remove();
   }
 
   if (!alerts.length) {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><p>すべてのアイテムが<br>十分な在庫です！</p></div>';
-    return;
+  } else {
+    el.innerHTML = alerts.map(function(item) {
+      var lv = stockLevel(item);
+      var desc = lv === 'critical' ? '在庫切れ' : '残り' + item.quantity + item.unit + '（最低' + item.minStock + item.unit + '）';
+      var inShop = shopList.some(function(s){ return s.itemId === item.id && !s.checked; });
+      return '<div class="alert-card ' + lv + '">'
+        + '<div class="alert-icon">' + (item.icon || '📦') + '</div>'
+        + '<div class="alert-info"><p class="alert-name">' + item.name + '</p><p class="alert-desc">' + desc + '</p></div>'
+        + '<div style="display:flex;flex-direction:column;gap:.3rem;align-items:flex-end;">'
+          + '<button class="restock-btn" onclick="restockItem(\'' + item.id + '\')">補充</button>'
+          + (!inShop ? '<button onclick="addToShopList(\'' + item.id + '\')" style="font-size:.65rem;padding:.2rem .5rem;background:rgba(125,186,69,.1);border:1px solid rgba(125,186,69,.3);color:var(--accent);border-radius:6px;cursor:pointer;font-family:var(--font);white-space:nowrap;">🛒 リストへ</button>' : '<span style="font-size:.62rem;color:var(--accent);">🛒 リスト済み</span>')
+        + '</div>'
+        + '</div>';
+    }).join('');
   }
-  el.innerHTML = alerts.map(function(item) {
-    var lv = stockLevel(item);
-    var desc = lv === 'critical' ? '在庫切れ' : '残り' + item.quantity + item.unit + '（最低' + item.minStock + item.unit + '）';
-    var inShop = shopList.some(function(s){ return s.itemId === item.id && !s.checked; });
-    return '<div class="alert-card ' + lv + '">'
-      + '<div class="alert-icon">' + (item.icon || '📦') + '</div>'
-      + '<div class="alert-info"><p class="alert-name">' + item.name + '</p><p class="alert-desc">' + desc + '</p></div>'
-      + '<div style="display:flex;flex-direction:column;gap:.3rem;align-items:flex-end;">'
-        + '<button class="restock-btn" onclick="restockItem(\'' + item.id + '\')">補充</button>'
-        + (!inShop ? '<button onclick="addToShopList(\'' + item.id + '\')" style="font-size:.65rem;padding:.2rem .5rem;background:rgba(125,186,69,.1);border:1px solid rgba(125,186,69,.3);color:var(--accent);border-radius:6px;cursor:pointer;font-family:var(--font);white-space:nowrap;">🛒 リストへ</button>' : '<span style="font-size:.62rem;color:var(--accent);">🛒 リスト済み</span>')
-      + '</div>'
-      + '</div>';
-  }).join('');
+
+  var expiryEl = document.getElementById('expiryAlertList');
+  var expirySection = document.getElementById('expirySection');
+  if (!expiryAlerts.length) {
+    expirySection.style.display = 'none';
+  } else {
+    expirySection.style.display = '';
+    expiryEl.innerHTML = expiryAlerts.map(function(item) {
+      var exp = parseLocalDate(item.expiryDate);
+      var diff = Math.round((exp - today) / (1000*60*60*24));
+      var lv = diff < 0 ? 'critical' : (diff <= 7 ? 'critical' : 'warning');
+      var desc = diff < 0 ? '期限切れ（' + item.expiryDate + '）'
+               : diff === 0 ? '本日期限（' + item.expiryDate + '）'
+               : diff + '日後に期限切れ（' + item.expiryDate + '）';
+      return '<div class="alert-card ' + lv + '">'
+        + '<div class="alert-icon">' + (item.icon || '📦') + '</div>'
+        + '<div class="alert-info"><p class="alert-name">' + item.name + '</p><p class="alert-desc">📅 ' + desc + '</p></div>'
+        + '<button class="restock-btn" onclick="editItem(\'' + item.id + '\')">編集</button>'
+        + '</div>';
+    }).join('');
+  }
 }
 
 // ── Quantity update ──
@@ -843,6 +909,8 @@ function openModal() {
   document.getElementById('fQty').value = '';
   document.getElementById('fMinStock').value = '';
   document.getElementById('fUnit').value = '個';
+  document.getElementById('fPurchaseDate').value = '';
+  document.getElementById('fExpiryDate').value = '';
   document.querySelectorAll('.preset-btn').forEach(function(b){ b.classList.remove('selected'); });
   document.getElementById('modalOverlay').classList.add('show');
 }
@@ -861,19 +929,24 @@ function editItem(id) {
   document.getElementById('fQty').value = item.quantity;
   document.getElementById('fMinStock').value = item.minStock;
   document.getElementById('fUnit').value = item.unit || '個';
+  document.getElementById('fPurchaseDate').value = item.purchaseDate || '';
+  document.getElementById('fExpiryDate').value = item.expiryDate || '';
+  document.querySelectorAll('.preset-btn').forEach(function(b){ b.classList.remove('selected'); });
   document.getElementById('modalOverlay').classList.add('show');
 }
 
 function saveItem() {
-  var name     = document.getElementById('fName').value.trim();
-  var icon     = document.getElementById('fIcon').value.trim() || '📦';
-  var category = document.getElementById('fCategory').value;
-  var qty      = parseInt(document.getElementById('fQty').value) || 0;
-  var minStock = parseInt(document.getElementById('fMinStock').value) || 1;
-  var unit     = document.getElementById('fUnit').value;
+  var name         = document.getElementById('fName').value.trim();
+  var icon         = document.getElementById('fIcon').value.trim() || '📦';
+  var category     = document.getElementById('fCategory').value;
+  var qty          = parseInt(document.getElementById('fQty').value) || 0;
+  var minStock     = parseInt(document.getElementById('fMinStock').value) || 1;
+  var unit         = document.getElementById('fUnit').value;
+  var purchaseDate = document.getElementById('fPurchaseDate').value || '';
+  var expiryDate   = document.getElementById('fExpiryDate').value || '';
   if (!name) { showToast('アイテム名を入力してください'); return; }
   if (!editId && items.length >= FREE_LIMIT && !isPro) { showToast('無料プランは' + FREE_LIMIT + '件まで登録できます'); return; }
-  var entry = { id: editId || Date.now().toString(), name:name, icon:icon, category:category, quantity:qty, minStock:minStock, maxStock:minStock*3, unit:unit };
+  var entry = { id: editId || Date.now().toString(), name:name, icon:icon, category:category, quantity:qty, minStock:minStock, maxStock:minStock*3, unit:unit, purchaseDate:purchaseDate, expiryDate:expiryDate };
   if (editId) { var idx = items.findIndex(function(x){ return x.id === editId; }); items[idx] = entry; }
   else items.push(entry);
   persist(); closeModal(); renderList(); renderAlert(); updateSummary();
@@ -902,8 +975,8 @@ function exportData(fmt) {
     var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
     a.download = 'stockly_' + new Date().toISOString().split('T')[0] + '.json'; a.click();
   } else {
-    var rows = [['名前','絵文字','カテゴリ','数量','最低在庫数','単位'].join(',')];
-    items.forEach(function(i){ rows.push([i.name,i.icon,i.category,i.quantity,i.minStock,i.unit].join(',')); });
+    var rows = [['名前','絵文字','カテゴリ','数量','最低在庫数','単位','購入日','賞味期限・使用期限'].join(',')];
+    items.forEach(function(i){ rows.push([i.name,i.icon,i.category,i.quantity,i.minStock,i.unit,i.purchaseDate||'',i.expiryDate||''].join(',')); });
     var blob = new Blob(['﻿'+rows.join('\n')],{type:'text/csv'});
     var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
     a.download = 'stockly_' + new Date().toISOString().split('T')[0] + '.csv'; a.click();
