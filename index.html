@@ -423,23 +423,13 @@
       <span class="bc-arrow">→</span>
     </a>
 
-    <!-- Readly & Ownly -->
+    <!-- Readly -->
     <a class="bc readly" href="readly.html">
       <div>
         <span class="bc-icon">📝</span>
         <span class="bc-tag">メモ・日記</span>
         <p class="bc-name">Readly</p>
         <p class="bc-desc">メモ・日記・アイデアを管理</p>
-      </div>
-      <span class="bc-arrow">→</span>
-    </a>
-
-    <a class="bc ownly" href="ownly.html">
-      <div>
-        <span class="bc-icon">🏠</span>
-        <span class="bc-tag">持ち物管理</span>
-        <p class="bc-name">Ownly</p>
-        <p class="bc-desc">持ち物・資産を管理</p>
       </div>
       <span class="bc-arrow">→</span>
     </a>
@@ -562,7 +552,7 @@
         if (res.error) throw new Error(res.error.message);
         if (!res.data) throw new Error('データが取得できませんでした（app_logsテーブルが未作成の可能性があります）');
         var s = res.data;
-        var appEmoji = {kakely:'💰',subly:'📱',medly:'💊',fitly:'💪',stockly:'📦',bookly:'📚',cookly:'🍳',renewly:'🔔',readly:'📝',learnly:'🎓',ownly:'🏠'};
+        var appEmoji = {kakely:'💰',subly:'📱',medly:'💊',fitly:'💪',stockly:'📦',bookly:'📚',cookly:'🍳',renewly:'🔔',readly:'📝',learnly:'🎓'};
         function sc(label, val) {
           return '<div class="admin-stat"><p class="admin-stat-label">'+label+'</p><p class="admin-stat-val">'+val+'</p></div>';
         }
@@ -718,7 +708,7 @@
     updateProUI();
 
     // ── Bento Customization ──
-    var APP_KEYS = ['kakely','subly','medly','fitly','stockly','bookly','cookly','renewly','readly','learnly','ownly'];
+    var APP_KEYS = ['kakely','subly','medly','fitly','stockly','bookly','cookly','renewly','readly','learnly'];
     var APP_META = {
       subly:   { name:'Subly',   icon:'💳', tag:'サブスク管理',   soon:false },
       medly:   { name:'Medly',   icon:'💊', tag:'サプリ・薬管理', soon:false },
@@ -729,23 +719,32 @@
       renewly: { name:'Renewly', icon:'🔄', tag:'期限管理',       soon:false },
       bookly:  { name:'Bookly',  icon:'📚', tag:'読書管理',       soon:false },
       readly:  { name:'Readly',  icon:'📝', tag:'メモ・日記',     soon:false },
-      ownly:   { name:'Ownly',   icon:'🏠', tag:'持ち物管理',     soon:false },
       kakely:  { name:'Kakely',  icon:'💰', tag:'家計簿',         soon:false },
     };
     var APP_COLORS = {
       subly:'#3d6b8e', medly:'#7c5cbf', fitly:'#4a8c5a', stockly:'#7c9c3c',
       cookly:'#bf6c3c', learnly:'#3c8cbf', renewly:'#bf9c3c', bookly:'#6d28d9',
-      readly:'#3c5cbf', ownly:'#9c9c3c', kakely:'#c47d0e'
+      readly:'#3c5cbf', kakely:'#c47d0e'
     };
 
     var _defaultPrefs = { order: APP_KEYS.slice(), hidden: [] };
     var bentoPrefs = JSON.parse(localStorage.getItem('bentoPrefs') || 'null') || JSON.parse(JSON.stringify(_defaultPrefs));
-    // mangaly → bookly マイグレーション
+    // マイグレーション
     (function() {
+      var changed = false;
+      // mangaly → bookly
       var idx = bentoPrefs.order.indexOf('mangaly');
-      if (idx !== -1) { bentoPrefs.order[idx] = 'bookly'; localStorage.setItem('bentoPrefs', JSON.stringify(bentoPrefs)); }
+      if (idx !== -1) { bentoPrefs.order[idx] = 'bookly'; changed = true; }
       var hi = bentoPrefs.hidden ? bentoPrefs.hidden.indexOf('mangaly') : -1;
-      if (hi !== -1) { bentoPrefs.hidden[hi] = 'bookly'; localStorage.setItem('bentoPrefs', JSON.stringify(bentoPrefs)); }
+      if (hi !== -1) { bentoPrefs.hidden[hi] = 'bookly'; changed = true; }
+      // ownly を非表示リストに追加（既存ユーザー向け）
+      if (bentoPrefs.hidden && bentoPrefs.hidden.indexOf('ownly') === -1) {
+        bentoPrefs.hidden.push('ownly'); changed = true;
+      }
+      // ownly を order から除去
+      var oi = bentoPrefs.order ? bentoPrefs.order.indexOf('ownly') : -1;
+      if (oi !== -1) { bentoPrefs.order.splice(oi, 1); changed = true; }
+      if (changed) localStorage.setItem('bentoPrefs', JSON.stringify(bentoPrefs));
     })();
 
     function applyBentoPrefs() {
@@ -837,7 +836,6 @@
       renewly: { label:'Renewly', icon:'🔄', keys:['renewly_items'] },
       bookly:  { label:'Bookly', icon:'📚', keys:['bookly_items'] },
       readly:  { label:'Readly', icon:'📝', keys:['readly_notes'] },
-      ownly:   { label:'Ownly', icon:'🏠', keys:['ownly_items'] },
       kakely:  { label:'Kakely', icon:'💰', keys:['kakely_cats','kakely_pays'] },
     };
 

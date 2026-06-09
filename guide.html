@@ -154,7 +154,6 @@
     <a class="toc-item" href="#renewly"><span class="toc-icon">🔔</span><span><span class="toc-name">Renewly</span><span class="toc-ja">期限管理</span></span></a>
     <a class="toc-item" href="#readly"><span class="toc-icon">📝</span><span><span class="toc-name">Readly</span><span class="toc-ja">メモ・日記</span></span></a>
     <a class="toc-item" href="#learnly"><span class="toc-icon">🎓</span><span><span class="toc-name">Learnly</span><span class="toc-ja">学習プランナー</span></span></a>
-    <a class="toc-item" href="#ownly"><span class="toc-icon">🏠</span><span><span class="toc-name">Ownly</span><span class="toc-ja">持ち物管理</span></span></a>
     <a class="toc-item" href="#common" style="grid-column:1/-1"><span class="toc-icon">☁️</span><span><span class="toc-name">全アプリ共通</span><span class="toc-ja">クラウド同期・保存状態バッジ</span></span></a>
   </div>
 </nav>
@@ -461,33 +460,6 @@
   </div>
 </div>
 
-<!-- Ownly -->
-<span class="section-anchor" id="ownly"></span>
-<div class="section">
-  <div class="section-header">
-    <div class="section-app-icon color-ownly">🏠</div>
-    <div>
-      <p class="section-name">Ownly <span class="section-name-ja">— 持ち物管理</span></p>
-    </div>
-  </div>
-  <p class="section-intro">家電・家具・ガジェットなどの所有物をカタログ化するアプリ。購入価格の集計と保証期限管理で、大切な持ち物を整理・把握できます。</p>
-  <div class="card">
-    <p class="card-title">できること</p>
-    <div class="feature-list">
-      <div class="feature-item"><span class="feature-icon">💼</span><p class="feature-text"><strong>所有物をカタログ化</strong> <span>— 家電・家具・ガジェット・衣類・乗り物などを登録して一覧管理できます</span></p></div>
-      <div class="feature-item"><span class="feature-icon">💰</span><p class="feature-text"><strong>総資産額を自動集計</strong> <span>— 購入価格の合計を自動計算します。自分が何にいくら使っているか把握できます</span></p></div>
-      <div class="feature-item"><span class="feature-icon">🛡</span><p class="feature-text"><strong>保証期限管理</strong> <span>— 家電の保証期限を登録しておくと、期限が近づいたらバッジで通知します</span></p></div>
-    </div>
-  </div>
-  <div class="card">
-    <p class="card-title">使い方</p>
-    <div class="steps">
-      <div class="step"><div class="step-num">1</div><div class="step-body"><p class="step-title">アイテムを登録</p><p class="step-desc">名前・カテゴリ・購入価格・購入日を入力します。保証書がある場合は保証期限も登録しておきましょう。</p></div></div>
-      <div class="step"><div class="step-num">2</div><div class="step-body"><p class="step-title">「保証」タブで期限を確認</p><p class="step-desc">保証期限が登録されたアイテムが一覧で表示されます。90日以内に期限が来ると「まもなく」バッジが付きます。</p></div></div>
-    </div>
-  </div>
-</div>
-
 <!-- Common Features -->
 <span class="section-anchor" id="common"></span>
 <div class="section">
@@ -540,14 +512,14 @@
         <tr><td>Kakely 家計簿</td><td class="check">✓</td><td class="check">✓</td></tr>
         <tr><td>Subly 登録数</td><td class="limit">5件</td><td class="check">無制限</td></tr>
         <tr><td>Medly 登録数</td><td class="limit">10件</td><td class="check">無制限</td></tr>
+        <tr><td>Fitly 保存メニュー</td><td class="limit">3件</td><td class="check">無制限</td></tr>
         <tr><td>Fitly 分析ダッシュボード</td><td class="cross">×</td><td class="check">✓</td></tr>
         <tr><td>Stockly 登録数</td><td class="limit">10件</td><td class="check">無制限</td></tr>
         <tr><td>Bookly 登録数</td><td class="limit">20件</td><td class="check">無制限</td></tr>
         <tr><td>Cookly 登録数</td><td class="limit">20件</td><td class="check">無制限</td></tr>
         <tr><td>Renewly 登録数</td><td class="limit">10件</td><td class="check">無制限</td></tr>
         <tr><td>Readly 登録数</td><td class="limit">30件</td><td class="check">無制限</td></tr>
-        <tr><td>Learnly 登録数</td><td class="limit">10件</td><td class="check">無制限</td></tr>
-        <tr><td>Ownly 登録数</td><td class="limit">20件</td><td class="check">無制限</td></tr>
+        <tr><td>Learnly</td><td class="check">✓</td><td class="check">✓</td></tr>
         <tr><td>データエクスポート</td><td class="cross">×</td><td class="check">JSON/CSV</td></tr>
         <tr><td>購入履歴（全期間）</td><td class="limit">30日分</td><td class="check">無制限</td></tr>
         <tr><td>広告</td><td class="cross">あり</td><td class="check">なし</td></tr>
@@ -601,7 +573,7 @@ function toggleFaq(item) {
   item.classList.toggle('open');
 }
 var SHARE_URL = 'https://totonoi-one.vercel.app/';
-var SHARE_TEXT = '暮らしを整えるライフダッシュボード「Totonoi One」— サブスク・家計簿・サプリ・筋トレ・在庫・レシピなど11アプリが無料で使えます！ #TotonoiOne';
+var SHARE_TEXT = '暮らしを整えるライフダッシュボード「Totonoi One」— サブスク・家計簿・サプリ・筋トレ・在庫・レシピなど10アプリが無料で使えます！ #TotonoiOne';
 function shareX(){ window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(SHARE_TEXT)+'&url='+encodeURIComponent(SHARE_URL),'_blank'); }
 function shareLine(){ window.open('https://social-plugins.line.me/lineit/share?url='+encodeURIComponent(SHARE_URL),'_blank'); }
 function shareCopy(){
