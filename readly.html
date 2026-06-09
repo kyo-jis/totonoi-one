@@ -120,6 +120,17 @@
     .share-x { background:#000; color:#fff; }
     .share-line { background:#06c755; color:#fff; }
     .share-copy { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+
+    /* Idea Status */
+    .idea-status-filter { display:none; gap:.4rem; padding:0 1.25rem .75rem; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+    .idea-status-filter::-webkit-scrollbar { display:none; }
+    .idea-status-filter.show { display:flex; }
+    .status-chip { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:.3rem .8rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); white-space:nowrap; transition:all .2s; flex-shrink:0; }
+    .status-chip.active { background:var(--surface2); border-color:var(--yellow); color:var(--yellow); }
+    .status-btn { width:28px; height:28px; border-radius:8px; border:none; background:none; font-size:1.05rem; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; padding:0; transition:transform .15s; }
+    .status-btn:active { transform:scale(.82); }
+    .note-title.done { text-decoration:line-through; opacity:.55; }
+    .note-preview.done { text-decoration:line-through; opacity:.45; }
   </style>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-E9Q0JQ0V92"></script>
@@ -169,6 +180,13 @@
     <button class="cat-chip" onclick="filterCat('idea',this)">💡 アイデア</button>
     <button class="cat-chip" onclick="filterCat('todo',this)">✅ TODO</button>
     <button class="cat-chip" onclick="filterCat('other',this)">📦 その他</button>
+  </div>
+  <div class="idea-status-filter" id="ideaStatusFilter">
+    <button class="status-chip active" onclick="filterIdeaStatus('all',this)">すべて</button>
+    <button class="status-chip" onclick="filterIdeaStatus('pending',this)">⬜ 未着手</button>
+    <button class="status-chip" onclick="filterIdeaStatus('progress',this)">▶️ 進行中</button>
+    <button class="status-chip" onclick="filterIdeaStatus('done',this)">✅ 完了</button>
+    <button class="status-chip" onclick="filterIdeaStatus('rejected',this)">❌ 却下・保留</button>
   </div>
   <div class="list-section"><div id="noteList"></div></div>
 </div>
@@ -256,16 +274,42 @@ var isPro = localStorage.getItem('isPro') === 'true';
 var CAT_LABELS = { all:'すべて', note:'📝 メモ', diary:'📔 日記', idea:'💡 アイデア', todo:'✅ TODO', other:'📦 その他' };
 var notes = JSON.parse(localStorage.getItem('readly_notes') || '[]');
 var currentCat = 'all';
+var currentIdeaStatus = 'all';
 var searchQuery = '';
 var editId = null;
+var IDEA_STATUS_CYCLE = ['pending','progress','done','rejected'];
+var IDEA_STATUS_ICONS = { pending:'⬜', progress:'▶️', done:'✅', rejected:'❌' };
 
 function init() { renderNotes(); updateProUI(); renderStats(); }
 
 function filterCat(cat, btn) {
   currentCat = cat;
+  currentIdeaStatus = 'all';
   document.querySelectorAll('.cat-chip').forEach(function(c){ c.classList.remove('active'); });
   btn.classList.add('active');
+  var sf = document.getElementById('ideaStatusFilter');
+  if (sf) {
+    sf.classList.toggle('show', cat === 'idea');
+    sf.querySelectorAll('.status-chip').forEach(function(c){ c.classList.remove('active'); });
+    var first = sf.querySelector('.status-chip');
+    if (first) first.classList.add('active');
+  }
   renderNotes();
+}
+function filterIdeaStatus(status, btn) {
+  currentIdeaStatus = status;
+  document.querySelectorAll('#ideaStatusFilter .status-chip').forEach(function(c){ c.classList.remove('active'); });
+  btn.classList.add('active');
+  renderNotes();
+}
+function cycleIdeaStatus(id) {
+  var i = notes.findIndex(function(x){ return x.id===id; });
+  if (i < 0) return;
+  var cur = notes[i].status || 'pending';
+  var idx = IDEA_STATUS_CYCLE.indexOf(cur);
+  notes[i].status = IDEA_STATUS_CYCLE[(idx+1) % IDEA_STATUS_CYCLE.length];
+  notes[i].updatedAt = new Date().toISOString();
+  persist();
 }
 function onSearch() { searchQuery = document.getElementById('searchInput').value.toLowerCase(); renderNotes(); }
 
@@ -273,6 +317,7 @@ function renderNotes() {
   var el = document.getElementById('noteList');
   var list = notes.filter(function(n){
     if (currentCat !== 'all' && n.category !== currentCat) return false;
+    if (currentCat === 'idea' && currentIdeaStatus !== 'all' && (n.status||'pending') !== currentIdeaStatus) return false;
     if (searchQuery) return (n.title||'').toLowerCase().includes(searchQuery) || (n.body||'').toLowerCase().includes(searchQuery);
     return true;
   });
@@ -281,12 +326,18 @@ function renderNotes() {
     var d = new Date(n.updatedAt || n.createdAt);
     var dateStr = d.getMonth()+1 + '/' + d.getDate();
     var catBadge = '<span class="cat-badge cat-' + n.category + '">' + CAT_LABELS[n.category] + '</span>';
+    var isIdea = n.category === 'idea';
+    var isDone = isIdea && (n.status||'pending') === 'done';
+    var statusBtn = isIdea
+      ? '<button class="status-btn" onclick="event.stopPropagation();cycleIdeaStatus(\'' + n.id + '\')" title="ステータスを変更">' + IDEA_STATUS_ICONS[n.status||'pending'] + '</button>'
+      : '';
     return '<div class="note-card" onclick="openNote(\'' + n.id + '\')">'
       + '<div class="note-card-top">'
-        + '<p class="note-title' + (!n.title?' untitled':'') + '">' + (n.title||'（タイトルなし）') + '</p>'
+        + statusBtn
+        + '<p class="note-title' + (isDone?' done':'') + (!n.title?' untitled':'') + '">' + (n.title||'（タイトルなし）') + '</p>'
         + '<span class="note-date">' + dateStr + '</span>'
       + '</div>'
-      + (n.body ? '<p class="note-preview">' + n.body.replace(/</g,'&lt;') + '</p>' : '')
+      + (n.body ? '<p class="note-preview' + (isDone?' done':'') + '">' + n.body.replace(/</g,'&lt;') + '</p>' : '')
       + '<div class="note-footer">' + catBadge
         + '<div class="note-btn-row">'
           + '<button class="btn-icon" onclick="event.stopPropagation();deleteNote(\'' + n.id + '\')">🗑</button>'
