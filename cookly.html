@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -135,6 +135,16 @@
     .share-x { background:#000; color:#fff; }
     .share-line { background:#06c755; color:#fff; }
     .share-copy { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+    /* Back confirm dialog */
+    .back-confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+    .back-confirm-overlay.show{opacity:1;pointer-events:all;}
+    .back-confirm-box{background:var(--surface);border-radius:20px 20px 0 0;padding:1.5rem 1.25rem 2rem;width:100%;max-width:480px;transform:translateY(100%);transition:transform .3s cubic-bezier(.34,1.56,.64,1);}
+    .back-confirm-overlay.show .back-confirm-box{transform:translateY(0);}
+    .back-confirm-title{font-size:1rem;font-weight:500;text-align:center;margin-bottom:1.25rem;}
+    .back-confirm-btn{width:100%;padding:.85rem;border:none;border-radius:12px;font-size:.95rem;font-weight:500;font-family:var(--font);cursor:pointer;margin-bottom:.6rem;}
+    .back-confirm-btn:active{transform:scale(.93);}
+    .back-confirm-btn-go{background:var(--accent);color:#fff;}
+    .back-confirm-btn-stay{background:var(--surface3);color:var(--text);}
   </style>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-E9Q0JQ0V92"></script>
@@ -151,7 +161,7 @@
     <a class="back-link" href="index.html"> Totonoi One</a>
     <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
   </div>
-  <h1 class="app-title">Cook<span>ly</span></h1>
+  <h1 class="app-title" onclick="goAppTop()" style="cursor:pointer;">Cook<span>ly</span></h1>
   <p class="app-subtitle">レシピ管理</p>
 </div>
 <div id="loginNotice" class="login-notice" onclick="openAuthModal()" style="display:none">
@@ -568,6 +578,11 @@ function openAuthModal(){if(currentUser){if(confirm(currentUser.email+'\nログ�
 function updateAuthUI(){var btn=document.getElementById('authBtn');if(!btn)return;if(currentUser){btn.textContent=currentUser.email.split('@')[0];btn.classList.add('logged-in');}else{btn.textContent='ログイン';btn.classList.remove('logged-in');}}
 _sb.auth.onAuthStateChange(function(event,session){currentUser=session?session.user:null;updateAuthUI();if(currentUser&&event==='SIGNED_IN')syncFromCloud();if(!currentUser)updateProUI();});
 _sb.auth.getSession().then(function(res){currentUser=res.data.session?res.data.session.user:null;updateAuthUI();if(currentUser)syncFromCloud();});
+
+// ── App top & back guard ──
+function goAppTop(){var t=document.querySelectorAll('.tab')[0];if(t)t.click();window.scrollTo({top:0,behavior:'smooth'});}
+(function(){history.pushState({page:'app'},'');window.addEventListener('popstate',function(){document.getElementById('backConfirm').classList.add('show');history.pushState({page:'app'},'');});})();
+function confirmBack(go){document.getElementById('backConfirm').classList.remove('show');if(go)window.location.href='index.html';}
 </script>
 
 <div class="modal-overlay" id="authModal" onclick="if(event.target===this)this.classList.remove('show')">
@@ -577,6 +592,14 @@ _sb.auth.getSession().then(function(res){currentUser=res.data.session?res.data.s
     <button onclick="handleGoogleAuth()" style="width:100%;padding:.85rem;background:#fff;color:#1a1a24;border:none;border-radius:12px;font-size:.95rem;font-weight:500;font-family:var(--font);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.6rem;margin-bottom:.75rem;"><svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>Google でログイン</button>
 
     <button class="btn-cancel" onclick="document.getElementById('authModal').classList.remove('show')">キャンセル</button>
+  </div>
+</div>
+<!-- Back confirm dialog -->
+<div class="back-confirm-overlay" id="backConfirm">
+  <div class="back-confirm-box">
+    <p class="back-confirm-title">ダッシュボードに戻りますか？</p>
+    <button class="back-confirm-btn back-confirm-btn-go" onclick="confirmBack(true)">戻る</button>
+    <button class="back-confirm-btn back-confirm-btn-stay" onclick="confirmBack(false)">このアプリに留まる</button>
   </div>
 </div>
 </body>

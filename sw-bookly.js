@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bookly-v1';
+const CACHE_NAME = 'bookly-v2';
 const ASSETS = ['/bookly', '/bookly.html', '/manifest-bookly.json'];
 
 self.addEventListener('install', function(e) {

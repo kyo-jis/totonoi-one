@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -131,6 +131,16 @@
     .status-btn:active { transform:scale(.82); }
     .note-title.done { text-decoration:line-through; opacity:.55; }
     .note-preview.done { text-decoration:line-through; opacity:.45; }
+    /* Back confirm dialog */
+    .back-confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+    .back-confirm-overlay.show{opacity:1;pointer-events:all;}
+    .back-confirm-box{background:var(--surface);border-radius:20px 20px 0 0;padding:1.5rem 1.25rem 2rem;width:100%;max-width:480px;transform:translateY(100%);transition:transform .3s cubic-bezier(.34,1.56,.64,1);}
+    .back-confirm-overlay.show .back-confirm-box{transform:translateY(0);}
+    .back-confirm-title{font-size:1rem;font-weight:500;text-align:center;margin-bottom:1.25rem;}
+    .back-confirm-btn{width:100%;padding:.85rem;border:none;border-radius:12px;font-size:.95rem;font-weight:500;font-family:var(--font);cursor:pointer;margin-bottom:.6rem;}
+    .back-confirm-btn:active{transform:scale(.93);}
+    .back-confirm-btn-go{background:var(--accent);color:#fff;}
+    .back-confirm-btn-stay{background:var(--surface3);color:var(--text);}
   </style>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-E9Q0JQ0V92"></script>
@@ -147,7 +157,7 @@
     <a class="back-link" href="index.html"> Totonoi One</a>
     <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
   </div>
-  <h1 class="app-title">Read<span>ly</span></h1>
+  <h1 class="app-title" onclick="goAppTop()" style="cursor:pointer;">Read<span>ly</span></h1>
   <p class="app-subtitle">メモ・日記</p>
 </div>
 <div id="loginNotice" class="login-notice" onclick="openAuthModal()" style="display:none">
@@ -487,6 +497,19 @@ function openAuthModal(){if(currentUser){if(confirm(currentUser.email+'\nログ�
 function updateAuthUI(){var btn=document.getElementById('authBtn');if(!btn)return;if(currentUser){btn.textContent=currentUser.email.split('@')[0];btn.classList.add('logged-in');}else{btn.textContent='ログイン';btn.classList.remove('logged-in');}}
 _sb.auth.onAuthStateChange(function(event,session){currentUser=session?session.user:null;updateAuthUI();if(currentUser&&event==='SIGNED_IN')syncFromCloud();if(!currentUser)updateProUI();});
 _sb.auth.getSession().then(function(res){currentUser=res.data.session?res.data.session.user:null;updateAuthUI();if(currentUser)syncFromCloud();});
+
+// ── App top & back guard ──
+function goAppTop(){var t=document.querySelectorAll('.tab')[0];if(t)t.click();window.scrollTo({top:0,behavior:'smooth'});}
+(function(){history.pushState({page:'app'},'');window.addEventListener('popstate',function(){document.getElementById('backConfirm').classList.add('show');history.pushState({page:'app'},'');});})();
+function confirmBack(go){document.getElementById('backConfirm').classList.remove('show');if(go)window.location.href='index.html';}
 </script>
+<!-- Back confirm dialog -->
+<div class="back-confirm-overlay" id="backConfirm">
+  <div class="back-confirm-box">
+    <p class="back-confirm-title">ダッシュボードに戻りますか？</p>
+    <button class="back-confirm-btn back-confirm-btn-go" onclick="confirmBack(true)">戻る</button>
+    <button class="back-confirm-btn back-confirm-btn-stay" onclick="confirmBack(false)">このアプリに留まる</button>
+  </div>
+</div>
 </body>
 </html>

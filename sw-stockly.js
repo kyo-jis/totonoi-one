@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stockly-v1';
+const CACHE_NAME = 'stockly-v2';
 const ASSETS = [
   '/stockly',
   '/stockly.html',

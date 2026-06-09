@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -205,6 +205,16 @@
     .share-line { background:#06c755; color:#fff; }
     .share-copy { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
     .data-btn { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:.55rem .9rem; font-size:.8rem; color:var(--text); cursor:pointer; font-family:var(--font); display:inline-block; }
+    /* Back confirm dialog */
+    .back-confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+    .back-confirm-overlay.show{opacity:1;pointer-events:all;}
+    .back-confirm-box{background:var(--surface);border-radius:20px 20px 0 0;padding:1.5rem 1.25rem 2rem;width:100%;max-width:480px;transform:translateY(100%);transition:transform .3s cubic-bezier(.34,1.56,.64,1);}
+    .back-confirm-overlay.show .back-confirm-box{transform:translateY(0);}
+    .back-confirm-title{font-size:1rem;font-weight:500;text-align:center;margin-bottom:1.25rem;}
+    .back-confirm-btn{width:100%;padding:.85rem;border:none;border-radius:12px;font-size:.95rem;font-weight:500;font-family:var(--font);cursor:pointer;margin-bottom:.6rem;}
+    .back-confirm-btn:active{transform:scale(.93);}
+    .back-confirm-btn-go{background:var(--accent);color:#fff;}
+    .back-confirm-btn-stay{background:var(--surface3);color:var(--text);}
   </style>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-E9Q0JQ0V92"></script>
@@ -232,7 +242,7 @@
     <a class="back-link" href="index.html"> Totonoi One</a>
     <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
   </div>
-  <h1 class="app-title">Stock<span>ly</span></h1>
+  <h1 class="app-title" onclick="goAppTop()" style="cursor:pointer;">Stock<span>ly</span></h1>
   <p class="app-subtitle">在庫・備蓄管理</p>
 </div>
 <div id="loginNotice" class="login-notice" onclick="openAuthModal()" style="display:none">
@@ -1169,8 +1179,21 @@ _sb.auth.getSession().then(function(res) {
   document.addEventListener('touchend',function(){clearTimeout(t);},{passive:true});
   document.addEventListener('touchmove',function(){clearTimeout(t);},{passive:true});
 })();
+
+// ── App top & back guard ──
+function goAppTop(){var t=document.querySelectorAll('.tab')[0];if(t)t.click();window.scrollTo({top:0,behavior:'smooth'});}
+(function(){history.pushState({page:'app'},'');window.addEventListener('popstate',function(){document.getElementById('backConfirm').classList.add('show');history.pushState({page:'app'},'');});})();
+function confirmBack(go){document.getElementById('backConfirm').classList.remove('show');if(go)window.location.href='index.html';}
 </script>
 
+<!-- Back confirm dialog -->
+<div class="back-confirm-overlay" id="backConfirm">
+  <div class="back-confirm-box">
+    <p class="back-confirm-title">ダッシュボードに戻りますか？</p>
+    <button class="back-confirm-btn back-confirm-btn-go" onclick="confirmBack(true)">戻る</button>
+    <button class="back-confirm-btn back-confirm-btn-stay" onclick="confirmBack(false)">このアプリに留まる</button>
+  </div>
+</div>
 <!-- Auth Modal -->
 <div class="modal-overlay" id="authModal" onclick="if(event.target===this)this.classList.remove('show')">
   <div class="modal">
