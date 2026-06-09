@@ -962,6 +962,30 @@ function editMaterialInline(id) {
   _detailSubjId = m.subjectId;
   editMaterial(id);
 }
+function openResourceModalForSubj(subjId) {
+  _detailSubjId = subjId;
+  openResourceModal();
+}
+function editResourceInline(id) {
+  var r = resources.find(function(x){ return x.id===id; });
+  if (!r) return;
+  _detailSubjId = r.subjectId;
+  editResource(id);
+}
+function renderResourceCardHtml(r) {
+  var icon = r.rtype==='youtube'?'▶️':r.rtype==='pdf'?'📄':r.rtype==='site'?'🌐':'🔗';
+  var thumb = (r.rtype==='youtube'&&r.ytThumb)
+    ?'<div class="resource-thumb" style="padding:0;"><img src="'+r.ytThumb+'" alt="" loading="lazy" onerror="this.parentNode.innerHTML=\'▶️\'"></div>'
+    :'<div class="resource-thumb">'+icon+'</div>';
+  return '<a href="'+r.url+'" target="_blank" rel="noopener" class="resource-card">'
+    +thumb
+    +'<div style="flex:1;min-width:0;">'
+      +'<p class="resource-name">'+r.name+'</p>'
+      +'<span class="resource-url-text">'+r.url+'</span>'
+    +'</div>'
+    +'<button onclick="event.preventDefault();event.stopPropagation();editResourceInline(\''+r.id+'\')" style="background:none;border:none;color:var(--muted);font-size:.85rem;cursor:pointer;flex-shrink:0;">✏️</button>'
+    +'</a>';
+}
 function renderMaterialCardHtml(m) {
   var isBook = m.type==='book';
   var badge = isBook
@@ -1008,12 +1032,21 @@ function renderSubjects() {
       var matsHtml = mats.length
         ? mats.map(function(m) { return renderMaterialCardHtml(m); }).join('')
         : '<p style="font-size:.8rem;color:var(--muted);padding:.35rem 0 .5rem;">まだ教材が登録されていません</p>';
+      var res = resources.filter(function(r) { return r.subjectId === subj.id; });
+      var resHtml = res.length
+        ? res.map(function(r) { return renderResourceCardHtml(r); }).join('')
+        : '<p style="font-size:.8rem;color:var(--muted);padding:.35rem 0 .5rem;">まだリソースが登録されていません</p>';
       expandedSection = '<div class="subject-expand-body" onclick="event.stopPropagation()">'
         + '<div class="subject-expand-section-header">'
           + '<span class="subject-expand-label">📚 教材</span>'
           + '<button class="btn-add-sm" onclick="openMaterialModalForSubj(\'' + subj.id + '\')">＋ 追加</button>'
         + '</div>'
         + matsHtml
+        + '<div class="subject-expand-section-header" style="margin-top:.85rem;border-top:1px solid var(--border);padding-top:.75rem;">'
+          + '<span class="subject-expand-label">🔗 学習リソース</span>'
+          + '<button class="btn-add-sm" onclick="openResourceModalForSubj(\'' + subj.id + '\')">＋ 追加</button>'
+        + '</div>'
+        + resHtml
         + '</div>';
     }
     return '<div class="subject-card-wrap' + (isExpanded ? ' expanded' : '') + '" onclick="toggleSubjectExpand(\'' + subj.id + '\')">'
@@ -1363,21 +1396,7 @@ function renderSDResources() {
   var list = resources.filter(function(r){ return r.subjectId===_detailSubjId; });
   var el = document.getElementById('sdResourceList');
   if (!list.length) { el.innerHTML='<p style="font-size:.8rem;color:var(--muted);padding:.4rem 0;">まだ登録されていません</p>'; return; }
-  el.innerHTML = list.map(function(r){
-    var icon = r.rtype==='youtube'?'▶️':r.rtype==='pdf'?'📄':r.rtype==='site'?'🌐':'🔗';
-    var thumb = (r.rtype==='youtube'&&r.ytThumb)
-      ?'<div class="resource-thumb" style="padding:0;"><img src="'+r.ytThumb+'" alt="" onerror="this.parentNode.innerHTML=\'▶️\'"></div>'
-      :'<div class="resource-thumb">'+icon+'</div>';
-    var editBtn='<button onclick="event.preventDefault();event.stopPropagation();editResource(\''+r.id+'\')" style="background:none;border:none;color:var(--muted);font-size:.85rem;cursor:pointer;flex-shrink:0;">✏️</button>';
-    return '<a href="'+r.url+'" target="_blank" rel="noopener" class="resource-card">'
-      +thumb
-      +'<div style="flex:1;min-width:0;">'
-        +'<p class="resource-name">'+r.name+'</p>'
-        +'<span class="resource-url-text">'+r.url+'</span>'
-      +'</div>'
-      +editBtn
-      +'</a>';
-  }).join('');
+  el.innerHTML = list.map(function(r){ return renderResourceCardHtml(r); }).join('');
 }
 
 /* ── Material Modal ── */
