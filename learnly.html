@@ -165,7 +165,6 @@
     .modal { background:var(--surface); border:1px solid var(--border); border-radius:24px 24px 0 0; padding:1.5rem 1.25rem 2rem; width:100%; max-height:92vh; overflow-y:auto; animation:slideUp .3s ease; }
     @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
     .modal-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 1.25rem; }
-    <p style="text-align:center;font-size:1rem;font-weight:500;margin-bottom:1.25rem;">ログイン</p>
     .modal-title { font-size:1.1rem; font-weight:500; margin-bottom:1.25rem; }
     .form-group { margin-bottom:1rem; }
     label { display:block; font-size:.75rem; color:var(--muted); letter-spacing:.05em; text-transform:uppercase; margin-bottom:.4rem; }
@@ -228,6 +227,59 @@
     .heatmap-cell { width:13px; height:13px; border-radius:2px; flex-shrink:0; cursor:default; transition:opacity .15s; }
     .heatmap-cell:hover { opacity:.7; }
     .heatmap-dow-label { height:13px; font-size:.6rem; color:var(--muted); line-height:13px; text-align:right; padding-right:3px; }
+    /* Exam Countdown */
+    .exam-cd-section { margin:0 1.25rem .75rem; }
+    .exam-countdown-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:.85rem 1.1rem; margin-bottom:.5rem; display:flex; align-items:center; gap:.85rem; cursor:pointer; }
+    .exam-countdown-card:active { opacity:.75; }
+    .exam-cd-days { font-size:1.8rem; font-weight:700; letter-spacing:-.03em; min-width:3.2rem; line-height:1; }
+    .exam-cd-name { font-size:.9rem; font-weight:500; }
+    .exam-cd-meta { font-size:.68rem; color:var(--muted); margin-top:.15rem; }
+    .exam-cd-alert { font-size:.72rem; color:var(--yellow); background:rgba(245,200,66,.1); border-radius:8px; padding:.15rem .45rem; display:inline-block; margin-top:.25rem; }
+
+    /* Subject Detail Overlay */
+    .subject-detail-overlay { position:fixed; inset:0; background:var(--bg); z-index:150; display:none; flex-direction:column; overflow:hidden; }
+    .subject-detail-overlay.show { display:flex; }
+    .sd-header { padding:calc(2.5rem + env(safe-area-inset-top)) 1.25rem 1rem; display:flex; align-items:center; gap:.85rem; border-bottom:1px solid var(--border); flex-shrink:0; background:var(--bg); }
+    .sd-back { background:none; border:none; color:var(--muted); font-size:1.2rem; cursor:pointer; padding:.25rem .5rem; font-family:var(--font); }
+    .sd-body { flex:1; overflow-y:auto; padding:1rem 1.25rem calc(80px + env(safe-area-inset-bottom)); }
+    .sd-section { margin-bottom:1.5rem; }
+    .sd-section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:.75rem; }
+    .sd-section-title { font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+    .btn-add-sm { background:var(--accent); color:#fff; border:none; border-radius:8px; padding:.3rem .75rem; font-size:.72rem; font-weight:500; font-family:var(--font); cursor:pointer; }
+    .btn-add-sm:active { transform:scale(.93); }
+
+    /* Material Card */
+    .material-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:.9rem 1rem; margin-bottom:.5rem; }
+    .material-card-top { display:flex; align-items:flex-start; gap:.6rem; }
+    .material-type-badge { font-size:.58rem; padding:.15rem .45rem; border-radius:6px; font-weight:600; letter-spacing:.04em; flex-shrink:0; margin-top:.2rem; }
+    .material-type-book { background:rgba(60,140,191,.15); color:var(--accent); }
+    .material-type-past { background:rgba(245,200,66,.15); color:var(--yellow); }
+    .material-title { font-size:.88rem; font-weight:500; flex:1; line-height:1.4; }
+    .material-meta-text { font-size:.68rem; color:var(--muted); display:block; margin-top:.15rem; }
+    .material-progress { margin-top:.65rem; }
+    .material-progress-bg { height:5px; background:var(--surface2); border-radius:3px; overflow:hidden; }
+    .material-progress-fill { height:100%; border-radius:3px; background:var(--accent); transition:width .4s var(--spring); }
+    .material-progress-meta { display:flex; justify-content:space-between; font-size:.65rem; color:var(--muted); margin-top:.25rem; }
+
+    /* Resource Card */
+    .resource-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; margin-bottom:.5rem; display:flex; align-items:center; gap:.75rem; padding:.8rem .9rem; cursor:pointer; text-decoration:none; color:var(--text); }
+    .resource-card:active { opacity:.75; }
+    .resource-thumb { width:52px; height:36px; border-radius:6px; background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0; overflow:hidden; }
+    .resource-thumb img { width:100%; height:100%; object-fit:cover; }
+    .resource-name { font-size:.88rem; font-weight:500; }
+    .resource-url-text { font-size:.65rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:.12rem; max-width:220px; display:block; }
+
+    /* Exam Item */
+    .exam-item { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:.9rem 1rem; margin-bottom:.5rem; }
+    .exam-item-top { display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
+    .exam-name-text { font-size:.9rem; font-weight:500; flex:1; }
+    .exam-days-badge { font-size:1rem; font-weight:700; flex-shrink:0; }
+    .exam-dates-meta { margin-top:.5rem; display:flex; flex-direction:column; gap:.25rem; }
+    .exam-date-row { display:flex; align-items:center; gap:.5rem; font-size:.72rem; color:var(--muted); }
+    .exam-date-label { min-width:4.5rem; font-weight:500; }
+    .exam-date-alert-text { color:var(--yellow); }
+    .btn-edit-inline { background:none; border:none; color:var(--muted); font-size:.72rem; cursor:pointer; font-family:var(--font); padding:.3rem 0 0; }
+
     @media (min-width: 768px) {
       body { padding-bottom:2rem; }
       .app-header { max-width:1040px; margin-left:auto; margin-right:auto; padding-left:2rem; padding-right:2rem; }
@@ -264,6 +316,7 @@
   <span style="font-size:.75rem;opacity:.6">ログイン →</span>
 </div>
 
+<div class="exam-cd-section" id="examCountdownSection" style="display:none;"></div>
 <div class="summary-card">
   <p class="summary-label">学習状況</p>
   <div class="summary-stats">
@@ -286,7 +339,7 @@
 
 <div class="tabs">
   <button class="tab active" onclick="switchTab('today',this)">今日</button>
-  <button class="tab" onclick="switchTab('subjects',this)">科目</button>
+  <button class="tab" onclick="switchTab('subjects',this)">資格</button>
   <button class="tab" onclick="switchTab('log',this)">記録</button>
   <button class="tab" onclick="switchTab('settings',this)">設定</button>
 </div>
@@ -432,7 +485,7 @@
     <div class="modal-handle"></div>
     <p class="modal-title">学習を記録</p>
     <div class="form-group">
-      <label>科目</label>
+      <label>資格・目標</label>
       <div class="subj-select-grid" id="logSubjGrid"></div>
     </div>
     <div class="form-group">
@@ -464,10 +517,10 @@
 <div class="modal-overlay" id="subjModal" onclick="if(event.target===this)closeSubjModal()">
   <div class="modal">
     <div class="modal-handle"></div>
-    <p class="modal-title" id="subjModalTitle">科目を追加</p>
+    <p class="modal-title" id="subjModalTitle">資格・目標を追加</p>
     <div class="form-group">
-      <label>科目名</label>
-      <input type="text" id="subjName" placeholder="例：英語・数学・プログラミング">
+      <label>資格・目標名</label>
+      <input type="text" id="subjName" placeholder="例：英検2級・AWS認定・簿記2級">
     </div>
     <div class="form-group">
       <label>アイコン</label>
@@ -488,8 +541,109 @@
       <p style="font-size:.68rem;color:var(--muted);margin-top:.35rem;">0 = 目標なし</p>
     </div>
     <button class="btn-primary" id="subjSaveBtn" onclick="saveSubject()">追加する</button>
-    <button class="btn-danger" id="subjDeleteBtn" onclick="deleteSubjectConfirm()" style="display:none;">この科目を削除</button>
+    <button class="btn-danger" id="subjDeleteBtn" onclick="deleteSubjectConfirm()" style="display:none;">この資格・目標を削除</button>
     <button class="btn-cancel" onclick="closeSubjModal()">キャンセル</button>
+  </div>
+</div>
+
+<!-- Material Modal -->
+<div class="modal-overlay" id="materialModal" onclick="if(event.target===this)closeMaterialModal()" style="z-index:250;">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <p class="modal-title" id="materialModalTitle">教材を追加</p>
+    <div class="form-group">
+      <label>種類</label>
+      <select id="materialType" onchange="onMaterialTypeChange()">
+        <option value="book">参考書</option>
+        <option value="past">過去問</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>タイトル</label>
+      <input type="text" id="materialTitle" placeholder="タイトルを入力">
+    </div>
+    <div id="bookFields">
+      <div class="form-group">
+        <label>著者（任意）</label>
+        <input type="text" id="materialAuthor" placeholder="著者名">
+      </div>
+      <div class="form-group">
+        <label>現在ページ / 総ページ数</label>
+        <div style="display:flex;align-items:center;gap:.5rem;">
+          <input type="number" id="materialCurrentPage" placeholder="0" min="0" style="flex:1;">
+          <span style="color:var(--muted);">/ </span>
+          <input type="number" id="materialTotalPages" placeholder="300" min="1" style="flex:1;">
+        </div>
+      </div>
+    </div>
+    <div id="pastFields" style="display:none;">
+      <div class="form-group">
+        <label>年度（任意）</label>
+        <input type="text" id="materialYear" placeholder="例：2024年度">
+      </div>
+      <div class="form-group">
+        <label>正解率 % （任意）</label>
+        <input type="number" id="materialCorrectRate" placeholder="75" min="0" max="100">
+      </div>
+    </div>
+    <button class="btn-primary" onclick="saveMaterial()">追加する</button>
+    <button class="btn-danger" id="materialDeleteBtn" onclick="deleteMaterial()" style="display:none;">この教材を削除</button>
+    <button class="btn-cancel" onclick="closeMaterialModal()">キャンセル</button>
+  </div>
+</div>
+
+<!-- Resource Modal -->
+<div class="modal-overlay" id="resourceModal" onclick="if(event.target===this)closeResourceModal()" style="z-index:250;">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <p class="modal-title" id="resourceModalTitle">リソースを追加</p>
+    <div class="form-group">
+      <label>名前</label>
+      <input type="text" id="resourceName" placeholder="例：英検公式チャンネル">
+    </div>
+    <div class="form-group">
+      <label>URL</label>
+      <input type="url" id="resourceUrl" placeholder="https://" oninput="onResourceUrlInput()">
+    </div>
+    <div class="form-group">
+      <label>種類</label>
+      <select id="resourceType">
+        <option value="youtube">YouTube</option>
+        <option value="site">Webサイト</option>
+        <option value="pdf">PDF</option>
+        <option value="other">その他</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="saveResource()">追加する</button>
+    <button class="btn-danger" id="resourceDeleteBtn" onclick="deleteResource()" style="display:none;">このリソースを削除</button>
+    <button class="btn-cancel" onclick="closeResourceModal()">キャンセル</button>
+  </div>
+</div>
+
+<!-- Exam Modal -->
+<div class="modal-overlay" id="examModal" onclick="if(event.target===this)closeExamModal()" style="z-index:250;">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <p class="modal-title" id="examModalTitle">試験日を追加</p>
+    <div class="form-group">
+      <label>試験名</label>
+      <input type="text" id="examName" placeholder="例：英検2級 第1回">
+    </div>
+    <div class="form-group">
+      <label>申込開始日（任意）</label>
+      <input type="date" id="examAppStart">
+    </div>
+    <div class="form-group">
+      <label>申込締切日（任意）</label>
+      <input type="date" id="examAppDeadline">
+    </div>
+    <div class="form-group">
+      <label>試験日</label>
+      <input type="date" id="examDate">
+    </div>
+    <button class="btn-primary" onclick="saveExam()">追加する</button>
+    <button class="btn-danger" id="examDeleteBtn" onclick="deleteExam()" style="display:none;">この試験を削除</button>
+    <button class="btn-cancel" onclick="closeExamModal()">キャンセル</button>
   </div>
 </div>
 
@@ -497,21 +651,63 @@
 <div class="modal-overlay" id="authModal" onclick="if(event.target===this)this.classList.remove('show')">
   <div class="modal">
     <div class="modal-handle"></div>
+    <p style="text-align:center;font-size:1rem;font-weight:500;margin-bottom:1.25rem;">ログイン</p>
+    <button onclick="handleGoogleAuth()" style="width:100%;padding:.9rem;background:#fff;color:#222;border:none;border-radius:12px;font-size:.95rem;font-weight:500;font-family:var(--font);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.6rem;margin-bottom:.5rem;">
+      <img src="https://www.google.com/favicon.ico" width="18" height="18" style="border-radius:2px;">
       Google でログイン
     </button>
-
     <button class="btn-cancel" onclick="document.getElementById('authModal').classList.remove('show')">キャンセル</button>
   </div>
 </div>
 
+<!-- Subject Detail Overlay -->
+<div class="subject-detail-overlay" id="subjectDetailOverlay">
+  <div class="sd-header">
+    <button class="sd-back" onclick="closeSubjectDetail()">← 戻る</button>
+    <div class="subj-icon" id="sdIcon" style="width:36px;height:36px;border-radius:10px;font-size:1.1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;"></div>
+    <p style="font-size:1.05rem;font-weight:500;" id="sdTitle"></p>
+  </div>
+  <div class="sd-body">
+    <div class="sd-section">
+      <div class="sd-section-header">
+        <span class="sd-section-title">試験日・申込期間</span>
+        <button class="btn-add-sm" onclick="openExamModal()">＋ 追加</button>
+      </div>
+      <div id="sdExamList"></div>
+    </div>
+    <div class="sd-section">
+      <div class="sd-section-header">
+        <span class="sd-section-title">教材</span>
+        <button class="btn-add-sm" onclick="openMaterialModal()">＋ 追加</button>
+      </div>
+      <div id="sdMaterialList"></div>
+    </div>
+    <div class="sd-section">
+      <div class="sd-section-header">
+        <span class="sd-section-title">学習リソース</span>
+        <button class="btn-add-sm" onclick="openResourceModal()">＋ 追加</button>
+      </div>
+      <div id="sdResourceList"></div>
+    </div>
+  </div>
+</div>
+
 <script>
-var subjects = JSON.parse(localStorage.getItem('learnly_subjects') || '[]');
+var subjects  = JSON.parse(localStorage.getItem('learnly_subjects')  || '[]');
 var sessions  = JSON.parse(localStorage.getItem('learnly_sessions')  || '[]');
+var materials = JSON.parse(localStorage.getItem('learnly_materials') || '[]');
+var resources = JSON.parse(localStorage.getItem('learnly_resources') || '[]');
+var exams     = JSON.parse(localStorage.getItem('learnly_exams')     || '[]');
 var isPro = localStorage.getItem('isPro') === 'true';
 
 var SUBJECT_COLORS = ['#3c8cbf','#7c5cbf','#4a8c5a','#bf6c3c','#bf3c8c','#bf9c3c','#5e6abf','#5ecfa0','#e06060','#bf793c'];
 var ICON_PRESETS   = ['📘','📐','🔬','📖','🌍','💻','🎯','🎨','🎸','🏋️','💼','🗣️','🧮','⚗️','🎬','📊'];
 
+function parseLocalDate(str) {
+  if (!str) return null;
+  var p = str.split('-');
+  return new Date(+p[0], +p[1]-1, +p[2]);
+}
 function localDateStr(d) {
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
@@ -709,8 +905,8 @@ function renderToday() {
 
   var el = document.getElementById('todaySubjList');
   if (!subjects.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📚</div><p>科目がまだ登録されていません。<br>科目タブから追加しましょう。</p>'
-      + '<button class="btn-empty" onclick="switchTabByName(\'subjects\')">科目を追加 →</button></div>';
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📚</div><p>資格・目標がまだ登録されていません。<br>資格タブから追加しましょう。</p>'
+      + '<button class="btn-empty" onclick="switchTabByName(\'subjects\')">資格・目標を追加 →</button></div>';
     return;
   }
   var today = todayStr();
@@ -746,7 +942,7 @@ function renderToday() {
 function renderSubjects() {
   var el = document.getElementById('subjectsList');
   if (!subjects.length) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📖</div><p>科目がまだ登録されていません。<br>＋ボタンで追加してください。</p></div>';
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📖</div><p>資格・目標がまだ登録されていません。<br>＋ボタンで追加してください。</p></div>';
     return;
   }
   el.innerHTML = subjects.map(function(subj) {
@@ -761,6 +957,7 @@ function renderSubjects() {
       + '</div>'
       + '<div style="display:flex;gap:.4rem;flex-shrink:0;">'
         + '<button class="btn-icon-sm" onclick="openLogModal(\'' + subj.id + '\')">＋</button>'
+        + '<button class="btn-icon-sm" onclick="openSubjectDetail(\'' + subj.id + '\')" title="詳細">📋</button>'
         + '<button class="btn-icon-sm" onclick="editSubject(\'' + subj.id + '\')">✏️</button>'
       + '</div>'
       + '</div>';
@@ -786,7 +983,7 @@ function renderLog() {
       return '<div class="sess-item">'
         + '<div class="sess-icon" style="background:' + ((subj&&subj.color)||'#3c8cbf') + '22;">' + ((subj&&subj.icon)||'📘') + '</div>'
         + '<div class="sess-info">'
-          + '<p class="sess-name">' + ((subj&&subj.name)||'削除された科目') + '</p>'
+          + '<p class="sess-name">' + ((subj&&subj.name)||'削除された資格') + '</p>'
           + (s.memo ? '<p class="sess-memo">' + s.memo + '</p>' : '')
         + '</div>'
         + '<span class="sess-duration">' + s.duration + '分</span>'
@@ -805,7 +1002,7 @@ function renderSettingsStats() {
   document.getElementById('statsGrid').innerHTML =
     '<div class="analysis-card"><p class="analysis-card-label">合計時間</p><p class="analysis-card-value">' + formatMin(total) + '</p><p class="analysis-card-sub">全期間</p></div>'
     + '<div class="analysis-card"><p class="analysis-card-label">連続記録</p><p class="analysis-card-value" style="color:var(--yellow)">' + streak + '日</p><p class="analysis-card-sub">現在の連続日数</p></div>'
-    + '<div class="analysis-card"><p class="analysis-card-label">科目数</p><p class="analysis-card-value">' + subjects.length + '</p><p class="analysis-card-sub">登録中</p></div>'
+    + '<div class="analysis-card"><p class="analysis-card-label">資格数</p><p class="analysis-card-value">' + subjects.length + '</p><p class="analysis-card-sub">登録中</p></div>'
     + '<div class="analysis-card"><p class="analysis-card-label">学習日数</p><p class="analysis-card-value" style="color:var(--green)">' + actDays + '</p><p class="analysis-card-sub">累計</p></div>';
 
   var DAY_LABELS = ['月','火','水','木','金','土','日'];
@@ -867,7 +1064,7 @@ function openLogModal(subjId, prefill) {
 function closeLogModal() { document.getElementById('logModal').classList.remove('show'); }
 
 function renderLogSubjGrid() {
-  if (!subjects.length) { document.getElementById('logSubjGrid').innerHTML = '<p style="font-size:.8rem;color:var(--muted);">科目がありません</p>'; return; }
+  if (!subjects.length) { document.getElementById('logSubjGrid').innerHTML = '<p style="font-size:.8rem;color:var(--muted);">資格・目標がありません</p>'; return; }
   document.getElementById('logSubjGrid').innerHTML = subjects.map(function(s) {
     return '<button class="subj-select-btn' + (s.id===_logSubjId?' selected':'') + '" onclick="selLogSubj(\'' + s.id + '\')">'
       + '<span class="subj-select-icon">' + (s.icon||'📘') + '</span>'
@@ -888,7 +1085,7 @@ function adjustDur(d) { var el=document.getElementById('logDur'); el.value=Math.
 function setDur(v)    { document.getElementById('logDur').value = v; }
 
 function saveSession() {
-  if (!_logSubjId) { showToast('科目を選択してください'); return; }
+  if (!_logSubjId) { showToast('資格・目標を選択してください'); return; }
   var dur = parseInt(document.getElementById('logDur').value) || 0;
   if (dur < 1) { showToast('時間を入力してください'); return; }
   var memo = document.getElementById('logMemo').value.trim();
@@ -936,7 +1133,7 @@ function openSubjModal(subjId) {
   var s = subjId ? getSubj(subjId) : null;
   _selColor = s ? (s.color || SUBJECT_COLORS[0]) : SUBJECT_COLORS[Math.floor(Math.random()*SUBJECT_COLORS.length)];
   _selIcon  = s ? (s.icon  || ICON_PRESETS[0]) : ICON_PRESETS[0];
-  document.getElementById('subjModalTitle').textContent = subjId ? '科目を編集' : '科目を追加';
+  document.getElementById('subjModalTitle').textContent = subjId ? '資格・目標を編集' : '資格・目標を追加';
   document.getElementById('subjName').value  = s ? s.name : '';
   document.getElementById('subjIcon').value  = s ? (s.icon||'') : '';
   document.getElementById('subjGoal').value  = s ? (s.dailyGoal||0) : 30;
@@ -964,14 +1161,14 @@ function adjustGoal(d) { var el=document.getElementById('subjGoal'); el.value=Ma
 
 function saveSubject() {
   var name = document.getElementById('subjName').value.trim();
-  if (!name) { showToast('科目名を入力してください'); return; }
+  if (!name) { showToast('資格・目標名を入力してください'); return; }
   var icon = document.getElementById('subjIcon').value.trim() || _selIcon;
   var goal = Math.max(0, parseInt(document.getElementById('subjGoal').value)||0);
   var entry = { id:_editSubjId||Date.now().toString(), name:name, icon:icon, color:_selColor, dailyGoal:goal };
   if (_editSubjId) { var idx=subjects.findIndex(function(s){return s.id===_editSubjId;}); subjects[idx]=entry; }
   else subjects.push(entry);
   persist(); closeSubjModal(); renderAll();
-  showToast(_editSubjId ? '✅ 更新しました' : '✅ 科目を追加しました');
+  showToast(_editSubjId ? '✅ 更新しました' : '✅ 資格・目標を追加しました');
 }
 
 function deleteSubjectConfirm() {
@@ -1002,15 +1199,307 @@ function onFab() {
   if (idx === 1) openSubjModal(); else openLogModal(null);
 }
 
-function renderAll() { renderSummary(); renderToday(); if(_currentTab==='subjects') renderSubjects(); if(_currentTab==='log') renderLog(); }
+function renderAll() { renderSummary(); renderToday(); renderExamCountdown(); if(_currentTab==='subjects') renderSubjects(); if(_currentTab==='log') renderLog(); }
+
+/* ── Exam Countdown ── */
+function renderExamCountdown() {
+  var today = new Date(); today.setHours(0,0,0,0);
+  var upcoming = exams
+    .filter(function(e){ var d=parseLocalDate(e.examDate); return d&&d>=today; })
+    .sort(function(a,b){ return parseLocalDate(a.examDate)-parseLocalDate(b.examDate); })
+    .slice(0,3);
+  var sec = document.getElementById('examCountdownSection');
+  if (!upcoming.length) { sec.style.display='none'; return; }
+  sec.style.display='block';
+  sec.innerHTML = upcoming.map(function(exam){
+    var examD = parseLocalDate(exam.examDate);
+    var days = Math.ceil((examD-today)/86400000);
+    var subj = getSubj(exam.subjectId);
+    var color = days<=7?'var(--red)':days<=30?'var(--yellow)':'var(--accent)';
+    var alert = '';
+    if (exam.appDeadline){
+      var dl=parseLocalDate(exam.appDeadline);
+      var dlDays=Math.ceil((dl-today)/86400000);
+      if(dlDays>=0&&dlDays<=14) alert='<p class="exam-cd-alert">⚠️ 申込締切まで'+dlDays+'日</p>';
+    }
+    return '<div class="exam-countdown-card" onclick="openSubjectDetail(\''+(exam.subjectId||'')+'\')">'
+      +'<p class="exam-cd-days" style="color:'+color+';">'+days+'<span style="font-size:.75rem;font-weight:400;">日</span></p>'
+      +'<div style="flex:1;min-width:0;">'
+        +'<p class="exam-cd-name">'+exam.name+'</p>'
+        +'<p class="exam-cd-meta">'+(subj?subj.icon+' '+subj.name+' · ':'')+'試験日: '+exam.examDate+'</p>'
+        +alert
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+/* ── Subject Detail ── */
+var _detailSubjId = null;
+function openSubjectDetail(subjId) {
+  if (!subjId) return;
+  _detailSubjId = subjId;
+  var subj = getSubj(subjId);
+  if (!subj) return;
+  var icon = document.getElementById('sdIcon');
+  icon.style.background = (subj.color||'#3c8cbf')+'22';
+  icon.textContent = subj.icon||'📘';
+  document.getElementById('sdTitle').textContent = subj.name;
+  renderSDExams(); renderSDMaterials(); renderSDResources();
+  document.getElementById('subjectDetailOverlay').classList.add('show');
+}
+function closeSubjectDetail() {
+  document.getElementById('subjectDetailOverlay').classList.remove('show');
+  _detailSubjId = null;
+}
+function renderSDExams() {
+  var list = exams.filter(function(e){ return e.subjectId===_detailSubjId; });
+  var el = document.getElementById('sdExamList');
+  if (!list.length) { el.innerHTML='<p style="font-size:.8rem;color:var(--muted);padding:.4rem 0;">まだ登録されていません</p>'; return; }
+  var today = new Date(); today.setHours(0,0,0,0);
+  el.innerHTML = list.map(function(exam){
+    var examD = parseLocalDate(exam.examDate);
+    var days = examD ? Math.ceil((examD-today)/86400000) : null;
+    var dStr = days!==null?(days>=0?days+'日後':Math.abs(days)+'日経過'):'';
+    var color = days!==null?(days<=7?'var(--red)':days<=30?'var(--yellow)':'var(--accent)'):'var(--muted)';
+    var dlRow='';
+    if(exam.appDeadline){
+      var dl=parseLocalDate(exam.appDeadline);
+      var dlD=Math.ceil((dl-today)/86400000);
+      var isAlert=dlD>=0&&dlD<=14;
+      dlRow='<div class="exam-date-row'+(isAlert?' exam-date-alert-text':'')+'"><span class="exam-date-label">申込締切</span><span>'+exam.appDeadline+(isAlert?' ⚠️ あと'+dlD+'日':'')+'</span></div>';
+    }
+    return '<div class="exam-item">'
+      +'<div class="exam-item-top">'
+        +'<p class="exam-name-text">'+exam.name+'</p>'
+        +(days!==null?'<span class="exam-days-badge" style="color:'+color+';">'+dStr+'</span>':'')
+      +'</div>'
+      +'<div class="exam-dates-meta">'
+        +(exam.appStart?'<div class="exam-date-row"><span class="exam-date-label">申込開始</span><span>'+exam.appStart+'</span></div>':'')
+        +dlRow
+        +'<div class="exam-date-row"><span class="exam-date-label">試験日</span><span>'+exam.examDate+'</span></div>'
+      +'</div>'
+      +'<button class="btn-edit-inline" onclick="editExam(\''+exam.id+'\')">✏️ 編集</button>'
+      +'</div>';
+  }).join('');
+}
+function renderSDMaterials() {
+  var list = materials.filter(function(m){ return m.subjectId===_detailSubjId; });
+  var el = document.getElementById('sdMaterialList');
+  if (!list.length) { el.innerHTML='<p style="font-size:.8rem;color:var(--muted);padding:.4rem 0;">まだ登録されていません</p>'; return; }
+  el.innerHTML = list.map(function(m){
+    var isBook = m.type==='book';
+    var badge = isBook?'<span class="material-type-badge material-type-book">参考書</span>':'<span class="material-type-badge material-type-past">過去問</span>';
+    var meta = isBook?(m.author||'')+(m.totalPages?' · '+m.currentPage+'/'+m.totalPages+'p':''):((m.year||'')+(m.correctRate!=null&&m.correctRate!==''?' · 正解率'+m.correctRate+'%':''));
+    var pct=0, progressHtml='';
+    if(isBook&&m.totalPages&&m.totalPages>0){
+      pct=Math.min(100,Math.round((m.currentPage/m.totalPages)*100));
+      progressHtml='<div class="material-progress"><div class="material-progress-bg"><div class="material-progress-fill" style="width:'+pct+'%;"></div></div><div class="material-progress-meta"><span>'+m.currentPage+'/'+m.totalPages+'ページ</span><span>'+pct+'%</span></div></div>';
+    } else if(!isBook&&m.correctRate!=null&&m.correctRate!==''){
+      var cr=parseInt(m.correctRate);
+      var crColor=cr>=80?'var(--green)':cr>=60?'var(--yellow)':'var(--red)';
+      progressHtml='<div class="material-progress"><div class="material-progress-bg"><div class="material-progress-fill" style="width:'+cr+'%;background:'+crColor+';"></div></div><div class="material-progress-meta"><span>正解率</span><span>'+cr+'%</span></div></div>';
+    }
+    return '<div class="material-card">'
+      +'<div class="material-card-top">'
+        +'<div style="flex:1;min-width:0;">'
+          +'<p class="material-title">'+m.title+'</p>'
+          +(meta?'<span class="material-meta-text">'+meta+'</span>':'')
+        +'</div>'
+        +badge
+        +'<button onclick="editMaterial(\''+m.id+'\')" style="background:none;border:none;color:var(--muted);font-size:.85rem;cursor:pointer;flex-shrink:0;padding-left:.4rem;">✏️</button>'
+      +'</div>'
+      +progressHtml
+      +'</div>';
+  }).join('');
+}
+function renderSDResources() {
+  var list = resources.filter(function(r){ return r.subjectId===_detailSubjId; });
+  var el = document.getElementById('sdResourceList');
+  if (!list.length) { el.innerHTML='<p style="font-size:.8rem;color:var(--muted);padding:.4rem 0;">まだ登録されていません</p>'; return; }
+  el.innerHTML = list.map(function(r){
+    var icon = r.rtype==='youtube'?'▶️':r.rtype==='pdf'?'📄':r.rtype==='site'?'🌐':'🔗';
+    var thumb = (r.rtype==='youtube'&&r.ytThumb)
+      ?'<div class="resource-thumb" style="padding:0;"><img src="'+r.ytThumb+'" alt="" onerror="this.parentNode.innerHTML=\'▶️\'"></div>'
+      :'<div class="resource-thumb">'+icon+'</div>';
+    var editBtn='<button onclick="event.preventDefault();event.stopPropagation();editResource(\''+r.id+'\')" style="background:none;border:none;color:var(--muted);font-size:.85rem;cursor:pointer;flex-shrink:0;">✏️</button>';
+    return '<a href="'+r.url+'" target="_blank" rel="noopener" class="resource-card">'
+      +thumb
+      +'<div style="flex:1;min-width:0;">'
+        +'<p class="resource-name">'+r.name+'</p>'
+        +'<span class="resource-url-text">'+r.url+'</span>'
+      +'</div>'
+      +editBtn
+      +'</a>';
+  }).join('');
+}
+
+/* ── Material Modal ── */
+var _editMaterialId = null;
+function openMaterialModal() {
+  _editMaterialId=null;
+  document.getElementById('materialModalTitle').textContent='教材を追加';
+  document.getElementById('materialType').value='book';
+  document.getElementById('materialTitle').value='';
+  document.getElementById('materialAuthor').value='';
+  document.getElementById('materialCurrentPage').value='';
+  document.getElementById('materialTotalPages').value='';
+  document.getElementById('materialYear').value='';
+  document.getElementById('materialCorrectRate').value='';
+  document.getElementById('materialDeleteBtn').style.display='none';
+  onMaterialTypeChange();
+  document.getElementById('materialModal').classList.add('show');
+}
+function editMaterial(id) {
+  _editMaterialId=id;
+  var m=materials.find(function(x){return x.id===id;});
+  if(!m) return;
+  document.getElementById('materialModalTitle').textContent='教材を編集';
+  document.getElementById('materialType').value=m.type||'book';
+  document.getElementById('materialTitle').value=m.title||'';
+  document.getElementById('materialAuthor').value=m.author||'';
+  document.getElementById('materialCurrentPage').value=m.currentPage||'';
+  document.getElementById('materialTotalPages').value=m.totalPages||'';
+  document.getElementById('materialYear').value=m.year||'';
+  document.getElementById('materialCorrectRate').value=m.correctRate!=null?m.correctRate:'';
+  document.getElementById('materialDeleteBtn').style.display='block';
+  onMaterialTypeChange();
+  document.getElementById('materialModal').classList.add('show');
+}
+function closeMaterialModal(){ document.getElementById('materialModal').classList.remove('show'); }
+function onMaterialTypeChange(){
+  var t=document.getElementById('materialType').value;
+  document.getElementById('bookFields').style.display=t==='book'?'block':'none';
+  document.getElementById('pastFields').style.display=t==='past'?'block':'none';
+}
+function saveMaterial(){
+  var title=document.getElementById('materialTitle').value.trim();
+  if(!title){showToast('タイトルを入力してください');return;}
+  var type=document.getElementById('materialType').value;
+  var cr=document.getElementById('materialCorrectRate').value;
+  var entry={id:_editMaterialId||Date.now().toString(),subjectId:_detailSubjId,type:type,title:title,
+    author:document.getElementById('materialAuthor').value.trim(),
+    currentPage:parseInt(document.getElementById('materialCurrentPage').value)||0,
+    totalPages:parseInt(document.getElementById('materialTotalPages').value)||0,
+    year:document.getElementById('materialYear').value.trim(),
+    correctRate:cr!==''?parseInt(cr):null,createdAt:new Date().toISOString()};
+  if(_editMaterialId){var idx=materials.findIndex(function(m){return m.id===_editMaterialId;});materials[idx]=entry;}
+  else materials.push(entry);
+  persist();closeMaterialModal();renderSDMaterials();
+  showToast(_editMaterialId?'✅ 更新しました':'✅ 教材を追加しました');
+}
+function deleteMaterial(){
+  if(!confirm('この教材を削除しますか？'))return;
+  materials=materials.filter(function(m){return m.id!==_editMaterialId;});
+  persist();closeMaterialModal();renderSDMaterials();
+}
+
+/* ── Resource Modal ── */
+var _editResourceId = null;
+function openResourceModal(){
+  _editResourceId=null;
+  document.getElementById('resourceModalTitle').textContent='リソースを追加';
+  document.getElementById('resourceName').value='';
+  document.getElementById('resourceUrl').value='';
+  document.getElementById('resourceType').value='site';
+  document.getElementById('resourceDeleteBtn').style.display='none';
+  document.getElementById('resourceModal').classList.add('show');
+}
+function editResource(id){
+  _editResourceId=id;
+  var r=resources.find(function(x){return x.id===id;});
+  if(!r)return;
+  document.getElementById('resourceModalTitle').textContent='リソースを編集';
+  document.getElementById('resourceName').value=r.name||'';
+  document.getElementById('resourceUrl').value=r.url||'';
+  document.getElementById('resourceType').value=r.rtype||'site';
+  document.getElementById('resourceDeleteBtn').style.display='block';
+  document.getElementById('resourceModal').classList.add('show');
+}
+function closeResourceModal(){ document.getElementById('resourceModal').classList.remove('show'); }
+function onResourceUrlInput(){
+  var url=document.getElementById('resourceUrl').value;
+  if(url.includes('youtube.com')||url.includes('youtu.be')) document.getElementById('resourceType').value='youtube';
+  else if(url.toLowerCase().endsWith('.pdf')) document.getElementById('resourceType').value='pdf';
+}
+function getYoutubeId(url){
+  var m=url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+  return m?m[1]:null;
+}
+function saveResource(){
+  var name=document.getElementById('resourceName').value.trim();
+  var url=document.getElementById('resourceUrl').value.trim();
+  if(!name){showToast('名前を入力してください');return;}
+  if(!url){showToast('URLを入力してください');return;}
+  var rtype=document.getElementById('resourceType').value;
+  var ytThumb=null;
+  if(rtype==='youtube'){var vid=getYoutubeId(url);if(vid)ytThumb='https://img.youtube.com/vi/'+vid+'/mqdefault.jpg';}
+  var entry={id:_editResourceId||Date.now().toString(),subjectId:_detailSubjId,name:name,url:url,rtype:rtype,ytThumb:ytThumb,createdAt:new Date().toISOString()};
+  if(_editResourceId){var idx=resources.findIndex(function(r){return r.id===_editResourceId;});resources[idx]=entry;}
+  else resources.push(entry);
+  persist();closeResourceModal();renderSDResources();
+  showToast(_editResourceId?'✅ 更新しました':'✅ リソースを追加しました');
+}
+function deleteResource(){
+  if(!confirm('このリソースを削除しますか？'))return;
+  resources=resources.filter(function(r){return r.id!==_editResourceId;});
+  persist();closeResourceModal();renderSDResources();
+}
+
+/* ── Exam Modal ── */
+var _editExamId = null;
+function openExamModal(){
+  _editExamId=null;
+  document.getElementById('examModalTitle').textContent='試験日を追加';
+  document.getElementById('examName').value='';
+  document.getElementById('examAppStart').value='';
+  document.getElementById('examAppDeadline').value='';
+  document.getElementById('examDate').value='';
+  document.getElementById('examDeleteBtn').style.display='none';
+  document.getElementById('examModal').classList.add('show');
+}
+function editExam(id){
+  _editExamId=id;
+  var e=exams.find(function(x){return x.id===id;});
+  if(!e)return;
+  document.getElementById('examModalTitle').textContent='試験日を編集';
+  document.getElementById('examName').value=e.name||'';
+  document.getElementById('examAppStart').value=e.appStart||'';
+  document.getElementById('examAppDeadline').value=e.appDeadline||'';
+  document.getElementById('examDate').value=e.examDate||'';
+  document.getElementById('examDeleteBtn').style.display='block';
+  document.getElementById('examModal').classList.add('show');
+}
+function closeExamModal(){ document.getElementById('examModal').classList.remove('show'); }
+function saveExam(){
+  var name=document.getElementById('examName').value.trim();
+  var examDate=document.getElementById('examDate').value;
+  if(!name){showToast('試験名を入力してください');return;}
+  if(!examDate){showToast('試験日を入力してください');return;}
+  var entry={id:_editExamId||Date.now().toString(),subjectId:_detailSubjId,name:name,
+    appStart:document.getElementById('examAppStart').value,
+    appDeadline:document.getElementById('examAppDeadline').value,
+    examDate:examDate,createdAt:new Date().toISOString()};
+  if(_editExamId){var idx=exams.findIndex(function(e){return e.id===_editExamId;});exams[idx]=entry;}
+  else exams.push(entry);
+  persist();closeExamModal();renderSDExams();renderExamCountdown();
+  showToast(_editExamId?'✅ 更新しました':'✅ 試験日を追加しました');
+}
+function deleteExam(){
+  if(!confirm('この試験情報を削除しますか？'))return;
+  exams=exams.filter(function(e){return e.id!==_editExamId;});
+  persist();closeExamModal();renderSDExams();renderExamCountdown();
+}
 
 function persist() {
-  localStorage.setItem('learnly_subjects', JSON.stringify(subjects));
+  localStorage.setItem('learnly_subjects',  JSON.stringify(subjects));
   localStorage.setItem('learnly_sessions',  JSON.stringify(sessions));
+  localStorage.setItem('learnly_materials', JSON.stringify(materials));
+  localStorage.setItem('learnly_resources', JSON.stringify(resources));
+  localStorage.setItem('learnly_exams',     JSON.stringify(exams));
   localStorage.setItem('learnly_updated_at', Date.now().toString());
   if(!currentUser){_syncStatus='local';updateSyncBadges();return;}
   _syncStatus='syncing';updateSyncBadges();
-  Promise.all([dbSave('subjects',subjects),dbSave('sessions',sessions)]).then(function(rs){_syncStatus=rs.every(function(r){return r&&!r.error;})?'synced':'failed';if(_syncStatus==='failed')showToast('⚠️ クラウド同期失敗');updateSyncBadges();});
+  Promise.all([dbSave('subjects',subjects),dbSave('sessions',sessions),dbSave('materials',materials),dbSave('resources',resources),dbSave('exams',exams)]).then(function(rs){_syncStatus=rs.every(function(r){return r&&!r.error;})?'synced':'failed';if(_syncStatus==='failed')showToast('⚠️ クラウド同期失敗');updateSyncBadges();});
 }
 
 /* ── Pro UI ── */
@@ -1039,7 +1528,7 @@ function exportData(fmt) {
     var b = new Blob([JSON.stringify({subjects:subjects,sessions:sessions},null,2)],{type:'application/json'});
     var a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='learnly_'+todayStr()+'.json'; a.click();
   } else {
-    var rows = [['日付','科目','時間（分）','メモ'].join(',')];
+    var rows = [['日付','資格・目標','時間（分）','メモ'].join(',')];
     sessions.forEach(function(s){ var sj=getSubj(s.subjectId); rows.push([s.date,'"'+(sj?sj.name:'不明')+'"',s.duration,'"'+(s.memo||'')+'"'].join(',')); });
     var b = new Blob(['﻿'+rows.join('\n')],{type:'text/csv'});
     var a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='learnly_'+todayStr()+'.csv'; a.click();
@@ -1065,7 +1554,7 @@ var _sb = window.supabase.createClient(
 var currentUser = null; var _APP = 'learnly'; var _syncStatus = 'local';
 function syncBadgeHTML(){if(!currentUser)return'<span class="sync-badge sync-local">💾 ローカル</span>';if(_syncStatus==='syncing')return'<span class="sync-badge sync-syncing">🔄 同期中</span>';if(_syncStatus==='synced')return'<span class="sync-badge sync-synced">☁️</span>';return'<span class="sync-badge sync-failed" onclick="retrySync()">⚠️ 再同期</span>';}
 function updateSyncBadges(){var h=syncBadgeHTML();document.querySelectorAll('.sync-slot').forEach(function(el){el.innerHTML=h;});}
-function retrySync(){if(!currentUser)return;_syncStatus='syncing';updateSyncBadges();Promise.all([dbSave('subjects',subjects),dbSave('sessions',sessions)]).then(function(rs){_syncStatus=rs.every(function(r){return r&&!r.error;})?'synced':'failed';if(_syncStatus==='failed')showToast('⚠️ クラウド同期失敗');updateSyncBadges();});}
+function retrySync(){if(!currentUser)return;_syncStatus='syncing';updateSyncBadges();Promise.all([dbSave('subjects',subjects),dbSave('sessions',sessions),dbSave('materials',materials),dbSave('resources',resources),dbSave('exams',exams)]).then(function(rs){_syncStatus=rs.every(function(r){return r&&!r.error;})?'synced':'failed';if(_syncStatus==='failed')showToast('⚠️ クラウド同期失敗');updateSyncBadges();});}
 
 function dbSave(key, data) {
   if (!currentUser) return Promise.resolve(null);
@@ -1080,13 +1569,19 @@ async function syncFromCloud() {
     var localTime = parseInt(localStorage.getItem('learnly_updated_at')||'0');
     res.data.forEach(function(row) {
       var cloudTime = new Date(row.updated_at).getTime();
-      if (row.key==='subjects') { if(cloudTime>=localTime){subjects=row.data||[];localStorage.setItem('learnly_subjects',JSON.stringify(subjects));}else dbSave('subjects',subjects); }
-      if (row.key==='sessions') { if(cloudTime>=localTime){sessions=row.data||[];localStorage.setItem('learnly_sessions',JSON.stringify(sessions));}else dbSave('sessions',sessions); }
+      if (row.key==='subjects')  { if(cloudTime>=localTime){subjects=row.data||[];localStorage.setItem('learnly_subjects',JSON.stringify(subjects));}else dbSave('subjects',subjects); }
+      if (row.key==='sessions')  { if(cloudTime>=localTime){sessions=row.data||[];localStorage.setItem('learnly_sessions',JSON.stringify(sessions));}else dbSave('sessions',sessions); }
+      if (row.key==='materials') { if(cloudTime>=localTime){materials=row.data||[];localStorage.setItem('learnly_materials',JSON.stringify(materials));}else dbSave('materials',materials); }
+      if (row.key==='resources') { if(cloudTime>=localTime){resources=row.data||[];localStorage.setItem('learnly_resources',JSON.stringify(resources));}else dbSave('resources',resources); }
+      if (row.key==='exams')     { if(cloudTime>=localTime){exams=row.data||[];localStorage.setItem('learnly_exams',JSON.stringify(exams));}else dbSave('exams',exams); }
     });
     _syncStatus = 'synced';
   } else {
-    if (subjects.length > 0) dbSave('subjects', subjects);
-    if (sessions.length > 0) dbSave('sessions', sessions);
+    if (subjects.length > 0)  dbSave('subjects', subjects);
+    if (sessions.length > 0)  dbSave('sessions', sessions);
+    if (materials.length > 0) dbSave('materials', materials);
+    if (resources.length > 0) dbSave('resources', resources);
+    if (exams.length > 0)     dbSave('exams', exams);
   }
   var p = await _sb.from('profiles').select('is_pro').eq('id',currentUser.id).maybeSingle();
   if (p.data) { isPro=p.data.is_pro; localStorage.setItem('isPro',String(isPro)); } if(currentUser.email==='kyouji.o@gmail.com'){isPro=true;localStorage.setItem('isPro','true');}
