@@ -1172,7 +1172,7 @@ function saveSubject() {
 }
 
 function deleteSubjectConfirm() {
-  if (!confirm('この科目を削除しますか？\n（記録データは残ります）')) return;
+  if (!confirm('この資格・目標を削除しますか？\n（記録データは残ります）')) return;
   subjects = subjects.filter(function(s) { return s.id !== _editSubjId; });
   persist(); closeSubjModal(); renderAll();
 }
