@@ -391,6 +391,9 @@
     .sound-btn { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:.45rem .7rem; font-size:.75rem; color:var(--muted); cursor:pointer; font-family:var(--font); display:flex; align-items:center; gap:.35rem; transition:all .15s; }
     .sound-btn.active { border-color:var(--accent); color:var(--accent); background:rgba(94,207,160,.1); }
     .sound-preview { font-size:.65rem; color:var(--muted); background:none; border:none; cursor:pointer; padding:0; font-family:var(--font); }
+    .vol-slider { -webkit-appearance:none; width:100%; height:4px; border-radius:2px; background:var(--border); outline:none; cursor:pointer; margin-top:.1rem; }
+    .vol-slider::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--accent); cursor:pointer; box-shadow:0 1px 6px rgba(94,207,160,.45); }
+    .vol-slider::-moz-range-thumb { width:18px; height:18px; border-radius:50%; background:var(--accent); cursor:pointer; border:none; }
     .analysis-wrap-pc { padding:0 1.25rem; }
     @media (min-width: 768px) {
       body { padding-bottom:2rem; }
@@ -859,6 +862,8 @@
 var isPro = localStorage.getItem('isPro') === 'true';
 var FREE_MENU_LIMIT = 3;
 var FREE_HISTORY_DAYS = 14;
+var FREE_FAVORITES_LIMIT = 5;
+var favorites = JSON.parse(localStorage.getItem('fitlyFavorites') || '[]');
 
 // 日付ユーティリティ（ローカル時間でYYYY-MM-DD）
 function localDateStr(d) {
@@ -2354,14 +2359,19 @@ function resetTimer() {
 // ── Sound ──
 var _audioCtx = null;
 var selectedSound = localStorage.getItem('fitlySound') || 'chime';
+var soundVolume = parseFloat(localStorage.getItem('fitlySoundVolume') || '0.7');
 
 var SOUNDS = [
-  { id:'bell',    label:'🔔 ベル',         desc:'クラシックベル' },
-  { id:'chime',   label:'🎵 チャイム',     desc:'和音アルペジオ' },
-  { id:'bowl',    label:'🎶 ボウル',       desc:'シンギングボウル' },
-  { id:'crystal', label:'✨ クリスタル',   desc:'高音ペンタトニック' },
-  { id:'synth',   label:'🎺 シンセ',       desc:'クリーンな電子音' },
-  { id:'none',    label:'🔕 なし',         desc:'無音' },
+  { id:'bell',       label:'🔔 ベル',           desc:'クラシックベル' },
+  { id:'chime',      label:'🎵 チャイム',       desc:'和音アルペジオ' },
+  { id:'bowl',       label:'🎶 ボウル',         desc:'シンギングボウル' },
+  { id:'crystal',    label:'✨ クリスタル',     desc:'高音ペンタトニック' },
+  { id:'synth',      label:'🎺 シンセ',         desc:'クリーンな電子音' },
+  { id:'beep',       label:'📳 ビープ',         desc:'短いビープ音' },
+  { id:'whistle',    label:'🎵 笛',             desc:'ホイッスル' },
+  { id:'drum',       label:'🥁 ドラム',         desc:'バスドラム' },
+  { id:'countdown',  label:'⏱ カウントダウン', desc:'3連ビープ' },
+  { id:'none',       label:'🔕 なし',           desc:'無音' },
 ];
 
 function getAudioCtx() {
@@ -2377,9 +2387,12 @@ function playSound(id) {
   try {
     var ctx = getAudioCtx();
     var now = ctx.currentTime;
+    var master = ctx.createGain();
+    master.gain.value = soundVolume;
+    master.connect(ctx.destination);
     if (sid === 'bell') {
       var o = ctx.createOscillator(), g = ctx.createGain();
-      o.connect(g); g.connect(ctx.destination);
+      o.connect(g); g.connect(master);
       o.type = 'sine';
       o.frequency.setValueAtTime(880, now);
       o.frequency.exponentialRampToValueAtTime(440, now + 1.5);
@@ -2389,7 +2402,7 @@ function playSound(id) {
     } else if (sid === 'chime') {
       [523.25, 659.25, 783.99, 1046.50].forEach(function(freq, i) {
         var o = ctx.createOscillator(), g = ctx.createGain();
-        o.connect(g); g.connect(ctx.destination);
+        o.connect(g); g.connect(master);
         o.type = 'sine'; o.frequency.value = freq;
         var t = now + i * 0.18;
         g.gain.setValueAtTime(0, t);
@@ -2400,7 +2413,7 @@ function playSound(id) {
     } else if (sid === 'bowl') {
       [432, 648].forEach(function(freq, i) {
         var o = ctx.createOscillator(), g = ctx.createGain();
-        o.connect(g); g.connect(ctx.destination);
+        o.connect(g); g.connect(master);
         o.type = 'sine'; o.frequency.value = freq;
         g.gain.setValueAtTime(0, now);
         g.gain.linearRampToValueAtTime(i === 0 ? 0.5 : 0.15, now + 0.5);
@@ -2410,7 +2423,7 @@ function playSound(id) {
     } else if (sid === 'crystal') {
       [1174.66, 1318.51, 1567.98, 1760, 2093].forEach(function(freq, i) {
         var o = ctx.createOscillator(), g = ctx.createGain();
-        o.connect(g); g.connect(ctx.destination);
+        o.connect(g); g.connect(master);
         o.type = 'sine'; o.frequency.value = freq;
         var t = now + i * 0.11;
         g.gain.setValueAtTime(0, t);
@@ -2421,12 +2434,51 @@ function playSound(id) {
     } else if (sid === 'synth') {
       [0, 0.35].forEach(function(delay) {
         var o = ctx.createOscillator(), g = ctx.createGain();
-        o.connect(g); g.connect(ctx.destination);
+        o.connect(g); g.connect(master);
         o.type = 'triangle'; o.frequency.value = 660;
         var t = now + delay;
         g.gain.setValueAtTime(0.5, t);
         g.gain.linearRampToValueAtTime(0, t + 0.18);
         o.start(t); o.stop(t + 0.2);
+      });
+    } else if (sid === 'beep') {
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(master);
+      o.type = 'square'; o.frequency.value = 880;
+      g.gain.setValueAtTime(0.3, now);
+      g.gain.setValueAtTime(0.3, now + 0.1);
+      g.gain.linearRampToValueAtTime(0, now + 0.15);
+      o.start(now); o.stop(now + 0.18);
+    } else if (sid === 'whistle') {
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(master);
+      o.type = 'sine';
+      o.frequency.setValueAtTime(1400, now);
+      o.frequency.exponentialRampToValueAtTime(1900, now + 0.25);
+      g.gain.setValueAtTime(0, now);
+      g.gain.linearRampToValueAtTime(0.55, now + 0.04);
+      g.gain.setValueAtTime(0.55, now + 0.2);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      o.start(now); o.stop(now + 0.5);
+    } else if (sid === 'drum') {
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(master);
+      o.type = 'sine';
+      o.frequency.setValueAtTime(200, now);
+      o.frequency.exponentialRampToValueAtTime(40, now + 0.3);
+      g.gain.setValueAtTime(0.9, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      o.start(now); o.stop(now + 0.45);
+    } else if (sid === 'countdown') {
+      [880, 880, 1047].forEach(function(freq, i) {
+        var t = now + i * 0.32;
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.connect(g); g.connect(master);
+        o.type = 'sine'; o.frequency.value = freq;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.45, t + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+        o.start(t); o.stop(t + 0.3);
       });
     }
   } catch(e) {}
@@ -2437,8 +2489,11 @@ function playCheckSound() {
   try {
     var ctx = getAudioCtx();
     var now = ctx.currentTime;
+    var master = ctx.createGain();
+    master.gain.value = soundVolume;
+    master.connect(ctx.destination);
     var o = ctx.createOscillator(), g = ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
+    o.connect(g); g.connect(master);
     o.type = 'sine'; o.frequency.value = 1320;
     g.gain.setValueAtTime(0, now);
     g.gain.linearRampToValueAtTime(0.28, now + 0.008);
@@ -2450,12 +2505,27 @@ function playCheckSound() {
 function buildSoundSelector() {
   var el = document.getElementById('soundSelector');
   if (!el) return;
+  var pct = Math.round(soundVolume * 100);
   el.innerHTML = SOUNDS.map(function(s) {
     return '<button class="sound-btn'+(s.id===selectedSound?' active':'')+'" onclick="selectSound(\''+s.id+'\')">'
       +s.label
       +(s.id!=='none'?'<span class="sound-preview" onclick="event.stopPropagation();playSound(\''+s.id+'\')">▶</span>':'')
       +'</button>';
-  }).join('');
+  }).join('')
+  + '<div style="width:100%;margin-top:.85rem;padding:.65rem .75rem;background:var(--surface2);border:1px solid var(--border);border-radius:11px;">'
+  + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">'
+  + '<span style="font-size:.7rem;color:var(--muted);">🔊 音量</span>'
+  + '<span id="volLabel" style="font-size:.75rem;font-weight:600;color:var(--accent);">'+pct+'%</span>'
+  + '</div>'
+  + '<input type="range" class="vol-slider" min="0" max="100" value="'+pct+'" oninput="setSoundVolume(this.value)">'
+  + '</div>';
+}
+
+function setSoundVolume(val) {
+  soundVolume = parseInt(val) / 100;
+  localStorage.setItem('fitlySoundVolume', soundVolume.toString());
+  var lbl = document.getElementById('volLabel');
+  if (lbl) lbl.textContent = val + '%';
 }
 
 function selectSound(id) {
@@ -2574,7 +2644,16 @@ var PART_FILTER_LIST = [
 ];
 
 function buildCatFilter() {
-  var cats = [{id:'all',label:'すべて'},{id:'strength',label:'🏋️ フリー'},{id:'machine',label:'⚙️ マシン'},{id:'bodyweight',label:'🤸 自重'},{id:'cardio',label:'🏃 有酸素'},{id:'stretch',label:'🧘 ストレッチ'},{id:'mindfulness',label:'🌸 マインドフル'}];
+  var cats = [
+    {id:'all',label:'すべて'},
+    {id:'favorites',label:'⭐ お気に入り'},
+    {id:'strength',label:'🏋️ フリー'},
+    {id:'machine',label:'⚙️ マシン'},
+    {id:'bodyweight',label:'🤸 自重'},
+    {id:'cardio',label:'🏃 有酸素'},
+    {id:'stretch',label:'🧘 ストレッチ'},
+    {id:'mindfulness',label:'🌸 マインドフル'}
+  ];
   document.getElementById('catFilter').innerHTML = cats.map(function(c){
     return '<button class="cat-btn'+(c.id==='all'?' active':'')+'" onclick="selectCat(\''+c.id+'\',this)">'+c.label+'</button>';
   }).join('');
@@ -2582,8 +2661,7 @@ function buildCatFilter() {
 }
 
 function buildPartFilter() {
-  // 有酸素・ストレッチ・マインドフルネスは部位フィルター不要
-  var noPart = ['cardio','stretch','mindfulness'];
+  var noPart = ['cardio','stretch','mindfulness','favorites'];
   var show = noPart.indexOf(selectedCat) < 0;
   var pf = document.getElementById('partFilter');
   if (!show) { pf.innerHTML = ''; return; }
@@ -2613,6 +2691,9 @@ function filterExercises() {
   var customEx = JSON.parse(localStorage.getItem('customExercises') || '[]');
   var allEx = EXERCISE_DB.concat(customEx);
   var filtered = allEx.filter(function(ex) {
+    if (selectedCat === 'favorites') {
+      return favorites.indexOf(ex.id) >= 0 && (!q || ex.name.toLowerCase().includes(q));
+    }
     var matchCat  = selectedCat  === 'all' || ex.cat  === selectedCat;
     var matchPart = selectedPart === 'all' || ex.part === selectedPart;
     var matchQ    = !q || ex.name.toLowerCase().includes(q);
@@ -2660,11 +2741,14 @@ function renderExerciseModal(list) {
       var color = d === 0 ? 'var(--accent)' : d <= 3 ? 'var(--muted)' : d <= 7 ? 'var(--blue)' : 'var(--muted)';
       daysBadge = '<span style="font-size:.62rem;color:'+color+';white-space:nowrap;">'+daysLabel(d)+'</span>';
     }
+    var isFav = favorites.indexOf(ex.id) >= 0;
+    var starBtn = '<button onclick="toggleFavorite(\''+ex.id+'\',event)" style="background:none;border:none;font-size:1.15rem;cursor:pointer;padding:.1rem .15rem;line-height:1;color:'+(isFav?'var(--yellow)':'var(--border)')+';transition:color .15s;" title="お気に入り">'+(isFav?'★':'☆')+'</button>';
     return '<div class="exercise-list-item" onclick="addExerciseToWorkout('+JSON.stringify(ex).replace(/"/g,'&quot;')+')">'
       +'<div><p class="exercise-list-name">'+ex.name+'</p>'
       +'<p class="exercise-list-meta">'+CAT_LABELS[ex.cat]+'</p></div>'
-      +'<div style="display:flex;align-items:center;gap:.5rem;">'
+      +'<div style="display:flex;align-items:center;gap:.35rem;">'
       +daysBadge
+      +starBtn
       +'<a href="'+ytURL+'" target="_blank" onclick="event.stopPropagation()" class="btn-yt">▶ 動画</a>'
       +'</div></div>';
   }
@@ -2687,6 +2771,24 @@ function renderExerciseModal(list) {
     html += otherGroup.map(exRow).join('');
   }
   el.innerHTML = html || '<p style="font-size:.82rem;color:var(--muted);padding:1rem 0">見つかりませんでした</p>';
+}
+
+function toggleFavorite(exId, event) {
+  event.stopPropagation();
+  var idx = favorites.indexOf(exId);
+  if (idx >= 0) {
+    favorites.splice(idx, 1);
+    showToast('☆ お気に入りから削除しました');
+  } else {
+    if (!isPro && favorites.length >= FREE_FAVORITES_LIMIT) {
+      showToast('無料プランはお気に入り' + FREE_FAVORITES_LIMIT + '種目まで（Proで無制限）');
+      return;
+    }
+    favorites.push(exId);
+    showToast('⭐ お気に入りに追加しました');
+  }
+  localStorage.setItem('fitlyFavorites', JSON.stringify(favorites));
+  filterExercises();
 }
 
 var customEditIdx = -1; // -1=新規, 0以上=編集中インデックス
