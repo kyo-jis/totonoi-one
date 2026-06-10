@@ -1919,15 +1919,27 @@ function saveWorkout() {
       if (s.done) { totalSets++; totalVolume += (Number(s.weight)||0) * (Number(s.reps)||0); }
     });
   });
+
+  // autoSaveToHistory() が作成済みのエントリを検索して上書き確定
+  var idx = -1;
+  if (currentWorkout.historyId) {
+    for (var i = 0; i < workoutHistory.length; i++) {
+      if (workoutHistory[i].id === currentWorkout.historyId) { idx = i; break; }
+    }
+  }
   var record = {
-    id: Date.now().toString(),
+    id: idx >= 0 ? workoutHistory[idx].id : Date.now().toString(),
     date: localDateStr(),
     duration: elapsed,
     exercises: currentWorkout.exercises,
     totalSets: totalSets,
     totalVolume: totalVolume
   };
-  workoutHistory.unshift(record);
+  if (idx >= 0) {
+    workoutHistory[idx] = record;
+  } else {
+    workoutHistory.unshift(record);
+  }
   localStorage.setItem('fitlyHistory', JSON.stringify(workoutHistory));
   dbSave('history', workoutHistory);
   checkAndUpdatePRs(currentWorkout.exercises);
@@ -2195,8 +2207,54 @@ function completeSet(ei, si) {
     }
   }
   persistCurrentWorkout();
-  dbSave('currentWorkout', currentWorkout);
+  autoSaveToHistory();
   renderExerciseCards();
+}
+
+// セットチェック時に履歴を即時保存（historyIdで既存エントリを追跡）
+function autoSaveToHistory() {
+  if (!currentWorkout.exercises.length) return;
+  var totalSets = 0, totalVolume = 0;
+  currentWorkout.exercises.forEach(function(ex) {
+    ex.sets.forEach(function(s) {
+      if (s.done) {
+        totalSets++;
+        totalVolume += (Number(s.weight)||0) * (Number(s.reps)||0);
+      }
+    });
+  });
+  if (!totalSets) return;
+
+  var elapsed = currentWorkout.startTime
+    ? Math.floor((Date.now() - currentWorkout.startTime) / 1000) : 0;
+
+  var idx = -1;
+  if (currentWorkout.historyId) {
+    for (var i = 0; i < workoutHistory.length; i++) {
+      if (workoutHistory[i].id === currentWorkout.historyId) { idx = i; break; }
+    }
+  }
+
+  if (idx >= 0) {
+    workoutHistory[idx].exercises   = JSON.parse(JSON.stringify(currentWorkout.exercises));
+    workoutHistory[idx].totalSets   = totalSets;
+    workoutHistory[idx].totalVolume = totalVolume;
+    workoutHistory[idx].duration    = elapsed;
+  } else {
+    currentWorkout.historyId = Date.now().toString();
+    workoutHistory.unshift({
+      id: currentWorkout.historyId,
+      date: localDateStr(),
+      duration: elapsed,
+      exercises: JSON.parse(JSON.stringify(currentWorkout.exercises)),
+      totalSets: totalSets,
+      totalVolume: totalVolume
+    });
+  }
+
+  localStorage.setItem('fitlyHistory', JSON.stringify(workoutHistory));
+  dbSave('history', workoutHistory);
+  persistCurrentWorkout();
 }
 
 // ── Rest Timer ──
