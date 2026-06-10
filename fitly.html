@@ -97,11 +97,10 @@
     .set-input.set-input-text { text-align:left; padding:.5rem .6rem; }
     .set-input:focus { border-color:var(--accent); background:var(--surface3); }
     .set-check { width:34px; height:34px; border-radius:10px; border:2px solid var(--border); background:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:.95rem; transition:all .2s var(--spring); }
-    .set-check.done { background:linear-gradient(135deg,var(--accent),var(--accent-dark)); border-color:var(--accent); animation:checkPop .35s var(--spring); box-shadow:0 2px 10px rgba(94,207,160,.4); }
-    @keyframes checkPop { 0%{transform:scale(.5)} 60%{transform:scale(1.15)} 100%{transform:scale(1)} }
-    .set-row.completed { opacity:.55; }
-    .set-row.completed .set-input { background:var(--surface); }
-    .set-row.completed .set-input { background:var(--surface3); }
+    .set-check.done { background:linear-gradient(135deg,var(--accent),var(--accent-dark)); border-color:var(--accent); animation:checkPop .48s var(--spring); box-shadow:0 2px 16px rgba(94,207,160,.55); }
+    @keyframes checkPop { 0%{transform:scale(0) rotate(-15deg)} 45%{transform:scale(1.55) rotate(8deg)} 70%{transform:scale(0.87) rotate(-3deg)} 100%{transform:scale(1) rotate(0)} }
+    .set-row.completed { background:rgba(94,207,160,.09); border-radius:9px; padding:.12rem .2rem; }
+    .set-row.completed .set-input { background:rgba(94,207,160,.13); border-color:rgba(94,207,160,.3); }
 
     .btn-add-set { width:100%; padding:.6rem; background:none; border:1px dashed var(--border); border-radius:10px; color:var(--muted); font-size:.82rem; font-family:var(--font); cursor:pointer; margin-top:.4rem; }
     .btn-add-set:active { border-color:var(--accent); color:var(--accent); }
@@ -541,9 +540,6 @@
     ＋ 種目を追加
   </button>
 
-  <button onclick="saveWorkout()" id="btnSave" style="display:none;width:100%;padding:.9rem;background:var(--blue);color:#fff;border:none;border-radius:14px;font-size:.95rem;font-weight:600;font-family:var(--font);cursor:pointer;">
-    💾 ワークアウトを保存
-  </button>
 </div>
 
 <!-- メニュータブ -->
@@ -1342,7 +1338,6 @@ function init() {
     document.getElementById('workoutActiveHeader').style.display = 'block';
     document.getElementById('workoutDashboard').style.display = 'none';
     document.getElementById('btnAddExercise').style.display = 'block';
-    document.getElementById('btnSave').style.display = 'block';
     if (currentWorkout.startTime) {
       workoutTimerInterval = setInterval(updateWorkoutTimer, 1000);
     }
@@ -1868,7 +1863,6 @@ function activateWorkoutUI() {
   document.getElementById('workoutDashboard').style.display = 'none';
   document.getElementById('workoutActiveHeader').style.display = 'block';
   document.getElementById('btnAddExercise').style.display = 'block';
-  document.getElementById('btnSave').style.display = 'block';
   document.getElementById('btnStartWorkout').style.display = 'block';
   document.getElementById('btnEndWorkout').style.display = 'none';
   document.getElementById('workoutStatusLabel').textContent = '種目を選択中';
@@ -1907,7 +1901,6 @@ function endWorkout() {
   document.getElementById('workoutDashboard').style.display = 'block';
   document.getElementById('workoutActiveHeader').style.display = 'none';
   document.getElementById('btnAddExercise').style.display = 'none';
-  document.getElementById('btnSave').style.display = 'none';
   document.getElementById('exerciseList').innerHTML = '';
   renderWorkoutDashboard();
 }
@@ -1962,7 +1955,6 @@ function saveWorkout() {
   document.getElementById('workoutActiveHeader').style.display = 'none';
   document.getElementById('workoutDashboard').style.display = 'block';
   document.getElementById('btnAddExercise').style.display = 'none';
-  document.getElementById('btnSave').style.display = 'none';
   renderExerciseCards();
   showToast('✅ ワークアウトを保存しました！');
   if (typeof confetti === 'function') {
@@ -2178,9 +2170,18 @@ function completeSet(ei, si) {
       var next = ex.sets[ni];
       if (next.done) continue;
       layout.fields.forEach(function(f) {
-        if (f === 'note') return; // メモ欄はコピーしない
+        if (f === 'note') return;
         if (!next[f] && set[f]) next[f] = set[f];
       });
+    }
+    // チェック音・バイブレーション
+    playCheckSound();
+    if (navigator.vibrate) navigator.vibrate(40);
+    // 種目の全セット完了チェック
+    var allDone = ex.sets.every(function(s){ return s.done; });
+    if (allDone) {
+      showToast('🎉 ' + ex.name + ' 種目完了！');
+      if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
     }
     // 休憩タイマー
     var restTime = ex.restTime || defaultRestTime;
@@ -2189,6 +2190,7 @@ function completeSet(ei, si) {
     }
   }
   persistCurrentWorkout();
+  dbSave('currentWorkout', currentWorkout);
   renderExerciseCards();
 }
 
@@ -2427,6 +2429,21 @@ function playSound(id) {
         o.start(t); o.stop(t + 0.2);
       });
     }
+  } catch(e) {}
+}
+
+function playCheckSound() {
+  if (selectedSound === 'none') return;
+  try {
+    var ctx = getAudioCtx();
+    var now = ctx.currentTime;
+    var o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'sine'; o.frequency.value = 1320;
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(0.28, now + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+    o.start(now); o.stop(now + 0.2);
   } catch(e) {}
 }
 
