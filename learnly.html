@@ -308,6 +308,15 @@
     .back-confirm-btn:active{transform:scale(.93);}
     .back-confirm-btn-go{background:var(--accent);color:#fff;}
     .back-confirm-btn-stay{background:var(--surface3);color:var(--text);}
+    /* Subject card exam strip */
+    .subj-exam-strip{margin-top:.6rem;padding-top:.55rem;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:.28rem;}
+    .subj-exam-row{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;}
+    .subj-exam-cd{font-size:.8rem;font-weight:600;}
+    .subj-exam-period{font-size:.7rem;color:var(--muted);}
+    .subj-exam-alert-badge{font-size:.65rem;color:var(--yellow);background:rgba(245,200,66,.12);border-radius:6px;padding:.1rem .38rem;}
+    .subj-applied-label{display:flex;align-items:center;gap:.3rem;font-size:.72rem;color:var(--muted);cursor:pointer;margin-left:auto;}
+    .subj-applied-label input[type=checkbox]{width:15px;height:15px;accent-color:var(--green);cursor:pointer;flex-shrink:0;}
+    .subj-applied-badge{font-size:.68rem;color:var(--green);background:rgba(94,207,160,.12);border-radius:6px;padding:.1rem .38rem;margin-left:auto;}
   </style>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-E9Q0JQ0V92"></script>
@@ -922,6 +931,18 @@ function renderWeekBar() {
   }).join('');
 }
 
+function fmtMD(dateStr) {
+  if (!dateStr) return '';
+  var d = parseLocalDate(dateStr);
+  return (d.getMonth()+1) + '月' + d.getDate() + '日';
+}
+function toggleExamApplied(examId) {
+  var e = exams.find(function(x){ return x.id === examId; });
+  if (!e) return;
+  e.applied = !e.applied;
+  persist(); renderAll();
+}
+
 /* ── Today Tab ── */
 function renderToday() {
   var d = new Date();
@@ -946,6 +967,32 @@ function renderToday() {
           + '<div class="goal-bar-meta"><span>' + todayM + '分 / 目標 ' + goal + '分</span><span>' + pct + '%</span></div>'
           + '</div>'
       : (todayM ? '<p style="font-size:.7rem;color:var(--muted);margin-top:.5rem;">今日: ' + todayM + '分</p>' : '');
+    var todayD = new Date(); todayD.setHours(0,0,0,0);
+    var nxExam = exams
+      .filter(function(e){ var ed=parseLocalDate(e.examDate); return e.subjectId===subj.id&&ed&&ed>=todayD; })
+      .sort(function(a,b){ return parseLocalDate(a.examDate)-parseLocalDate(b.examDate); })[0];
+    var examStrip = '';
+    if (nxExam) {
+      var exDays = Math.ceil((parseLocalDate(nxExam.examDate)-todayD)/86400000);
+      var exColor = exDays<=7?'var(--red)':exDays<=30?'var(--yellow)':'var(--accent)';
+      var exPeriod = '';
+      if (nxExam.appStart||nxExam.appDeadline) {
+        var ps=nxExam.appStart?fmtMD(nxExam.appStart):''; var pe=nxExam.appDeadline?fmtMD(nxExam.appDeadline):'';
+        exPeriod = '申込：'+(ps&&pe?ps+'〜'+pe:ps||pe);
+      }
+      var exAlert='';
+      if (nxExam.appDeadline){
+        var dlD=parseLocalDate(nxExam.appDeadline), dlDays=Math.ceil((dlD-todayD)/86400000);
+        if(dlDays>=0&&dlDays<=7) exAlert='<span class="subj-exam-alert-badge">⚠️ 申込まで'+dlDays+'日</span>';
+      }
+      var appliedHtml = nxExam.applied
+        ? '<span class="subj-applied-badge">申込済み✅</span>'
+        : '<label class="subj-applied-label" onclick="event.stopPropagation()"><input type="checkbox" onchange="toggleExamApplied(\''+nxExam.id+'\')"><span>申込済み</span></label>';
+      examStrip = '<div class="subj-exam-strip">'
+        +'<div class="subj-exam-row"><span class="subj-exam-cd" style="color:'+exColor+';">試験まであと'+exDays+'日</span>'+exAlert+appliedHtml+'</div>'
+        +(exPeriod?'<span class="subj-exam-period">'+exPeriod+'</span>':'')
+        +'</div>';
+    }
     return '<div class="subj-card">'
       + '<div class="subj-card-top">'
         + '<div class="subj-icon" style="background:' + (subj.color || '#3c8cbf') + '22;">' + (subj.icon || '📘') + '</div>'
@@ -959,6 +1006,7 @@ function renderToday() {
         + '</div>'
       + '</div>'
       + goalBar
+      + examStrip
       + '<div class="sync-slot"></div>'
       + '</div>';
   }).join('');
@@ -1585,13 +1633,13 @@ function saveExam(){
     examDate:examDate,createdAt:new Date().toISOString()};
   if(_editExamId){var idx=exams.findIndex(function(e){return e.id===_editExamId;});exams[idx]=entry;}
   else exams.push(entry);
-  persist();closeExamModal();renderSDExams();renderExamCountdown();
+  persist();closeExamModal();renderSDExams();renderAll();
   showToast(_editExamId?'✅ 更新しました':'✅ 試験日を追加しました');
 }
 function deleteExam(){
   if(!confirm('この試験情報を削除しますか？'))return;
   exams=exams.filter(function(e){return e.id!==_editExamId;});
-  persist();closeExamModal();renderSDExams();renderExamCountdown();
+  persist();closeExamModal();renderSDExams();renderAll();
 }
 
 function persist() {
