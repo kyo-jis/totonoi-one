@@ -40,7 +40,18 @@ bookly.html         # 本・読書管理
 sw-{app}.js         # 各アプリのService Worker
 manifest-{app}.json # 各アプリのPWAマニフェスト
 api/                # Vercel Serverless Functions（Stripe連携）
+db/                 # Supabase スキーマ・マイグレーションSQL
+scripts/            # ユーティリティスクリプト（CSV生成など）
+docs/               # アプリ別の開発メモ（データ構造・関数一覧など）
 ```
+
+### アプリ別開発メモ
+
+各アプリの詳細仕様・データ構造・関数一覧は `docs/` フォルダを参照。
+
+| ファイル | 内容 |
+|----------|------|
+| `docs/learnly.md` | learnly のデータ構造・関数一覧・実装済み機能 |
 
 ### データフロー
 
