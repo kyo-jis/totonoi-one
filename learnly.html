@@ -326,6 +326,21 @@
     .subj-applied-label{display:flex;align-items:center;gap:.3rem;font-size:.72rem;color:var(--muted);cursor:pointer;margin-left:auto;}
     .subj-applied-label input[type=checkbox]{width:15px;height:15px;accent-color:var(--green);cursor:pointer;flex-shrink:0;}
     .subj-applied-badge{font-size:.68rem;color:var(--green);background:rgba(94,207,160,.12);border-radius:6px;padding:.1rem .38rem;margin-left:auto;}
+    /* Study type selector */
+    .study-type-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem;}
+    .study-type-btn{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:.55rem .3rem;cursor:pointer;font-family:var(--font);text-align:center;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:.18rem;}
+    .study-type-btn.selected{border-color:var(--accent);background:rgba(60,140,191,.12);}
+    .study-type-btn:active{transform:scale(.93);}
+    .study-type-icon{font-size:1.2rem;}
+    .study-type-lbl{font-size:.6rem;color:var(--text);}
+    /* Study type breakdown */
+    .breakdown-bar-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem;}
+    .breakdown-bar-row:last-child{margin-bottom:0;}
+    .breakdown-bar-icon{font-size:.95rem;width:1.4rem;flex-shrink:0;text-align:center;}
+    .breakdown-bar-label{font-size:.7rem;color:var(--muted);width:3.8rem;flex-shrink:0;}
+    .breakdown-bar-bg{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;}
+    .breakdown-bar-fill{height:100%;border-radius:4px;background:var(--accent);transition:width .5s var(--spring);}
+    .breakdown-bar-val{font-size:.68rem;color:var(--muted);width:2.8rem;text-align:right;flex-shrink:0;}
   </style>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-E9Q0JQ0V92"></script>
@@ -409,6 +424,10 @@
       <p class="analytics-title">統計</p>
       <div class="analysis-grid" id="statsGrid"></div>
       <div class="bar-chart" style="margin-top:.75rem;" id="weeklyChart"></div>
+    </div>
+    <div class="analytics-section" id="studyTypeSection">
+      <p class="analytics-title">学習方法の内訳</p>
+      <div id="studyTypeBreakdown"></div>
     </div>
     <div class="analytics-section pc-only" id="heatmapSection">
       <p class="analytics-title">年間学習ヒートマップ（過去52週）</p>
@@ -551,6 +570,10 @@
         <button class="dur-preset" onclick="setDur(60)">60分</button>
         <button class="dur-preset" onclick="setDur(90)">90分</button>
       </div>
+    </div>
+    <div class="form-group">
+      <label>学習方法（任意）</label>
+      <div class="study-type-grid" id="logStudyTypeGrid"></div>
     </div>
     <div class="form-group">
       <label>メモ（任意）</label>
@@ -758,6 +781,15 @@ var isPro = localStorage.getItem('isPro') === 'true';
 
 var SUBJECT_COLORS = ['#3c8cbf','#7c5cbf','#4a8c5a','#bf6c3c','#bf3c8c','#bf9c3c','#5e6abf','#5ecfa0','#e06060','#bf793c'];
 var ICON_PRESETS   = ['📘','📐','🔬','📖','🌍','💻','🎯','🎨','🎸','🏋️','💼','🗣️','🧮','⚗️','🎬','📊'];
+var STUDY_TYPES = [
+  {id:'text',    icon:'📖', label:'テキスト'},
+  {id:'problem', icon:'📝', label:'問題集'},
+  {id:'past',    icon:'📄', label:'過去問'},
+  {id:'video',   icon:'🎥', label:'動画'},
+  {id:'note',    icon:'✍️',  label:'ノート'},
+  {id:'audio',   icon:'🎧', label:'音声'},
+  {id:'other',   icon:'📌', label:'その他'},
+];
 
 function parseLocalDate(str) {
   if (!str) return null;
@@ -991,7 +1023,14 @@ function fmtMD(dateStr) {
 function toggleExamApplied(examId) {
   var e = exams.find(function(x){ return x.id === examId; });
   if (!e) return;
-  e.applied = !e.applied;
+  e.applied = true;
+  persist(); renderAll();
+}
+function cancelExamApplied(examId) {
+  if (!confirm('申込をキャンセルしますか？')) return;
+  var e = exams.find(function(x){ return x.id === examId; });
+  if (!e) return;
+  e.applied = false;
   persist(); renderAll();
 }
 
@@ -1038,7 +1077,7 @@ function renderToday() {
         if(dlDays>=0&&dlDays<=7) exAlert='<span class="subj-exam-alert-badge">⚠️ 申込まで'+dlDays+'日</span>';
       }
       var appliedHtml = nxExam.applied
-        ? '<span class="subj-applied-badge">申込済み✅</span>'
+        ? '<span class="subj-applied-badge" onclick="event.stopPropagation();cancelExamApplied(\''+nxExam.id+'\')" style="cursor:pointer;" title="タップでキャンセル">申込済み✅</span>'
         : '<label class="subj-applied-label" onclick="event.stopPropagation()"><input type="checkbox" onchange="toggleExamApplied(\''+nxExam.id+'\')"><span>申込済み</span></label>';
       examStrip = '<div class="subj-exam-strip">'
         +'<div class="subj-exam-row"><span class="subj-exam-cd" style="color:'+exColor+';">試験まであと'+exDays+'日</span>'+exAlert+appliedHtml+'</div>'
@@ -1246,11 +1285,12 @@ function renderLog() {
     var lbl = (d.getMonth()+1) + '月' + d.getDate() + '日（' + DAYS[d.getDay()] + '） — 合計 ' + minsOnDate(date) + '分';
     var items = byDate[date].slice().reverse().map(function(s) {
       var subj = getSubj(s.subjectId);
+      var stType = STUDY_TYPES.find(function(t){ return t.id===s.studyType; });
       return '<div class="sess-item">'
         + '<div class="sess-icon" style="background:' + ((subj&&subj.color)||'#3c8cbf') + '22;">' + ((subj&&subj.icon)||'📘') + '</div>'
         + '<div class="sess-info">'
-          + '<p class="sess-name">' + ((subj&&subj.name)||'削除された資格') + '</p>'
-          + (s.memo ? '<p class="sess-memo">' + s.memo + '</p>' : '')
+          + '<p class="sess-name">' + ((subj&&subj.name)||'削除された資格') + (stType ? '<span style="font-size:.8rem;margin-left:.4rem;opacity:.75;">'+stType.icon+'</span>' : '') + '</p>'
+          + (s.memo ? '<p class="sess-memo">' + s.memo + '</p>' : (stType ? '<p class="sess-memo">'+stType.label+'</p>' : ''))
         + '</div>'
         + '<span class="sess-duration">' + s.duration + '分</span>'
         + '<button class="sess-delete" onclick="deleteSession(\'' + s.id + '\')">🗑</button>'
@@ -1286,6 +1326,45 @@ function renderSettingsStats() {
   if (window.innerWidth >= 768) renderLearnHeatmap();
   var wgInput = document.getElementById('weekGoalInput');
   if (wgInput) wgInput.value = parseInt(localStorage.getItem('learnly_weekly_goal'))||0;
+  renderStudyTypeBreakdown();
+}
+
+function renderStudyTypeBreakdown() {
+  var el = document.getElementById('studyTypeBreakdown');
+  if (!el) return;
+  var typed = sessions.filter(function(s){ return s.studyType; });
+  if (!typed.length) {
+    el.innerHTML = '<p style="font-size:.8rem;color:var(--muted);padding:.3rem 0;">学習方法を記録するとここに表示されます</p>';
+    return;
+  }
+  var overall = {};
+  typed.forEach(function(s){ overall[s.studyType]=(overall[s.studyType]||0)+(s.duration||0); });
+  var maxOv = Math.max.apply(null, Object.values(overall));
+  var html = '<div class="bar-chart" style="padding:.9rem 1rem;margin-bottom:.75rem;">'
+    + '<p style="font-size:.68rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.65rem;">全体</p>';
+  STUDY_TYPES.forEach(function(t){
+    if(!overall[t.id]) return;
+    var mins=overall[t.id], pct=Math.round((mins/maxOv)*100);
+    html+='<div class="breakdown-bar-row"><span class="breakdown-bar-icon">'+t.icon+'</span><span class="breakdown-bar-label">'+t.label+'</span><div class="breakdown-bar-bg"><div class="breakdown-bar-fill" style="width:'+pct+'%;"></div></div><span class="breakdown-bar-val">'+formatMin(mins)+'</span></div>';
+  });
+  html+='</div>';
+  var subjsWithData = subjects.filter(function(subj){ return typed.some(function(s){ return s.subjectId===subj.id; }); });
+  subjsWithData.forEach(function(subj){
+    var ss=typed.filter(function(s){ return s.subjectId===subj.id; });
+    var bt={};
+    ss.forEach(function(s){ bt[s.studyType]=(bt[s.studyType]||0)+(s.duration||0); });
+    var subjTotal=Object.values(bt).reduce(function(a,b){return a+b;},0);
+    var maxT=Math.max.apply(null,Object.values(bt));
+    html+='<div class="bar-chart" style="padding:.85rem 1rem;margin-bottom:.5rem;">'
+      +'<p style="font-size:.78rem;font-weight:500;margin-bottom:.6rem;">'+subj.icon+' '+subj.name+'</p>';
+    STUDY_TYPES.forEach(function(t){
+      if(!bt[t.id]) return;
+      var mins=bt[t.id], pct=Math.round((mins/maxT)*100), share=Math.round((mins/subjTotal)*100);
+      html+='<div class="breakdown-bar-row"><span class="breakdown-bar-icon">'+t.icon+'</span><span class="breakdown-bar-label">'+t.label+'</span><div class="breakdown-bar-bg"><div class="breakdown-bar-fill" style="width:'+pct+'%;background:'+(subj.color||'var(--accent)')+'99;"></div></div><span class="breakdown-bar-val">'+share+'%</span></div>';
+    });
+    html+='</div>';
+  });
+  el.innerHTML = html;
 }
 
 function adjustWeekGoal(d) { var el=document.getElementById('weekGoalInput'); el.value=Math.max(0,(parseInt(el.value)||0)+d); }
@@ -1330,12 +1409,15 @@ function renderLearnHeatmap() {
 
 /* ── Log Modal ── */
 var _logSubjId = null;
+var _logStudyType = null;
 
 function openLogModal(subjId, prefill) {
   _logSubjId = subjId || (subjects.length ? subjects[0].id : null);
+  _logStudyType = null;
   document.getElementById('logDur').value  = prefill || 30;
   document.getElementById('logMemo').value = '';
   renderLogSubjGrid();
+  renderLogStudyTypeGrid();
   document.getElementById('logModal').classList.add('show');
 }
 function closeLogModal() { document.getElementById('logModal').classList.remove('show'); }
@@ -1358,6 +1440,21 @@ function selLogSubj(id) {
   if (btns[idx]) btns[idx].classList.add('selected');
 }
 
+function renderLogStudyTypeGrid() {
+  var el = document.getElementById('logStudyTypeGrid');
+  if (!el) return;
+  el.innerHTML = STUDY_TYPES.map(function(t) {
+    return '<button class="study-type-btn' + (t.id===_logStudyType?' selected':'') + '" onclick="selStudyType(\'' + t.id + '\')">'
+      + '<span class="study-type-icon">' + t.icon + '</span>'
+      + '<span class="study-type-lbl">' + t.label + '</span>'
+      + '</button>';
+  }).join('');
+}
+function selStudyType(id) {
+  _logStudyType = (_logStudyType === id) ? null : id;
+  renderLogStudyTypeGrid();
+}
+
 function adjustDur(d) { var el=document.getElementById('logDur'); el.value=Math.max(1,Math.min(480,(parseInt(el.value)||0)+d)); }
 function setDur(v)    { document.getElementById('logDur').value = v; }
 
@@ -1367,7 +1464,7 @@ function saveSession() {
   if (dur < 1) { showToast('時間を入力してください'); return; }
   var memo = document.getElementById('logMemo').value.trim();
   var wasPomodoro = _timerPomodoro; _timerPomodoro = false;
-  sessions.push({ id:Date.now().toString(), subjectId:_logSubjId, date:todayStr(), duration:dur, memo:memo, createdAt:new Date().toISOString() });
+  sessions.push({ id:Date.now().toString(), subjectId:_logSubjId, date:todayStr(), duration:dur, memo:memo, studyType:_logStudyType||null, createdAt:new Date().toISOString() });
   persist(); closeLogModal(); renderAll();
   var subj = getSubj(_logSubjId);
   if (subj && subj.dailyGoal) {
