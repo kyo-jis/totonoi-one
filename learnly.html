@@ -50,10 +50,19 @@
     /* Summary Card */
     .summary-card { margin:0 1.25rem 1.25rem; background:linear-gradient(145deg,#0f2335,#091827); border:1px solid rgba(60,140,191,.38); border-radius:24px; padding:1.5rem; position:relative; overflow:hidden; box-shadow:0 0 60px rgba(60,140,191,.1),inset 0 1px 0 rgba(255,255,255,.07),0 8px 40px rgba(0,0,0,.5); }
     .summary-card::before { content:''; position:absolute; top:-80px; right:-80px; width:280px; height:280px; background:radial-gradient(circle,rgba(60,140,191,.5) 0%,transparent 60%); border-radius:50%; }
-    .summary-label { font-size:.72rem; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-bottom:.5rem; }
-    .summary-stats { display:flex; gap:1.5rem; margin-top:.5rem; }
-    .summary-stat-value { font-size:2.2rem; font-weight:600; letter-spacing:-.03em; }
-    .summary-stat-label { font-size:.7rem; color:var(--muted); margin-top:.1rem; }
+    .summary-label { font-size:.72rem; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-bottom:.35rem; }
+    .summary-today-hero { display:flex; align-items:flex-end; gap:.3rem; margin-bottom:.85rem; }
+    .summary-today-value { font-size:3.6rem; font-weight:600; letter-spacing:-.04em; line-height:1; color:var(--text); }
+    .summary-today-unit { font-size:1.1rem; color:var(--muted); margin-bottom:.5rem; }
+    .summary-streak-chip { font-size:.72rem; color:var(--yellow); background:rgba(245,200,66,.14); border-radius:20px; padding:.2rem .65rem; margin-bottom:.4rem; margin-left:.1rem; white-space:nowrap; }
+    .summary-mini-stats { display:flex; gap:1.5rem; margin-bottom:.9rem; }
+    .summary-mini-stat { display:flex; flex-direction:column; }
+    .summary-mini-val { font-size:1.1rem; font-weight:600; letter-spacing:-.02em; }
+    .summary-mini-lbl { font-size:.62rem; color:var(--muted); margin-top:.1rem; }
+    .week-goal-bar { margin-bottom:.85rem; }
+    .week-goal-bar-bg { height:5px; background:rgba(255,255,255,.08); border-radius:3px; overflow:hidden; }
+    .week-goal-bar-fill { height:100%; border-radius:3px; background:var(--green); transition:width .6s var(--spring); }
+    .week-goal-bar-meta { display:flex; justify-content:space-between; font-size:.62rem; color:var(--muted); margin-top:.28rem; }
     .card-deco { position:absolute; right:1rem; bottom:-.75rem; font-size:8.5rem; font-weight:700; line-height:1; color:rgba(255,255,255,.04); pointer-events:none; user-select:none; z-index:0; }
     .week-bar { display:flex; gap:.25rem; margin-top:1rem; align-items:flex-end; height:40px; }
     .week-bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:.2rem; }
@@ -345,21 +354,14 @@
 
 <div class="exam-cd-section" id="examCountdownSection" style="display:none;"></div>
 <div class="summary-card">
-  <p class="summary-label">学習状況</p>
-  <div class="summary-stats">
-    <div class="summary-stat">
-      <p class="summary-stat-value" id="summaryToday">0</p>
-      <p class="summary-stat-label">今日 (分)</p>
-    </div>
-    <div class="summary-stat">
-      <p class="summary-stat-value" style="color:var(--yellow)" id="summaryStreak">0</p>
-      <p class="summary-stat-label">連続日</p>
-    </div>
-    <div class="summary-stat">
-      <p class="summary-stat-value" style="color:var(--green)" id="summaryWeek">0</p>
-      <p class="summary-stat-label">今週 (分)</p>
-    </div>
+  <p class="summary-label">TODAY</p>
+  <div class="summary-today-hero">
+    <span class="summary-today-value" id="summaryToday">0</span>
+    <span class="summary-today-unit">分</span>
+    <span class="summary-streak-chip" id="summaryStreakChip" style="display:none;"></span>
   </div>
+  <div class="summary-mini-stats" id="summaryMiniStats"></div>
+  <div class="week-goal-bar" id="weekGoalBar" style="display:none;"></div>
   <div class="week-bar" id="weekBar"></div>
   <span class="card-deco" aria-hidden="true">学</span>
 </div>
@@ -411,6 +413,25 @@
     <div class="analytics-section pc-only" id="heatmapSection">
       <p class="analytics-title">年間学習ヒートマップ（過去52週）</p>
       <div class="bar-chart" id="learnHeatmapBox" style="padding:1.25rem;overflow-x:auto;"></div>
+    </div>
+    <div class="analytics-section">
+      <p class="analytics-title">週間目標</p>
+      <div class="bar-chart" style="padding:1rem 1.1rem;">
+        <p style="font-size:.78rem;color:var(--muted);margin-bottom:.75rem;line-height:1.5;">週あたりの合計学習時間の目標を設定します</p>
+        <div class="dur-stepper">
+          <button class="dur-btn" onclick="adjustWeekGoal(-30)">−</button>
+          <input type="number" class="dur-input" id="weekGoalInput" value="0" min="0" max="3000">
+          <button class="dur-btn" onclick="adjustWeekGoal(30)">＋</button>
+        </div>
+        <div class="dur-presets" style="margin-top:.5rem;">
+          <button class="dur-preset" onclick="setWeekGoalVal(300)">5h</button>
+          <button class="dur-preset" onclick="setWeekGoalVal(600)">10h</button>
+          <button class="dur-preset" onclick="setWeekGoalVal(900)">15h</button>
+          <button class="dur-preset" onclick="setWeekGoalVal(1200)">20h</button>
+        </div>
+        <p style="font-size:.68rem;color:var(--muted);margin-top:.35rem;">0 = 目標なし</p>
+        <button class="btn-primary" style="margin-top:.75rem;" onclick="saveWeekGoal()">保存する</button>
+      </div>
     </div>
     <div class="analytics-section">
       <p class="analytics-title">プラン</p>
@@ -910,10 +931,41 @@ function renderSummary() {
   var today = todayStr();
   var todayMin = minsOnDate(today);
   var weekMin  = weekDates().reduce(function(s, d) { return s + minsOnDate(d); }, 0);
-  document.getElementById('summaryToday').textContent  = todayMin;
-  document.getElementById('summaryStreak').textContent = calcStreak();
-  document.getElementById('summaryWeek').textContent   = weekMin;
-  document.getElementById('todayTotalMin').textContent  = todayMin;
+  var streak   = calcStreak();
+
+  var now = new Date();
+  var monthPrefix = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  var monthMin = sessions.filter(function(s){ return s.date.startsWith(monthPrefix); })
+    .reduce(function(sum,s){ return sum+(s.duration||0); }, 0);
+  var totalMin = sessions.reduce(function(sum,s){ return sum+(s.duration||0); }, 0);
+
+  document.getElementById('summaryToday').textContent = todayMin;
+  document.getElementById('todayTotalMin').textContent = todayMin;
+
+  var sc = document.getElementById('summaryStreakChip');
+  if (sc) { if(streak>0){sc.textContent='🔥 '+streak+'日連続';sc.style.display='';}else sc.style.display='none'; }
+
+  var ms = document.getElementById('summaryMiniStats');
+  if (ms) ms.innerHTML = [
+    {v:formatMin(weekMin),  l:'今週', c:'var(--accent)'},
+    {v:formatMin(monthMin), l:'今月', c:'var(--green)'},
+    {v:formatMin(totalMin), l:'累計', c:'var(--muted)'}
+  ].map(function(s){
+    return '<div class="summary-mini-stat"><span class="summary-mini-val" style="color:'+s.c+';">'+s.v+'</span><span class="summary-mini-lbl">'+s.l+'</span></div>';
+  }).join('');
+
+  var wg = parseInt(localStorage.getItem('learnly_weekly_goal'))||0;
+  var wb = document.getElementById('weekGoalBar');
+  if (wb) {
+    if (wg > 0) {
+      var wpct = Math.min(100, Math.round((weekMin/wg)*100));
+      wb.style.display = '';
+      wb.innerHTML = '<div class="week-goal-bar-bg"><div class="week-goal-bar-fill" style="width:'+wpct+'%;"></div></div>'
+        + '<div class="week-goal-bar-meta"><span>週間目標 '+formatMin(wg)+'</span><span>'+formatMin(weekMin)+' ('+wpct+'%)</span></div>';
+    } else {
+      wb.style.display = 'none';
+    }
+  }
   renderWeekBar();
 }
 
@@ -993,7 +1045,7 @@ function renderToday() {
         +(exPeriod?'<span class="subj-exam-period">'+exPeriod+'</span>':'')
         +'</div>';
     }
-    return '<div class="subj-card">'
+    return '<div class="subj-card" onclick="openSubjectDetail(\'' + subj.id + '\')" style="cursor:pointer;">'
       + '<div class="subj-card-top">'
         + '<div class="subj-icon" style="background:' + (subj.color || '#3c8cbf') + '22;">' + (subj.icon || '📘') + '</div>'
         + '<div class="subj-info">'
@@ -1001,8 +1053,8 @@ function renderToday() {
           + '<p class="subj-today-min">' + (goal ? '目標 ' + goal + '分/日' : '今日: ' + todayM + '分') + '</p>'
         + '</div>'
         + '<div class="subj-actions">'
-          + '<button class="btn-timer" onclick="openTimerSetModal(\'' + subj.id + '\')" title="タイマー設定">▶</button>'
-          + '<button class="btn-log" onclick="openLogModal(\'' + subj.id + '\')">記録</button>'
+          + '<button class="btn-timer" onclick="event.stopPropagation();openTimerSetModal(\'' + subj.id + '\')" title="タイマー設定">▶</button>'
+          + '<button class="btn-log" onclick="event.stopPropagation();openLogModal(\'' + subj.id + '\')">記録</button>'
         + '</div>'
       + '</div>'
       + goalBar
@@ -1232,6 +1284,17 @@ function renderSettingsStats() {
       + '</div>';
   }).join('');
   if (window.innerWidth >= 768) renderLearnHeatmap();
+  var wgInput = document.getElementById('weekGoalInput');
+  if (wgInput) wgInput.value = parseInt(localStorage.getItem('learnly_weekly_goal'))||0;
+}
+
+function adjustWeekGoal(d) { var el=document.getElementById('weekGoalInput'); el.value=Math.max(0,(parseInt(el.value)||0)+d); }
+function setWeekGoalVal(v) { document.getElementById('weekGoalInput').value=v; }
+function saveWeekGoal() {
+  var v = Math.max(0, parseInt(document.getElementById('weekGoalInput').value)||0);
+  localStorage.setItem('learnly_weekly_goal', String(v));
+  renderSummary();
+  showToast('✅ 週間目標を保存しました');
 }
 
 function renderLearnHeatmap() {
