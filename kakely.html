@@ -1735,40 +1735,46 @@ async function savePay() {
 
   var bal = (type === 'cash' || type === 'emoney') ? (document.getElementById('fBalance').value !== '' ? parseInt(document.getElementById('fBalance').value) : null) : null;
 
-  // null値を除外したペイロード（カラム不一致エラーを防ぐ）
-  var payload = { icon: icon, name: name, type: type };
-  if (wd != null) payload.withdrawal_date = wd;
-  if (brand != null) payload.brand = brand;
-  if (expiry != null) payload.expiry = expiry;
-  if (bal != null) payload.balance = bal;
+  // ローカル用（brand/expiry含む）
+  var localPayload = { icon: icon, name: name, type: type };
+  if (wd != null) localPayload.withdrawal_date = wd;
+  if (brand != null) localPayload.brand = brand;
+  if (expiry != null) localPayload.expiry = expiry;
+  if (bal != null) localPayload.balance = bal;
+
+  // Supabase用（既存カラムのみ）
+  var dbPayload = { icon: icon, name: name, type: type };
+  if (wd != null) dbPayload.withdrawal_date = wd;
+  if (bal != null) dbPayload.balance = bal;
 
   if (editPayId) {
     var idx = paymentMethods.findIndex(function(p){ return p.id === editPayId; });
-    if (idx !== -1) paymentMethods[idx] = Object.assign(paymentMethods[idx], payload);
+    if (idx !== -1) paymentMethods[idx] = Object.assign(paymentMethods[idx], localPayload);
+    // ローカルを先に確定
+    localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
     if (currentUser) {
-      var upRes = await _sb.from('kakely_payment_methods').update(payload).eq('id', editPayId);
-      if (upRes.error) { showToast('⚠️ 更新失敗: ' + upRes.error.message); return; }
+      var upRes = await _sb.from('kakely_payment_methods').update(dbPayload).eq('id', editPayId);
+      if (upRes.error) console.warn('kakely_payment_methods update:', upRes.error.message);
     }
   } else {
-    var newPay = Object.assign({ id: 'tmp_' + Date.now() }, payload);
+    var newPay = Object.assign({ id: 'tmp_' + Date.now() }, localPayload);
     paymentMethods.push(newPay);
+    // ローカルを先に確定
+    localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
     if (currentUser) {
       var res = await _sb.from('kakely_payment_methods')
-        .insert(Object.assign({ user_id: currentUser.id }, payload))
+        .insert(Object.assign({ user_id: currentUser.id }, dbPayload))
         .select().single();
       if (res.error) {
-        // ローカルから巻き戻す
-        paymentMethods = paymentMethods.filter(function(p){ return p.id !== newPay.id; });
+        console.warn('kakely_payment_methods insert:', res.error.message);
+      } else if (res.data) {
+        newPay.id = res.data.id;
         localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
-        showToast('⚠️ 保存失敗: ' + res.error.message);
-        return;
       }
-      if (res.data) newPay.id = res.data.id;
     } else {
       showToast('ℹ️ ログインしていないためデバイス内にのみ保存されます');
     }
   }
-  localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
   closeModal('payModal');
   renderSettings();
   updateBalanceDisplay();
