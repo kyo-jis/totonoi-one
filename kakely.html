@@ -150,10 +150,16 @@
     .btn-sm-icon { width: 28px; height: 28px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); font-size: .72rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .btn-add-row { width: 100%; padding: .65rem; background: none; border: 1px dashed var(--border); border-radius: 12px; color: var(--muted); font-size: .82rem; font-family: var(--font); cursor: pointer; margin-top: .35rem; }
     .btn-add-row:active { opacity: .7; }
-    .sort-btns { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
-    .btn-sort { width: 22px; height: 18px; border-radius: 4px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); font-size: .55rem; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
-    .btn-sort:disabled { opacity: .25; cursor: default; }
-    .btn-sort:not(:disabled):active { background: var(--surface3); }
+    .drag-handle { width: 24px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; touch-action: none; user-select: none; cursor: grab; }
+    .drag-handle::before { content: ''; display: block; width: 13px; height: 11px; background: repeating-linear-gradient(to bottom, var(--border) 0, var(--border) 2px, transparent 2px, transparent 5px); border-radius: 1px; transition: background .2s; }
+    .drag-handle:active::before, .drag-handle.active::before { background: repeating-linear-gradient(to bottom, var(--accent) 0, var(--accent) 2px, transparent 2px, transparent 5px); }
+    .drag-placeholder { border-radius: 12px; border: 1.5px dashed var(--accent); opacity: .35; margin-bottom: .35rem; }
+    /* View Transitions for pay reorder */
+    @keyframes vt-fade-in  { from { opacity: 0; transform: translateY(6px); } }
+    @keyframes vt-fade-out { to   { opacity: 0; transform: translateY(-6px); } }
+    ::view-transition-old(pay-reorder) { animation: 160ms ease-out both vt-fade-out; }
+    ::view-transition-new(pay-reorder) { animation: 200ms cubic-bezier(.34,1.56,.64,1) both vt-fade-in; }
+    #payList { view-transition-name: pay-reorder; }
 
     /* FAB */
     .fab { position: fixed; bottom: calc(60px + env(safe-area-inset-bottom)); right: 1.25rem; width: 56px; height: 56px; border-radius: 18px; background: var(--accent); color: #1a1000; border: none; font-size: 1.5rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 24px rgba(245,166,35,.45); z-index: 50; transition: transform .15s; }
@@ -1272,13 +1278,8 @@ function renderSettings() {
     if (p.type === 'card' && p.expiry) subParts.push(p.expiry);
     if (p.withdrawal_date) subParts.push(p.withdrawal_date + '日引き落とし');
     if (hasBalance) subParts.push('¥' + p.balance.toLocaleString());
-    var isFirst = idx === 0;
-    var isLast  = idx === paymentMethods.length - 1;
-    return '<div class="settings-row">'
-      + '<div class="sort-btns">'
-      + '<button class="btn-sort" onclick="movePayUp(\'' + p.id + '\')"' + (isFirst ? ' disabled' : '') + '>▲</button>'
-      + '<button class="btn-sort" onclick="movePayDown(\'' + p.id + '\')"' + (isLast ? ' disabled' : '') + '>▼</button>'
-      + '</div>'
+    return '<div class="settings-row" data-pay-id="' + p.id + '">'
+      + '<span class="drag-handle" onpointerdown="drDown(event,\'' + p.id + '\')" onpointermove="drMove(event)" onpointerup="drUp(event)" onpointercancel="drUp(event)"></span>'
       + '<span class="settings-icon">' + p.icon + '</span>'
       + '<div style="flex:1"><p class="settings-name">' + esc(p.name) + badge + '</p>'
       + '<p class="settings-sub">' + subParts.join(' · ') + '</p></div>'
@@ -1287,25 +1288,113 @@ function renderSettings() {
   }).join('');
 }
 
-// ── Payment Method Reorder ──
-function movePayUp(id) {
-  var idx = paymentMethods.findIndex(function(p){ return p.id === id; });
-  if (idx <= 0) return;
-  var tmp = paymentMethods[idx];
-  paymentMethods[idx] = paymentMethods[idx - 1];
-  paymentMethods[idx - 1] = tmp;
-  localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
-  renderSettings();
+// ── Drag-to-Reorder (Pointer Events API + View Transitions API) ──
+var _dr = { timer: null, active: false, el: null, ph: null, payId: null, startY: 0, fixedTop: 0, currentY: 0 };
+
+function drDown(e, payId) {
+  e.currentTarget.setPointerCapture(e.pointerId);
+  _dr.payId  = payId;
+  _dr.startY = e.clientY;
+  _dr.currentY = e.clientY;
+  e.currentTarget.classList.add('active');
+  _dr.timer = setTimeout(drActivate, 420);
 }
 
-function movePayDown(id) {
-  var idx = paymentMethods.findIndex(function(p){ return p.id === id; });
-  if (idx < 0 || idx >= paymentMethods.length - 1) return;
-  var tmp = paymentMethods[idx];
-  paymentMethods[idx] = paymentMethods[idx + 1];
-  paymentMethods[idx + 1] = tmp;
+function drMove(e) {
+  _dr.currentY = e.clientY;
+  if (!_dr.active) {
+    if (_dr.timer && Math.abs(_dr.currentY - _dr.startY) > 8) {
+      clearTimeout(_dr.timer);
+      _dr.timer = null;
+      if (_dr.el) _dr.el.querySelector('.drag-handle').classList.remove('active');
+      _dr.payId = null;
+    }
+    return;
+  }
+  var dy = _dr.currentY - _dr.startY;
+  _dr.el.style.top = (_dr.fixedTop + dy) + 'px';
+
+  var list = document.getElementById('payList');
+  var rows = Array.from(list.querySelectorAll('.settings-row'));
+  var mid  = _dr.currentY;
+  var ins  = null;
+  for (var i = 0; i < rows.length; i++) {
+    var rr = rows[i].getBoundingClientRect();
+    if (mid < rr.top + rr.height / 2) { ins = rows[i]; break; }
+  }
+  if (ins) list.insertBefore(_dr.ph, ins);
+  else list.appendChild(_dr.ph);
+}
+
+function drUp(e) {
+  clearTimeout(_dr.timer);
+  if (_dr.el) _dr.el.querySelector && _dr.el.querySelector('.drag-handle') && _dr.el.querySelector('.drag-handle').classList.remove('active');
+  if (!_dr.active) { _dr.payId = null; return; }
+
+  var list = document.getElementById('payList');
+  var newOrder = [];
+  Array.from(list.children).forEach(function(n) {
+    if (n === _dr.ph) newOrder.push(_dr.payId);
+    else if (n.dataset && n.dataset.payId && n.dataset.payId !== _dr.payId) newOrder.push(n.dataset.payId);
+  });
+  var dragged = paymentMethods.find(function(p){ return p.id === _dr.payId; });
+  var ordered = [];
+  newOrder.forEach(function(id) {
+    var pm = (id === _dr.payId) ? dragged : paymentMethods.find(function(p){ return p.id === id; });
+    if (pm) ordered.push(pm);
+  });
+  paymentMethods.forEach(function(pm){ if (ordered.indexOf(pm) === -1) ordered.push(pm); });
+  paymentMethods = ordered;
   localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
-  renderSettings();
+
+  _dr.el.style.cssText = '';
+  _dr.ph.remove();
+  _dr.active = false;
+  _dr.el = null;
+  _dr.ph = null;
+  _dr.payId = null;
+
+  if (document.startViewTransition) {
+    document.startViewTransition(function(){ renderSettings(); });
+  } else {
+    renderSettings();
+  }
+}
+
+function drActivate() {
+  if (navigator.vibrate) navigator.vibrate(28);
+  _dr.active = true;
+
+  var list = document.getElementById('payList');
+  _dr.el = list.querySelector('[data-pay-id="' + _dr.payId + '"]');
+  if (!_dr.el) { _dr.active = false; _dr.payId = null; return; }
+
+  var rect = _dr.el.getBoundingClientRect();
+  _dr.fixedTop = rect.top;
+  _dr.startY   = _dr.currentY;
+
+  _dr.ph = document.createElement('div');
+  _dr.ph.className = 'drag-placeholder';
+  _dr.ph.style.height = rect.height + 'px';
+  _dr.el.parentNode.insertBefore(_dr.ph, _dr.el);
+
+  _dr.el.style.cssText = [
+    'position:fixed',
+    'top:' + rect.top + 'px',
+    'left:' + rect.left + 'px',
+    'width:' + rect.width + 'px',
+    'z-index:200',
+    'margin:0',
+    'touch-action:none',
+    'box-shadow:0 12px 36px rgba(0,0,0,.55)',
+    'background:var(--surface2)',
+    'border-radius:12px',
+  ].join(';');
+
+  _dr.el.animate(
+    [{ transform: 'scale(1)' }, { transform: 'scale(1.04)' }],
+    { duration: 150, fill: 'forwards', easing: 'cubic-bezier(.34,1.56,.64,1)' }
+  );
 }
 
 // ── Tab ──
