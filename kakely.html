@@ -12,8 +12,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Kakely">
   <link rel="apple-touch-icon" href="/apple-touch-icon-kakely.png">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -650,6 +649,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 // ── Date helpers ──
 function localDateStr(d) {
@@ -744,7 +744,7 @@ function init() {
   updateMonthNav();
   loadFromStorage();
   renderAll();
-  autoAddFixedCosts();
+  setTimeout(autoAddFixedCosts, 100);
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw-kakely.js');
 }
 
@@ -770,10 +770,11 @@ function loadFromStorage() {
 function renderAll() {
   updateSummary();
   renderList();
-  renderCalendar();
-  renderSettings();
   updateBalanceDisplay();
-  if (document.getElementById('view-graph').classList.contains('active')) renderGraph();
+  // 非表示タブはタブ切り替え時に遅延レンダリング
+  if (document.getElementById('view-calendar').classList.contains('active')) renderCalendar();
+  if (document.getElementById('view-settings').classList.contains('active')) renderSettings();
+  if (document.getElementById('view-graph').classList.contains('active')) loadChartJs(renderGraph);
 }
 
 // ── Month Nav ──
@@ -870,7 +871,7 @@ function renderList() {
               ? 'deleteGroupTxns(\'' + t.group_id + '\',event)'
               : 'quickDeleteTxn(\'' + t.id + '\',event)';
           var amtPrefix = isTransfer ? (t.is_income ? '↙' : '↗') : (t.is_income ? '+' : '−');
-          return '<div class="txn-row" style="animation:slideIn .25s ease">'
+          return '<div class="txn-row">'
             + '<div class="txn-icon" onclick="openTxnModal(\'' + t.id + '\')" style="cursor:pointer">' + (isTransfer ? '💸' : (cat ? cat.icon : '❓')) + '</div>'
             + '<div class="txn-info" onclick="openTxnModal(\'' + t.id + '\')" style="cursor:pointer">'
             + '<p class="txn-name">' + nameLine + '</p>'
@@ -1429,14 +1430,29 @@ function drActivate() {
   );
 }
 
+// ── Chart.js 動的ロード ──
+var _chartJsLoading = false;
+var _chartJsQueue = [];
+function loadChartJs(cb) {
+  if (typeof Chart !== 'undefined') { cb(); return; }
+  _chartJsQueue.push(cb);
+  if (_chartJsLoading) return;
+  _chartJsLoading = true;
+  var s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+  s.onload = function() { _chartJsQueue.forEach(function(f){ f(); }); _chartJsQueue = []; };
+  document.head.appendChild(s);
+}
+
 // ── Tab ──
 function switchTab(name, btn) {
   document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.getElementById('view-' + name).classList.add('active');
   btn.classList.add('active');
-  if (name === 'graph') renderGraph();
+  if (name === 'graph')    loadChartJs(renderGraph);
   if (name === 'calendar') renderCalendar();
+  if (name === 'settings') renderSettings();
 }
 
 // ── Transaction Modal ──
