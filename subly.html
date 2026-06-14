@@ -808,25 +808,35 @@ function onCycleChange() {
   onStartDateChange();
 }
 
+// 月末日オーバーフロー防止（例: 1/31 + 1ヶ月 → 2/28、3/3にならない）
+function addMonthsPreserveDay(date, n) {
+  var origDay = date.getDate();
+  date.setDate(1);
+  date.setMonth(date.getMonth() + n);
+  var maxDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  date.setDate(Math.min(origDay, maxDay));
+  return date;
+}
+
 function calcNextBillingDate(startStr, cycle, customNum, customUnit) {
   if (!startStr || cycle === 'once') return '';
   var p = startStr.split('-');
-  var next = new Date(+p[0], +p[1]-1, +p[2]); // ローカル時刻で解釈
+  var next = new Date(+p[0], +p[1]-1, +p[2]);
   var now = new Date(); now.setHours(0,0,0,0);
   var max = 1000;
-  // 厳密な「より小さい」で判定: startDate当日はそのまま返す（翌月に進めない）
-  while (next < now && --max > 0) {
+  // 今日が請求日の場合も次回に進める（<=）
+  while (next <= now && --max > 0) {
     if (cycle === 'weekly')       next.setDate(next.getDate() + 7);
-    else if (cycle === 'monthly') next.setMonth(next.getMonth() + 1);
-    else if (cycle === '3months') next.setMonth(next.getMonth() + 3);
-    else if (cycle === '6months') next.setMonth(next.getMonth() + 6);
+    else if (cycle === 'monthly') addMonthsPreserveDay(next, 1);
+    else if (cycle === '3months') addMonthsPreserveDay(next, 3);
+    else if (cycle === '6months') addMonthsPreserveDay(next, 6);
     else if (cycle === 'yearly')  next.setFullYear(next.getFullYear() + 1);
     else if (cycle === '2years')  next.setFullYear(next.getFullYear() + 2);
     else if (cycle === '3years')  next.setFullYear(next.getFullYear() + 3);
     else if (cycle === 'custom') {
       var n = parseInt(customNum) || 1;
       if (customUnit === 'years') next.setFullYear(next.getFullYear() + n);
-      else next.setMonth(next.getMonth() + n);
+      else addMonthsPreserveDay(next, n);
     } else break;
   }
   var y = next.getFullYear();
@@ -897,7 +907,7 @@ function autoRecordHistory() {
         bill.setDate(bill.getDate() + 7);
       } else {
         var m = cycleToMonths(s);
-        if (m >= 1) bill.setMonth(bill.getMonth() + Math.round(m));
+        if (m >= 1) addMonthsPreserveDay(bill, Math.round(m));
         else bill.setDate(bill.getDate() + Math.round(m * 30));
       }
       updated = true;
