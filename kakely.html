@@ -159,7 +159,9 @@
     @keyframes vt-fade-out { to   { opacity: 0; transform: translateY(-6px); } }
     ::view-transition-old(pay-reorder) { animation: 160ms ease-out both vt-fade-out; }
     ::view-transition-new(pay-reorder) { animation: 200ms cubic-bezier(.34,1.56,.64,1) both vt-fade-in; }
-    #payList { view-transition-name: pay-reorder; }
+    #payList   { view-transition-name: pay-reorder; }
+    #catList   { view-transition-name: cat-reorder; }
+    #fixedList { view-transition-name: fixed-reorder; }
 
     /* FAB */
     .fab { position: fixed; bottom: calc(60px + env(safe-area-inset-bottom)); right: 1.25rem; width: 56px; height: 56px; border-radius: 18px; background: var(--accent); color: #1a1000; border: none; font-size: 1.5rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 24px rgba(245,166,35,.45); z-index: 50; transition: transform .15s; }
@@ -1239,7 +1241,8 @@ function renderSettings() {
   if (fixedEl) {
     fixedEl.innerHTML = fixedCosts.length ? fixedCosts.map(function(fc) {
       var cat = categories.find(function(c){ return c.id===fc.category_id; });
-      return '<div class="settings-row">'
+      return '<div class="settings-row" data-fixed-id="' + fc.id + '">'
+        + '<span class="drag-handle" onpointerdown="drDown(event,\'fixed\',\'' + fc.id + '\')" onpointermove="drMove(event)" onpointerup="drUp(event)" onpointercancel="drUp(event)"></span>'
         + '<span class="settings-icon">' + (fc.icon||'💴') + '</span>'
         + '<div style="flex:1"><p class="settings-name">' + esc(fc.name)
         + '<span class="fixed-day-badge">毎月' + fc.day + '日</span></p>'
@@ -1251,7 +1254,8 @@ function renderSettings() {
   // Categories
   var catEl = document.getElementById('catList');
   catEl.innerHTML = categories.map(function(c) {
-    return '<div class="settings-row">'
+    return '<div class="settings-row" data-cat-id="' + c.id + '">'
+      + '<span class="drag-handle" onpointerdown="drDown(event,\'cat\',\'' + c.id + '\')" onpointermove="drMove(event)" onpointerup="drUp(event)" onpointercancel="drUp(event)"></span>'
       + '<span class="settings-icon">' + c.icon + '</span>'
       + '<div><p class="settings-name">' + c.name + '</p>'
       + (c.budget ? '<p class="settings-sub">予算 ¥' + c.budget.toLocaleString() + '/月</p>' : '') + '</div>'
@@ -1279,7 +1283,7 @@ function renderSettings() {
     if (p.withdrawal_date) subParts.push(p.withdrawal_date + '日引き落とし');
     if (hasBalance) subParts.push('¥' + p.balance.toLocaleString());
     return '<div class="settings-row" data-pay-id="' + p.id + '">'
-      + '<span class="drag-handle" onpointerdown="drDown(event,\'' + p.id + '\')" onpointermove="drMove(event)" onpointerup="drUp(event)" onpointercancel="drUp(event)"></span>'
+      + '<span class="drag-handle" onpointerdown="drDown(event,\'pay\',\'' + p.id + '\')" onpointermove="drMove(event)" onpointerup="drUp(event)" onpointercancel="drUp(event)"></span>'
       + '<span class="settings-icon">' + p.icon + '</span>'
       + '<div style="flex:1"><p class="settings-name">' + esc(p.name) + badge + '</p>'
       + '<p class="settings-sub">' + subParts.join(' · ') + '</p></div>'
@@ -1289,12 +1293,16 @@ function renderSettings() {
 }
 
 // ── Drag-to-Reorder (Pointer Events API + View Transitions API) ──
-var _dr = { timer: null, active: false, el: null, ph: null, payId: null, startY: 0, fixedTop: 0, currentY: 0 };
+var _dr = { timer: null, active: false, el: null, ph: null, id: null, type: null, startY: 0, fixedTop: 0, currentY: 0 };
 
-function drDown(e, payId) {
+var _drListId = { pay: 'payList', cat: 'catList', fixed: 'fixedList' };
+var _drAttr   = { pay: 'payId',   cat: 'catId',   fixed: 'fixedId'   };
+
+function drDown(e, type, id) {
   e.currentTarget.setPointerCapture(e.pointerId);
-  _dr.payId  = payId;
-  _dr.startY = e.clientY;
+  _dr.id   = id;
+  _dr.type = type;
+  _dr.startY   = e.clientY;
   _dr.currentY = e.clientY;
   e.currentTarget.classList.add('active');
   _dr.timer = setTimeout(drActivate, 420);
@@ -1306,21 +1314,17 @@ function drMove(e) {
     if (_dr.timer && Math.abs(_dr.currentY - _dr.startY) > 8) {
       clearTimeout(_dr.timer);
       _dr.timer = null;
-      if (_dr.el) _dr.el.querySelector('.drag-handle').classList.remove('active');
-      _dr.payId = null;
+      _dr.id = null;
     }
     return;
   }
-  var dy = _dr.currentY - _dr.startY;
-  _dr.el.style.top = (_dr.fixedTop + dy) + 'px';
-
-  var list = document.getElementById('payList');
+  _dr.el.style.top = (_dr.fixedTop + (_dr.currentY - _dr.startY)) + 'px';
+  var list = document.getElementById(_drListId[_dr.type]);
   var rows = Array.from(list.querySelectorAll('.settings-row'));
-  var mid  = _dr.currentY;
-  var ins  = null;
+  var ins = null;
   for (var i = 0; i < rows.length; i++) {
     var rr = rows[i].getBoundingClientRect();
-    if (mid < rr.top + rr.height / 2) { ins = rows[i]; break; }
+    if (_dr.currentY < rr.top + rr.height / 2) { ins = rows[i]; break; }
   }
   if (ins) list.insertBefore(_dr.ph, ins);
   else list.appendChild(_dr.ph);
@@ -1328,31 +1332,58 @@ function drMove(e) {
 
 function drUp(e) {
   clearTimeout(_dr.timer);
-  if (_dr.el) _dr.el.querySelector && _dr.el.querySelector('.drag-handle') && _dr.el.querySelector('.drag-handle').classList.remove('active');
-  if (!_dr.active) { _dr.payId = null; return; }
+  var h = _dr.el && _dr.el.querySelector('.drag-handle');
+  if (h) h.classList.remove('active');
+  if (!_dr.active) { _dr.id = null; return; }
 
-  var list = document.getElementById('payList');
+  var dsKey = _drAttr[_dr.type];
+  var list  = document.getElementById(_drListId[_dr.type]);
   var newOrder = [];
   Array.from(list.children).forEach(function(n) {
-    if (n === _dr.ph) newOrder.push(_dr.payId);
-    else if (n.dataset && n.dataset.payId && n.dataset.payId !== _dr.payId) newOrder.push(n.dataset.payId);
+    if (n === _dr.ph) newOrder.push(_dr.id);
+    else if (n.dataset && n.dataset[dsKey] && n.dataset[dsKey] !== _dr.id) newOrder.push(n.dataset[dsKey]);
   });
-  var dragged = paymentMethods.find(function(p){ return p.id === _dr.payId; });
-  var ordered = [];
-  newOrder.forEach(function(id) {
-    var pm = (id === _dr.payId) ? dragged : paymentMethods.find(function(p){ return p.id === id; });
-    if (pm) ordered.push(pm);
-  });
-  paymentMethods.forEach(function(pm){ if (ordered.indexOf(pm) === -1) ordered.push(pm); });
-  paymentMethods = ordered;
-  localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
+
+  function reorder(arr) {
+    var dragged = arr.find(function(x){ return x.id === _dr.id; });
+    var ordered = [];
+    newOrder.forEach(function(id) {
+      var item = id === _dr.id ? dragged : arr.find(function(x){ return x.id === id; });
+      if (item) ordered.push(item);
+    });
+    arr.forEach(function(x){ if (ordered.indexOf(x) === -1) ordered.push(x); });
+    return ordered;
+  }
+
+  if (_dr.type === 'pay') {
+    paymentMethods = reorder(paymentMethods);
+    localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
+  } else if (_dr.type === 'cat') {
+    categories = reorder(categories);
+    categories.forEach(function(c, i){ c.sort_order = i; });
+    localStorage.setItem('kakely_cats', JSON.stringify(categories));
+    if (currentUser) {
+      _sb.from('kakely_categories').upsert(
+        categories.map(function(c, i){ return { id: c.id, user_id: currentUser.id, sort_order: i }; })
+      );
+    }
+  } else if (_dr.type === 'fixed') {
+    fixedCosts = reorder(fixedCosts);
+    localStorage.setItem('kakely_fixed', JSON.stringify(fixedCosts));
+    if (currentUser) {
+      _sb.from('user_data').upsert(
+        { user_id: currentUser.id, app: 'kakely', key: 'fixed_costs', data: fixedCosts },
+        { onConflict: 'user_id,app,key' }
+      );
+    }
+  }
 
   _dr.el.style.cssText = '';
   _dr.ph.remove();
   _dr.active = false;
   _dr.el = null;
   _dr.ph = null;
-  _dr.payId = null;
+  _dr.id = null;
 
   if (document.startViewTransition) {
     document.startViewTransition(function(){ renderSettings(); });
@@ -1365,9 +1396,10 @@ function drActivate() {
   if (navigator.vibrate) navigator.vibrate(28);
   _dr.active = true;
 
-  var list = document.getElementById('payList');
-  _dr.el = list.querySelector('[data-pay-id="' + _dr.payId + '"]');
-  if (!_dr.el) { _dr.active = false; _dr.payId = null; return; }
+  var list = document.getElementById(_drListId[_dr.type]);
+  var attr = 'data-' + _dr.type + '-id';
+  _dr.el = list.querySelector('[' + attr + '="' + _dr.id + '"]');
+  if (!_dr.el) { _dr.active = false; _dr.id = null; return; }
 
   var rect = _dr.el.getBoundingClientRect();
   _dr.fixedTop = rect.top;
