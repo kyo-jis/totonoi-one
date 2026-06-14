@@ -150,6 +150,10 @@
     .btn-sm-icon { width: 28px; height: 28px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); font-size: .72rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .btn-add-row { width: 100%; padding: .65rem; background: none; border: 1px dashed var(--border); border-radius: 12px; color: var(--muted); font-size: .82rem; font-family: var(--font); cursor: pointer; margin-top: .35rem; }
     .btn-add-row:active { opacity: .7; }
+    .sort-btns { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+    .btn-sort { width: 22px; height: 18px; border-radius: 4px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); font-size: .55rem; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
+    .btn-sort:disabled { opacity: .25; cursor: default; }
+    .btn-sort:not(:disabled):active { background: var(--surface3); }
 
     /* FAB */
     .fab { position: fixed; bottom: calc(60px + env(safe-area-inset-bottom)); right: 1.25rem; width: 56px; height: 56px; border-radius: 18px; background: var(--accent); color: #1a1000; border: none; font-size: 1.5rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 24px rgba(245,166,35,.45); z-index: 50; transition: transform .15s; }
@@ -505,6 +509,22 @@
         <option value="bank">銀行口座</option>
       </select>
     </div>
+    <div class="form-group" id="cardBrandWrap" style="display:none">
+      <label class="form-label">ブランド</label>
+      <select id="fCardBrand">
+        <option value="">未選択</option>
+        <option value="Visa">Visa</option>
+        <option value="Mastercard">Mastercard</option>
+        <option value="JCB">JCB</option>
+        <option value="American Express">American Express</option>
+        <option value="Diners Club">Diners Club</option>
+        <option value="その他">その他</option>
+      </select>
+    </div>
+    <div class="form-group" id="cardExpiryWrap" style="display:none">
+      <label class="form-label">有効期限（MM/YY）</label>
+      <input type="text" id="fCardExpiry" placeholder="12/28" maxlength="5" inputmode="numeric">
+    </div>
     <div class="form-group" id="withdrawalWrap" style="display:none">
       <label class="form-label">引き落とし日</label>
       <input type="number" id="fWithdrawal" placeholder="27" min="1" max="31" inputmode="numeric">
@@ -690,12 +710,18 @@ var DEFAULT_CATS = [
 ];
 
 var DEFAULT_PAYS = [
-  {icon:'💴',name:'現金',        type:'cash',   withdrawal_date:null},
-  {icon:'💳',name:'クレジットカード',type:'card',   withdrawal_date:27},
-  {icon:'📱',name:'PayPay',      type:'emoney', withdrawal_date:null},
-  {icon:'🚃',name:'Suica・交通系IC',type:'emoney',withdrawal_date:null},
-  {icon:'🔴',name:'楽天ペイ',    type:'emoney', withdrawal_date:null},
-  {icon:'🏦',name:'銀行口座',    type:'bank',   withdrawal_date:null},
+  {icon:'💴',name:'現金',          type:'cash',   withdrawal_date:null},
+  {icon:'💳',name:'クレジットカード', type:'card',   withdrawal_date:27},
+  {icon:'📱',name:'PayPay',        type:'emoney', withdrawal_date:null},
+  {icon:'🚃',name:'Suica',         type:'emoney', withdrawal_date:null},
+  {icon:'🚌',name:'PASMO',         type:'emoney', withdrawal_date:null},
+  {icon:'🔴',name:'楽天ペイ',      type:'emoney', withdrawal_date:null},
+  {icon:'📲',name:'d払い',         type:'emoney', withdrawal_date:null},
+  {icon:'🟡',name:'au PAY',        type:'emoney', withdrawal_date:null},
+  {icon:'🟠',name:'nanaco',        type:'emoney', withdrawal_date:null},
+  {icon:'🐕',name:'WAON',          type:'emoney', withdrawal_date:null},
+  {icon:'💚',name:'LINE Pay',      type:'emoney', withdrawal_date:null},
+  {icon:'🏦',name:'銀行口座',      type:'bank',   withdrawal_date:null},
 ];
 
 var CAT_COLORS = [
@@ -1229,7 +1255,7 @@ function renderSettings() {
   // Payment methods
   var PAY_TYPE = { cash:'現金', card:'クレカ', emoney:'電子マネー', bank:'銀行口座' };
   var payEl = document.getElementById('payList');
-  payEl.innerHTML = paymentMethods.map(function(p) {
+  payEl.innerHTML = paymentMethods.map(function(p, idx) {
     var isCash = p.type === 'cash';
     var isEmoney = p.type === 'emoney';
     var hasBalance = (isCash || isEmoney) && p.balance != null;
@@ -1241,15 +1267,45 @@ function renderSettings() {
     var chargeBtn = isEmoney && hasBalance
       ? '<button class="btn-charge" onclick="openChargeModal(\'' + p.id + '\')">チャージ</button>'
       : '';
+    var subParts = [PAY_TYPE[p.type]||p.type];
+    if (p.type === 'card' && p.brand) subParts.push(p.brand);
+    if (p.type === 'card' && p.expiry) subParts.push(p.expiry);
+    if (p.withdrawal_date) subParts.push(p.withdrawal_date + '日引き落とし');
+    if (hasBalance) subParts.push('¥' + p.balance.toLocaleString());
+    var isFirst = idx === 0;
+    var isLast  = idx === paymentMethods.length - 1;
     return '<div class="settings-row">'
+      + '<div class="sort-btns">'
+      + '<button class="btn-sort" onclick="movePayUp(\'' + p.id + '\')"' + (isFirst ? ' disabled' : '') + '>▲</button>'
+      + '<button class="btn-sort" onclick="movePayDown(\'' + p.id + '\')"' + (isLast ? ' disabled' : '') + '>▼</button>'
+      + '</div>'
       + '<span class="settings-icon">' + p.icon + '</span>'
       + '<div style="flex:1"><p class="settings-name">' + esc(p.name) + badge + '</p>'
-      + '<p class="settings-sub">' + (PAY_TYPE[p.type]||p.type)
-      + (p.withdrawal_date ? ' · ' + p.withdrawal_date + '日引き落とし' : '')
-      + (hasBalance ? '　¥' + p.balance.toLocaleString() : '') + '</p></div>'
+      + '<p class="settings-sub">' + subParts.join(' · ') + '</p></div>'
       + chargeBtn
       + '<button class="btn-sm-icon" onclick="openPayModal(\'' + p.id + '\')">✏️</button></div>';
   }).join('');
+}
+
+// ── Payment Method Reorder ──
+function movePayUp(id) {
+  var idx = paymentMethods.findIndex(function(p){ return p.id === id; });
+  if (idx <= 0) return;
+  var tmp = paymentMethods[idx];
+  paymentMethods[idx] = paymentMethods[idx - 1];
+  paymentMethods[idx - 1] = tmp;
+  localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
+  renderSettings();
+}
+
+function movePayDown(id) {
+  var idx = paymentMethods.findIndex(function(p){ return p.id === id; });
+  if (idx < 0 || idx >= paymentMethods.length - 1) return;
+  var tmp = paymentMethods[idx];
+  paymentMethods[idx] = paymentMethods[idx + 1];
+  paymentMethods[idx + 1] = tmp;
+  localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
+  renderSettings();
 }
 
 // ── Tab ──
@@ -1546,16 +1602,25 @@ function openPayModal(id) {
     document.getElementById('fPayName').value = p.name;
     document.getElementById('fPayType').value = p.type;
     document.getElementById('fWithdrawal').value = p.withdrawal_date || '';
+    document.getElementById('fCardBrand').value  = p.brand || '';
+    document.getElementById('fCardExpiry').value = p.expiry || '';
     var hasBalType = p.type === 'cash' || p.type === 'emoney';
-    document.getElementById('fBalance').value     = hasBalType && p.balance != null ? p.balance : '';
-    document.getElementById('withdrawalWrap').style.display = p.type === 'card' ? '' : 'none';
+    var isCard = p.type === 'card';
+    document.getElementById('fBalance').value       = hasBalType && p.balance != null ? p.balance : '';
+    document.getElementById('cardBrandWrap').style.display  = isCard ? '' : 'none';
+    document.getElementById('cardExpiryWrap').style.display = isCard ? '' : 'none';
+    document.getElementById('withdrawalWrap').style.display = isCard ? '' : 'none';
     document.getElementById('balanceWrap').style.display    = hasBalType ? '' : 'none';
   } else {
-    document.getElementById('fPayIcon').value = '';
-    document.getElementById('fPayName').value = '';
-    document.getElementById('fPayType').value = 'cash';
+    document.getElementById('fPayIcon').value   = '';
+    document.getElementById('fPayName').value   = '';
+    document.getElementById('fPayType').value   = 'cash';
     document.getElementById('fWithdrawal').value = '';
-    document.getElementById('fBalance').value = '';
+    document.getElementById('fCardBrand').value  = '';
+    document.getElementById('fCardExpiry').value = '';
+    document.getElementById('fBalance').value   = '';
+    document.getElementById('cardBrandWrap').style.display  = 'none';
+    document.getElementById('cardExpiryWrap').style.display = 'none';
     document.getElementById('withdrawalWrap').style.display = 'none';
     document.getElementById('balanceWrap').style.display    = '';
   }
@@ -1563,15 +1628,20 @@ function openPayModal(id) {
 }
 
 document.getElementById('fPayType').addEventListener('change', function() {
-  document.getElementById('withdrawalWrap').style.display = this.value === 'card' ? '' : 'none';
-  document.getElementById('balanceWrap').style.display   = (this.value === 'cash' || this.value === 'emoney') ? '' : 'none';
+  var isCard = this.value === 'card';
+  document.getElementById('cardBrandWrap').style.display  = isCard ? '' : 'none';
+  document.getElementById('cardExpiryWrap').style.display = isCard ? '' : 'none';
+  document.getElementById('withdrawalWrap').style.display = isCard ? '' : 'none';
+  document.getElementById('balanceWrap').style.display    = (this.value === 'cash' || this.value === 'emoney') ? '' : 'none';
 });
 
 async function savePay() {
-  var icon = document.getElementById('fPayIcon').value.trim() || '💳';
-  var name = document.getElementById('fPayName').value.trim();
-  var type = document.getElementById('fPayType').value;
-  var wd   = parseInt(document.getElementById('fWithdrawal').value) || null;
+  var icon   = document.getElementById('fPayIcon').value.trim() || '💳';
+  var name   = document.getElementById('fPayName').value.trim();
+  var type   = document.getElementById('fPayType').value;
+  var wd     = parseInt(document.getElementById('fWithdrawal').value) || null;
+  var brand  = type === 'card' ? (document.getElementById('fCardBrand').value.trim() || null) : null;
+  var expiry = type === 'card' ? (document.getElementById('fCardExpiry').value.trim() || null) : null;
   if (!name) { showToast('名前を入力してください'); return; }
 
   var bal = (type === 'cash' || type === 'emoney') ? (document.getElementById('fBalance').value !== '' ? parseInt(document.getElementById('fBalance').value) : null) : null;
@@ -1579,6 +1649,8 @@ async function savePay() {
   // null値を除外したペイロード（カラム不一致エラーを防ぐ）
   var payload = { icon: icon, name: name, type: type };
   if (wd != null) payload.withdrawal_date = wd;
+  if (brand != null) payload.brand = brand;
+  if (expiry != null) payload.expiry = expiry;
   if (bal != null) payload.balance = bal;
 
   if (editPayId) {
@@ -1806,16 +1878,28 @@ async function syncFromCloud() {
       var localOnly = localPays.filter(function(p){ return cloudIds.indexOf(p.id) === -1; });
       // ローカルのbalanceをSupabaseのnullで上書きしない（IDで一致）
       paymentMethods = payRes.data.map(function(p) {
-        if (p.balance != null) return p;
         var local = localPays.find(function(l){ return l.id === p.id; });
-        return (local && local.balance != null) ? Object.assign({}, p, { balance: local.balance }) : p;
+        var merged = Object.assign({}, p);
+        if (p.balance == null && local && local.balance != null) merged.balance = local.balance;
+        return merged;
       });
       // ローカルのみの項目をSupabaseにアップロード
       for (var li = 0; li < localOnly.length; li++) {
         var lp = localOnly[li];
         var lpPayload = { icon: lp.icon, name: lp.name, type: lp.type, withdrawal_date: lp.withdrawal_date || null, balance: lp.balance || null };
+        if (lp.brand) lpPayload.brand = lp.brand;
+        if (lp.expiry) lpPayload.expiry = lp.expiry;
         var upr = await _sb.from('kakely_payment_methods').insert(Object.assign({ user_id: currentUser.id }, lpPayload)).select().single();
         if (upr.data) paymentMethods.push(upr.data);
+      }
+      // ローカルの並び順を保持
+      var localOrder = localPays.map(function(p){ return p.id; });
+      if (localOrder.length > 0) {
+        paymentMethods.sort(function(a, b) {
+          var ai = localOrder.indexOf(a.id); if (ai === -1) ai = 9999;
+          var bi = localOrder.indexOf(b.id); if (bi === -1) bi = 9999;
+          return ai - bi;
+        });
       }
     }
     localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
