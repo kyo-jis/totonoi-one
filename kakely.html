@@ -1742,9 +1742,11 @@ async function savePay() {
   if (expiry != null) localPayload.expiry = expiry;
   if (bal != null) localPayload.balance = bal;
 
-  // Supabase用（既存カラムのみ）
+  // Supabase用
   var dbPayload = { icon: icon, name: name, type: type };
   if (wd != null) dbPayload.withdrawal_date = wd;
+  if (brand != null) dbPayload.brand = brand;
+  if (expiry != null) dbPayload.expiry = expiry;
   if (bal != null) dbPayload.balance = bal;
 
   if (editPayId) {

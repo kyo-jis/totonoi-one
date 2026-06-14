@@ -24,6 +24,8 @@ create table if not exists kakely_payment_methods (
   type text not null default 'cash',
   withdrawal_date integer,
   balance integer,
+  brand text,
+  expiry text,
   created_at timestamptz default now()
 );
 alter table kakely_payment_methods enable row level security;
