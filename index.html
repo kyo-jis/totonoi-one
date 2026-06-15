@@ -13,6 +13,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Totonoi One">
   <link rel="apple-touch-icon" href="/apple-touch-icon-portal.png">
+  <script>if(localStorage.getItem('tototheme')==='light')document.documentElement.setAttribute('data-theme','light');</script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -28,6 +29,27 @@
       --shadow-sm: 0 2px 10px rgba(0,0,0,.3);
       --spring: cubic-bezier(.34,1.56,.64,1);
     }
+    [data-theme="light"] {
+      --bg: #e8e7f5;
+      --surface: #f4f3fc;
+      --border: #c8c6e6;
+      --ink: #1a1838;
+      --muted: #686898;
+    }
+    [data-theme="light"] body { background: radial-gradient(ellipse 75% 45% at 12% 4%, rgba(94,207,160,.07) 0%, transparent 100%), radial-gradient(ellipse 65% 45% at 88% 92%, rgba(108,142,255,.06) 0%, transparent 100%), var(--bg); }
+    [data-theme="light"] .modal { background: var(--surface); border-color: var(--border); }
+    [data-theme="light"] .modal-handle { background: var(--border); }
+    [data-theme="light"] .form-group input { background: #eae9f8; border-color: var(--border); color: var(--ink); }
+    [data-theme="light"] .bento-edit-item { background: var(--surface); border-color: var(--border); }
+    [data-theme="light"] .bento-edit-arrow { background: #eae9f8; color: var(--ink); }
+    [data-theme="light"] .bento-edit-vis:active { background: #eae9f8; }
+    [data-theme="light"] .auth-chip { background: rgba(0,0,0,.06); border-color: rgba(0,0,0,.12); color: var(--muted); }
+    [data-theme="light"] .auth-chip.logged-in { border-color: rgba(94,207,160,.5); color: #2a9468; }
+    [data-theme="light"] .edit-dash-btn { background: rgba(0,0,0,.06); border-color: rgba(0,0,0,.12); }
+    [data-theme="light"] .theme-btn-idx { background: rgba(0,0,0,.06); border-color: rgba(0,0,0,.12); }
+    [data-theme="light"] .login-notice { background: rgba(100,100,160,.07); border-color: rgba(100,100,160,.2); }
+    [data-theme="light"] .backup-app-row, [data-theme="light"] .admin-stat { background: var(--surface); border-color: var(--border); }
+    [data-theme="light"] .backup-btn { background: var(--surface); border-color: var(--border); }
 
     html { font-size: 16px; }
 
@@ -37,6 +59,7 @@
       font-family: var(--font);
       font-weight: 400;
       min-height: 100vh;
+      transition: background .25s, color .25s;
     }
 
     /* ── Header ── */
@@ -242,8 +265,10 @@
     .header-row { display:flex; justify-content:flex-end; align-items:center; padding:.75rem 1.25rem 0; gap:.5rem; }
     .edit-dash-btn { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); transition:all .2s; }
     .edit-dash-btn:active { background:rgba(255,255,255,.1); color:var(--ink); }
+    .theme-btn-idx { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:20px; width:2rem; height:2rem; display:flex; align-items:center; justify-content:center; font-size:.85rem; cursor:pointer; transition:all .2s; }
+    .theme-btn-idx:active { transform:scale(.88); background:rgba(255,255,255,.1); }
     /* Bento edit modal */
-    .bento-edit-item { display:flex; align-items:center; gap:.6rem; padding:.65rem .75rem; background:var(--surface); border:1px solid var(--border); border-radius:12px; margin-bottom:.4rem; transition:opacity .2s; }
+    .bento-edit-item { display:flex; align-items:center; gap:.6rem; padding:.65rem .75rem; background:var(--surface); border:1px solid var(--border); border-radius:12px; margin-bottom:.4rem; transition:opacity .2s; touch-action:none; user-select:none; }
     .bento-edit-item.is-hidden { opacity:.4; }
     .bento-edit-vis { width:30px; height:30px; border-radius:8px; border:1px solid var(--border); background:none; font-size:.85rem; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .15s; }
     .bento-edit-vis:active { background:#2a2a3a; }
@@ -251,10 +276,8 @@
     .bento-edit-info { flex:1; min-width:0; }
     .bento-edit-name { font-size:.85rem; font-weight:500; }
     .bento-edit-tag { font-size:.65rem; color:var(--muted); margin-top:.1rem; }
-    .bento-edit-arrows { display:flex; gap:.25rem; flex-shrink:0; }
-    .bento-edit-arrow { width:28px; height:28px; border-radius:7px; border:1px solid var(--border); background:#1a1a2e; color:var(--muted); font-size:.75rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
-    .bento-edit-arrow:active { background:#2a2a3a; color:var(--ink); }
-    .bento-edit-arrow:disabled { opacity:.2; cursor:default; }
+    .bento-edit-drag { font-size:1.1rem; color:var(--muted); cursor:grab; flex-shrink:0; padding:0 .1rem; touch-action:none; }
+    .bento-edit-item.bdr-lifted { border-radius:12px; }
 
     /* ── Modal ── */
     .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); backdrop-filter:blur(6px); z-index:100; display:none; align-items:flex-end; }
@@ -319,6 +342,7 @@
   <div class="header-row">
     <button class="edit-dash-btn" onclick="openBentoEdit()">⚙️ 編集</button>
     <button class="admin-dash-btn" id="adminDashBtn" onclick="openAdminDash()" style="display:none">📊 管理</button>
+    <button class="theme-btn-idx" id="themeBtnIdx" onclick="toggleTheme()">🌙</button>
     <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
   </div>
 
@@ -510,7 +534,7 @@
     <div class="modal">
       <div class="modal-handle"></div>
       <p class="modal-title">ダッシュボードをカスタマイズ</p>
-      <p style="font-size:.75rem;color:var(--muted);margin-bottom:1rem;">👁 で表示/非表示、▲▼ で並び替え</p>
+      <p style="font-size:.75rem;color:var(--muted);margin-bottom:1rem;">👁 で表示/非表示　長押しでドラッグ並び替え</p>
       <div id="bentoEditList"></div>
       <button class="btn-primary" onclick="saveBentoPrefs()" style="margin-top:.75rem;">保存する</button>
       <button class="btn-cancel" onclick="resetBentoPrefs()" style="font-size:.72rem;color:var(--muted);">デフォルトに戻す</button>
@@ -532,6 +556,30 @@
   </div>
 
   <script>
+    // ── Theme ──
+    function toggleTheme() {
+      var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+      if (isLight) {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('tototheme', 'dark');
+        document.getElementById('themeBtnIdx').textContent = '🌙';
+        document.querySelector('meta[name="theme-color"]').content = '#0f0f14';
+      } else {
+        document.documentElement.setAttribute('data-theme', 'light');
+        localStorage.setItem('tototheme', 'light');
+        document.getElementById('themeBtnIdx').textContent = '☀️';
+        document.querySelector('meta[name="theme-color"]').content = '#e8e7f5';
+      }
+    }
+    (function() {
+      var t = localStorage.getItem('tototheme');
+      var btn = document.getElementById('themeBtnIdx');
+      if (t === 'light') {
+        if (btn) btn.textContent = '☀️';
+        document.querySelector('meta[name="theme-color"]').content = '#e8e7f5';
+      }
+    })();
+
     var _sb = window.supabase.createClient(
       'https://foknpmvpgbkwgpmlgzrn.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZva25wbXZwZ2Jrd2dwbWxnenJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyODc4NTksImV4cCI6MjA5NTg2Mzg1OX0.6KP9_m4Q6x0hs7IsinNhZsODmZCjrvAL1CxtbQ32-80'
@@ -774,19 +822,17 @@
     }
 
     function renderBentoEditList() {
-      document.getElementById('bentoEditList').innerHTML = _editOrder.map(function(key, i) {
+      document.getElementById('bentoEditList').innerHTML = _editOrder.map(function(key) {
         var m = APP_META[key] || {};
         var hidden = _editHidden.indexOf(key) !== -1;
-        return '<div class="bento-edit-item'+(hidden?' is-hidden':'')+'">'
-          +'<button class="bento-edit-vis" onclick="toggleBentoHidden(\''+key+'\')">'+(hidden?'🚫':'👁')+'</button>'
+        return '<div class="bento-edit-item'+(hidden?' is-hidden':'')+'" data-key="'+key+'" '
+          +'onpointerdown="bentoDrDown(event,\''+key+'\')" onpointermove="bentoDrMove(event)" onpointerup="bentoDrUp(event)" onpointercancel="bentoDrUp(event)">'
+          +'<span class="bento-edit-drag">≡</span>'
+          +'<button class="bento-edit-vis" onclick="event.stopPropagation();toggleBentoHidden(\''+key+'\')">'+(hidden?'🚫':'👁')+'</button>'
           +'<div class="bento-edit-dot" style="background:'+(APP_COLORS[key]||'#666')+'"></div>'
           +'<div class="bento-edit-info">'
             +'<p class="bento-edit-name">'+(m.icon||'')+'  '+(m.name||key)+'</p>'
             +'<p class="bento-edit-tag">'+(m.tag||'')+(m.soon?' · Soon':'')+'</p>'
-          +'</div>'
-          +'<div class="bento-edit-arrows">'
-            +'<button class="bento-edit-arrow" onclick="moveBentoItem('+i+',-1)"'+(i===0?' disabled':'')+'>▲</button>'
-            +'<button class="bento-edit-arrow" onclick="moveBentoItem('+i+',1)"'+(i===_editOrder.length-1?' disabled':'')+'>▼</button>'
           +'</div>'
           +'</div>';
       }).join('');
@@ -799,10 +845,56 @@
       renderBentoEditList();
     }
 
-    function moveBentoItem(i, dir) {
-      var j = i + dir;
-      if (j < 0 || j >= _editOrder.length) return;
-      var tmp = _editOrder[i]; _editOrder[i] = _editOrder[j]; _editOrder[j] = tmp;
+    // ── Bento Drag ──
+    var _bdr = { timer:null, active:false, el:null, ph:null, id:null, startY:0, fixedTop:0, fixedLeft:0, w:0 };
+
+    function bentoDrDown(e, key) {
+      if (e.button && e.button !== 0) return;
+      e.currentTarget.setPointerCapture(e.pointerId);
+      _bdr.id = key; _bdr.startY = e.clientY; _bdr.el = e.currentTarget;
+      _bdr.timer = setTimeout(bentoDrActivate, 420);
+    }
+
+    function bentoDrActivate() {
+      _bdr.active = true;
+      var el = _bdr.el;
+      var rect = el.getBoundingClientRect();
+      _bdr.fixedTop = rect.top; _bdr.fixedLeft = rect.left; _bdr.w = rect.width;
+      _bdr.ph = document.createElement('div');
+      _bdr.ph.className = 'bento-edit-item';
+      _bdr.ph.style.cssText = 'height:'+rect.height+'px;background:rgba(155,109,255,.12);border:1px dashed rgba(155,109,255,.35);pointer-events:none;';
+      el.parentNode.insertBefore(_bdr.ph, el.nextSibling);
+      el.style.cssText = 'position:fixed;top:'+rect.top+'px;left:'+rect.left+'px;width:'+rect.width+'px;z-index:999;transform:scale(1.03);box-shadow:0 8px 32px rgba(0,0,0,.5);border-radius:12px;transition:transform .15s,box-shadow .15s;';
+      navigator.vibrate && navigator.vibrate(28);
+    }
+
+    function bentoDrMove(e) {
+      if (!_bdr.active) return;
+      _bdr.el.style.top = (_bdr.fixedTop + e.clientY - _bdr.startY) + 'px';
+      var list = document.getElementById('bentoEditList');
+      var items = Array.from(list.querySelectorAll('.bento-edit-item[data-key]'));
+      var insertBefore = null;
+      for (var i = 0; i < items.length; i++) {
+        var r = items[i].getBoundingClientRect();
+        if (e.clientY < r.top + r.height * 0.5) { insertBefore = items[i]; break; }
+      }
+      if (insertBefore) list.insertBefore(_bdr.ph, insertBefore);
+      else list.appendChild(_bdr.ph);
+    }
+
+    function bentoDrUp(e) {
+      clearTimeout(_bdr.timer); _bdr.timer = null;
+      if (!_bdr.active) { _bdr.el = null; _bdr.id = null; return; }
+      var list = document.getElementById('bentoEditList');
+      var newOrder = [];
+      Array.from(list.children).forEach(function(item) {
+        if (item === _bdr.ph) newOrder.push(_bdr.id);
+        else if (item !== _bdr.el) { var k = item.getAttribute('data-key'); if (k) newOrder.push(k); }
+      });
+      _editOrder = newOrder;
+      _bdr.el.style.cssText = '';
+      _bdr.ph && _bdr.ph.remove();
+      _bdr.active = false; _bdr.el = null; _bdr.ph = null; _bdr.id = null;
       renderBentoEditList();
     }
 

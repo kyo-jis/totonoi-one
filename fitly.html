@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Fitly">
   <link rel="apple-touch-icon" href="/apple-touch-icon-fitly.png">
-  <script>if(localStorage.getItem('fitlyTheme')==='light')document.documentElement.setAttribute('data-theme','light');</script>
+  <script>if(localStorage.getItem('tototheme')==='light')document.documentElement.setAttribute('data-theme','light');</script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -898,18 +898,18 @@ function toggleTheme() {
   var isLight = document.documentElement.getAttribute('data-theme') === 'light';
   if (isLight) {
     document.documentElement.removeAttribute('data-theme');
-    localStorage.setItem('fitlyTheme', 'dark');
+    localStorage.setItem('tototheme', 'dark');
     document.getElementById('themeBtn').textContent = '🌙';
     document.querySelector('meta[name="theme-color"]').content = '#13132a';
   } else {
     document.documentElement.setAttribute('data-theme', 'light');
-    localStorage.setItem('fitlyTheme', 'light');
+    localStorage.setItem('tototheme', 'light');
     document.getElementById('themeBtn').textContent = '☀️';
     document.querySelector('meta[name="theme-color"]').content = '#f2f2fa';
   }
 }
 (function() {
-  var saved = localStorage.getItem('fitlyTheme');
+  var saved = localStorage.getItem('tototheme');
   var btn = document.getElementById('themeBtn');
   if (saved === 'light') {
     if (btn) btn.textContent = '☀️';

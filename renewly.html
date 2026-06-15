@@ -12,6 +12,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Renewly">
   <link rel="apple-touch-icon" href="/apple-touch-icon-renewly.png">
+  <script>if(localStorage.getItem('tototheme')==='light')document.documentElement.setAttribute('data-theme','light');</script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <style>
@@ -25,6 +26,8 @@
       --shadow-sm:0 2px 10px rgba(0,0,0,.3); --shadow-md:0 4px 24px rgba(0,0,0,.4);
       --spring:cubic-bezier(.34,1.56,.64,1);
     }
+    [data-theme="light"] { --bg:#e8e7f5; --surface:#f4f3fc; --surface2:#e6e5f6; --surface3:#dddcf0; --border:#c8c6e6; --text:#1a1838; --muted:#686898; }
+    [data-theme="light"] body { background: radial-gradient(ellipse 75% 45% at 12% 4%, rgba(94,207,160,.07) 0%, transparent 100%), radial-gradient(ellipse 65% 45% at 88% 92%, rgba(108,142,255,.06) 0%, transparent 100%), var(--bg); }
     html { font-size:16px; }
     body { background:var(--bg); color:var(--text); font-family:var(--font); font-weight:400; min-height:100vh; padding-bottom:130px; }
     .app-header { padding:3rem 1.25rem 1.25rem; }
