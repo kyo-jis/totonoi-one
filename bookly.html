@@ -21,7 +21,7 @@
       --bg:#0c0c18; --surface:#14142a; --surface2:#1c1c38; --surface3:#242448;
       --border:#2e2e50; --text:#f2f2fa; --muted:#9494b8;
       --accent:#8b5cf6; --accent-dark:#7c3aed; --accent2:#ff7c6e;
-      --green:#5ecfa0; --yellow:#f5c842; --orange:#ffb347; --blue:#6c8eff;
+      --green:#5ecfa0; --yellow:#e8718a; --orange:#ffb347; --blue:#6c8eff;
       --font:'Outfit',sans-serif;
       --shadow-sm:0 2px 14px rgba(0,0,0,.38); --shadow-md:0 6px 32px rgba(0,0,0,.55);
       --spring:cubic-bezier(.34,1.56,.64,1);
@@ -56,7 +56,7 @@
     .summary-bar-item { display:flex; align-items:center; gap:.4rem; font-size:.75rem; color:var(--muted); }
     .dot { width:8px; height:8px; border-radius:50%; }
 
-    .free-banner { margin:0 1.25rem 1.25rem; background:rgba(245,200,66,.1); border:1px solid rgba(245,200,66,.25); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+    .free-banner { margin:0 1.25rem 1.25rem; background:rgba(232,113,138,.1); border:1px solid rgba(232,113,138,.25); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
     .free-banner-text { font-size:.8rem; color:var(--yellow); }
     .upgrade-btn { font-size:.72rem; font-weight:500; color:#1a1a24; background:var(--yellow); border:none; border-radius:8px; padding:.4rem .75rem; cursor:pointer; white-space:nowrap; font-family:var(--font); }
 
@@ -113,7 +113,7 @@
     .format-badge { font-size:.6rem; padding:.1rem .38rem; border-radius:6px; font-weight:500; }
     .fmt-physical { background:rgba(94,207,160,.15); color:var(--green); }
     .fmt-digital  { background:rgba(108,142,255,.15); color:var(--blue); }
-    .fmt-scanned  { background:rgba(245,200,66,.15); color:var(--yellow); }
+    .fmt-scanned  { background:rgba(232,113,138,.15); color:var(--yellow); }
 
     .stars-display { display:flex; gap:1px; }
     .star-filled { color:var(--yellow); font-size:.8rem; }
@@ -434,7 +434,7 @@
     <div class="analytics-section">
       <p class="analytics-title">データ管理</p>
       <div class="bar-chart" style="padding:.9rem 1.1rem;">
-        <p style="font-size:.8rem;font-weight:500;margin-bottom:.5rem;">エクスポート <span style="font-size:.65rem;color:var(--yellow);background:rgba(245,200,66,.12);padding:.1rem .4rem;border-radius:8px;margin-left:.3rem;">有料</span></p>
+        <p style="font-size:.8rem;font-weight:500;margin-bottom:.5rem;">エクスポート <span style="font-size:.65rem;color:var(--yellow);background:rgba(232,113,138,.12);padding:.1rem .4rem;border-radius:8px;margin-left:.3rem;">有料</span></p>
         <div style="display:flex;gap:.5rem;margin-top:.5rem;">
           <button onclick="exportData('json')" class="data-btn">JSON</button>
           <button onclick="exportData('csv')" class="data-btn">CSV</button>

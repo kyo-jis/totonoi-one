@@ -40,7 +40,7 @@
       --accent-dark: #4a6ddd;
       --accent2: #ff7c6e;
       --green: #5ecfa0;
-      --yellow: #f5c842;
+      --yellow: #e8718a;
       --purple: #b388ff;
       --font: 'Outfit', sans-serif;
       --shadow-sm: 0 2px 14px rgba(0,0,0,.38);
@@ -81,7 +81,7 @@
     .dot { width:8px; height:8px; border-radius:50%; }
 
     /* Free banner */
-    .free-banner { margin:0 1.25rem 1.25rem; background:rgba(245,200,66,.1); border:1px solid rgba(245,200,66,.25); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+    .free-banner { margin:0 1.25rem 1.25rem; background:rgba(232,113,138,.1); border:1px solid rgba(232,113,138,.25); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
     .free-banner-text { font-size:.8rem; color:var(--yellow); }
     .upgrade-btn { font-size:.72rem; font-weight:500; color:#1a1a24; background:var(--yellow); border:none; border-radius:8px; padding:.4rem .75rem; cursor:pointer; white-space:nowrap; font-family:var(--font); }
 
@@ -114,7 +114,7 @@
 
     .days-badge { font-size:.65rem; font-weight:500; padding:.15rem .45rem; border-radius:20px; white-space:nowrap; }
     .days-badge.urgent { background:rgba(255,124,110,.2); color:var(--accent2); }
-    .days-badge.soon { background:rgba(245,200,66,.15); color:var(--yellow); }
+    .days-badge.soon { background:rgba(232,113,138,.15); color:var(--yellow); }
     .days-badge.normal { background:rgba(136,136,160,.12); color:var(--muted); }
 
     .sub-right { text-align:right; flex-shrink:0; }
@@ -366,7 +366,7 @@
         <div class="bar-chart-inner" id="barChart"></div>
         <div style="display:flex;gap:6px;" id="barLabels"></div>
       </div>
-      <div id="chartNotice" style="display:none;margin-top:.75rem;background:rgba(245,200,66,.1);border:1px solid rgba(245,200,66,.25);border-radius:12px;padding:.65rem 1rem;align-items:center;justify-content:space-between;gap:.75rem;">
+      <div id="chartNotice" style="display:none;margin-top:.75rem;background:rgba(232,113,138,.1);border:1px solid rgba(232,113,138,.25);border-radius:12px;padding:.65rem 1rem;align-items:center;justify-content:space-between;gap:.75rem;">
         <p style="font-size:.75rem;color:var(--yellow);">📊 無料プランは過去3ヶ月まで表示</p>
         <button onclick="startCheckout()" style="font-size:.68rem;font-weight:500;color:#1a1a24;background:var(--yellow);border:none;border-radius:6px;padding:.35rem .65rem;cursor:pointer;font-family:var(--font);">全期間を見る</button>
       </div>
@@ -391,14 +391,14 @@
       <p class="analytics-title">データ管理</p>
       <div style="display:flex;flex-direction:column;gap:.625rem;">
         <div class="bar-chart" style="padding:.9rem 1.1rem;">
-          <p style="font-size:.8rem;font-weight:500;margin-bottom:.5rem;">エクスポート <span style="font-size:.65rem;color:var(--yellow);background:rgba(245,200,66,.12);padding:.1rem .4rem;border-radius:8px;margin-left:.3rem;">有料</span></p>
+          <p style="font-size:.8rem;font-weight:500;margin-bottom:.5rem;">エクスポート <span style="font-size:.65rem;color:var(--yellow);background:rgba(232,113,138,.12);padding:.1rem .4rem;border-radius:8px;margin-left:.3rem;">有料</span></p>
           <div style="display:flex;gap:.5rem;margin-top:.5rem;">
             <button onclick="exportData('json')" class="data-btn">JSON</button>
             <button onclick="exportData('csv')" class="data-btn">CSV</button>
           </div>
         </div>
         <div class="bar-chart" style="padding:.9rem 1.1rem;">
-          <p style="font-size:.8rem;font-weight:500;margin-bottom:.5rem;">インポート <span style="font-size:.65rem;color:var(--yellow);background:rgba(245,200,66,.12);padding:.1rem .4rem;border-radius:8px;margin-left:.3rem;">有料</span></p>
+          <p style="font-size:.8rem;font-weight:500;margin-bottom:.5rem;">インポート <span style="font-size:.65rem;color:var(--yellow);background:rgba(232,113,138,.12);padding:.1rem .4rem;border-radius:8px;margin-left:.3rem;">有料</span></p>
           <label class="data-btn" style="cursor:pointer;margin-top:.5rem;display:inline-block;">ファイルを選択<input type="file" accept=".json" onchange="importData(event)" style="display:none;"></label>
         </div>
       </div>
@@ -785,7 +785,7 @@ function iconHTML(s, size, radius) {
 }
 
 function iconBg(icon) {
-  var colors = ['rgba(108,142,255,.18)','rgba(94,207,160,.18)','rgba(255,124,110,.18)','rgba(245,200,66,.18)'];
+  var colors = ['rgba(108,142,255,.18)','rgba(94,207,160,.18)','rgba(255,124,110,.18)','rgba(232,113,138,.18)'];
   return colors[((icon || '💳').charCodeAt(0)) % colors.length];
 }
 

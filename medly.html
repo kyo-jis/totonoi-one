@@ -21,7 +21,7 @@
       --bg:#0c0c18; --surface:#14142a; --surface2:#1c1c38; --surface3:#242448;
       --border:#2e2e50; --text:#f2f2fa; --muted:#9494b8;
       --accent:#b388ff; --accent-dark:#9060dd; --accent2:#ff7c6e; --green:#5ecfa0;
-      --yellow:#f5c842; --blue:#6c8eff; --font:'Outfit',sans-serif;
+      --yellow:#e8718a; --blue:#6c8eff; --font:'Outfit',sans-serif;
       --shadow-sm:0 2px 14px rgba(0,0,0,.38); --shadow-md:0 6px 32px rgba(0,0,0,.55);
       --spring:cubic-bezier(.34,1.56,.64,1);
     }
@@ -70,7 +70,7 @@
     .item-card { background:linear-gradient(160deg, var(--surface) 0%, var(--surface2) 100%); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:.75rem; animation:slideIn .3s ease; box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.07); }
     @keyframes slideIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
     .item-card.urgent { border-color:rgba(255,124,110,.4); }
-    .item-card.warning { border-color:rgba(245,200,66,.3); }
+    .item-card.warning { border-color:rgba(232,113,138,.3); }
 
     .item-header { display:flex; align-items:center; gap:.85rem; margin-bottom:.75rem; }
     .item-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.4rem; flex-shrink:0; }
@@ -95,7 +95,7 @@
     .days-row { display:flex; align-items:center; justify-content:space-between; }
     .days-badge { font-size:.72rem; font-weight:500; padding:.25rem .6rem; border-radius:20px; }
     .days-badge.good { background:rgba(94,207,160,.15); color:var(--green); }
-    .days-badge.warning { background:rgba(245,200,66,.15); color:var(--yellow); }
+    .days-badge.warning { background:rgba(232,113,138,.15); color:var(--yellow); }
     .days-badge.urgent { background:rgba(255,124,110,.18); color:var(--accent2); }
     .days-badge.expired { background:rgba(255,124,110,.25); color:var(--accent2); font-weight:600; }
 
@@ -181,10 +181,10 @@
 
     .search-input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:.75rem 1rem; font-size:.95rem; color:var(--text); font-family:var(--font); outline:none; margin-bottom:1rem; }
     .search-input:focus { border-color:var(--accent); }
-    .free-banner { margin:0 1.25rem 1.25rem; background:rgba(245,200,66,.1); border:1px solid rgba(245,200,66,.25); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+    .free-banner { margin:0 1.25rem 1.25rem; background:rgba(232,113,138,.1); border:1px solid rgba(232,113,138,.25); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
     .free-banner-text { font-size:.8rem; color:var(--yellow); }
     .upgrade-btn { font-size:.72rem; font-weight:500; color:#1a1a24; background:var(--yellow); border:none; border-radius:8px; padding:.4rem .75rem; cursor:pointer; white-space:nowrap; font-family:var(--font); }
-    .pro-gate-small { background:rgba(245,200,66,.08); border:1px solid rgba(245,200,66,.2); border-radius:12px; padding:.9rem 1rem; text-align:center; margin-bottom:.75rem; }
+    .pro-gate-small { background:rgba(232,113,138,.08); border:1px solid rgba(232,113,138,.2); border-radius:12px; padding:.9rem 1rem; text-align:center; margin-bottom:.75rem; }
     .pro-gate-small p { font-size:.82rem; color:var(--yellow); margin-bottom:.6rem; }
     .rating-btn { flex:1; padding:.55rem .3rem; background:var(--surface2); border:1px solid var(--border); border-radius:10px; font-size:.75rem; color:var(--muted); cursor:pointer; font-family:var(--font); transition:all .15s; }
     .rating-btn.selected { background:var(--accent); border-color:var(--accent); color:#1a1a24; font-weight:600; }
@@ -216,7 +216,7 @@
     .compat-section { margin-top:1.25rem; }
     .compat-card { border-radius:14px; padding:.85rem 1rem; margin-bottom:.6rem; }
     .compat-card.caution { background:rgba(255,124,110,.08); border:1px solid rgba(255,124,110,.25); }
-    .compat-card.overlap { background:rgba(245,200,66,.08); border:1px solid rgba(245,200,66,.2); }
+    .compat-card.overlap { background:rgba(232,113,138,.08); border:1px solid rgba(232,113,138,.2); }
     .compat-card.synergy { background:rgba(94,207,160,.08); border:1px solid rgba(94,207,160,.2); }
     .compat-title { font-size:.82rem; font-weight:500; margin-bottom:.3rem; }
     .compat-detail { font-size:.75rem; color:var(--muted); line-height:1.55; }
@@ -232,7 +232,7 @@
     .compat-guide-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:.9rem 1rem; margin-bottom:.75rem; }
     .compat-guide-type { font-size:.65rem; font-weight:500; letter-spacing:.08em; text-transform:uppercase; padding:.15rem .5rem; border-radius:20px; margin-bottom:.5rem; display:inline-block; }
     .compat-guide-type.caution { background:rgba(255,124,110,.15); color:var(--accent2); }
-    .compat-guide-type.overlap { background:rgba(245,200,66,.12); color:var(--yellow); }
+    .compat-guide-type.overlap { background:rgba(232,113,138,.12); color:var(--yellow); }
     .compat-guide-type.synergy { background:rgba(94,207,160,.12); color:var(--green); }
     .compat-guide-combo { font-size:.88rem; font-weight:500; margin-bottom:.3rem; }
     .compat-guide-detail { font-size:.75rem; color:var(--muted); line-height:1.55; }
@@ -476,7 +476,7 @@
         <div class="timing-check" id="tc-meal" onclick="toggleTiming('meal')">
           <input type="checkbox" id="t-meal"><label for="t-meal">🍽️ 食後</label>
         </div>
-        <div class="timing-check" id="tc-prn" onclick="toggleTiming('prn')" style="grid-column:1/-1;border-color:rgba(245,200,66,.35);background:rgba(245,200,66,.08);">
+        <div class="timing-check" id="tc-prn" onclick="toggleTiming('prn')" style="grid-column:1/-1;border-color:rgba(232,113,138,.35);background:rgba(232,113,138,.08);">
           <input type="checkbox" id="t-prn"><label for="t-prn" style="color:var(--yellow);">🆘 頓服（必要な時だけ）</label>
         </div>
       </div>
@@ -857,7 +857,7 @@ function updateSummary() {
   var bannerHTML = '';
   if (urgentNames.length) bannerHTML += '<div class="urgent-badge" style="margin-top:.75rem;">⚠️ 購入推奨: '+urgentNames.join('・')+'</div>';
   if (expiredNames.length) bannerHTML += '<div class="urgent-badge" style="margin-top:.5rem;background:rgba(255,80,80,.15);border-color:rgba(255,80,80,.3);">🚨 期限切れ: '+expiredNames.join('・')+'</div>';
-  if (expiringNames.length) bannerHTML += '<div class="urgent-badge" style="margin-top:.5rem;background:rgba(245,200,66,.1);border-color:rgba(245,200,66,.25);color:var(--yellow);">📅 期限間近: '+expiringNames.join('・')+'</div>';
+  if (expiringNames.length) bannerHTML += '<div class="urgent-badge" style="margin-top:.5rem;background:rgba(232,113,138,.1);border-color:rgba(232,113,138,.25);color:var(--yellow);">📅 期限間近: '+expiringNames.join('・')+'</div>';
   banner.innerHTML = bannerHTML;
 }
 
@@ -962,7 +962,7 @@ function renderList() {
     var isPrn = (item.timing||[]).indexOf('prn') !== -1;
     var regularTimings = (item.timing||[]).filter(function(t){ return t !== 'prn'; });
     var timingHTML = '';
-    if (isPrn) timingHTML += '<span class="timing-badge" style="background:rgba(245,200,66,.15);color:var(--yellow);border-color:rgba(245,200,66,.35);">🆘 頓服</span>';
+    if (isPrn) timingHTML += '<span class="timing-badge" style="background:rgba(232,113,138,.15);color:var(--yellow);border-color:rgba(232,113,138,.35);">🆘 頓服</span>';
     if (regularTimings.length) timingHTML += regularTimings.map(function(t){ return '<span class="timing-badge">'+(TIMING_LABELS[t]||t)+'</span>'; }).join('');
     timingHTML = timingHTML ? '<div class="timing-wrap">'+timingHTML+'</div>' : '';
     return '<div class="'+cardCls+'">'
@@ -1041,7 +1041,7 @@ function renderSchedule() {
     html += '<div style="margin-top:'+(html?'1rem':'0')+';">'
       +'<p style="font-size:.85rem;font-weight:500;margin-bottom:.5rem;color:var(--yellow);">🆘 頓服（必要な時）</p>'
       +prnItems.map(function(item){
-        return '<div style="background:var(--surface);border:1px solid rgba(245,200,66,.3);border-radius:12px;padding:.75rem 1rem;margin-bottom:.4rem;display:flex;align-items:center;justify-content:space-between;">'
+        return '<div style="background:var(--surface);border:1px solid rgba(232,113,138,.3);border-radius:12px;padding:.75rem 1rem;margin-bottom:.4rem;display:flex;align-items:center;justify-content:space-between;">'
           +'<div style="display:flex;align-items:center;gap:.75rem;">'
           +'<span style="font-size:1.2rem;">'+(item.icon||'💊')+'</span>'
           +'<div><p style="font-size:.88rem;font-weight:400;">'+item.name+'</p>'
