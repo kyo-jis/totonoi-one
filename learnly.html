@@ -150,6 +150,12 @@
     .sess-memo { font-size:.7rem; color:var(--muted); margin-top:.1rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .sess-duration { font-size:1rem; font-weight:600; color:var(--accent); flex-shrink:0; }
     .sess-delete { background:none; border:none; color:var(--muted); font-size:.8rem; cursor:pointer; padding:.2rem; flex-shrink:0; }
+    .sess-edit { background:none; border:none; color:var(--muted); font-size:.8rem; cursor:pointer; padding:.2rem; flex-shrink:0; }
+    .sess-edit:active, .sess-delete:active { transform:scale(.85); }
+    .page-range-row { display:flex; align-items:center; gap:.4rem; margin-top:.4rem; }
+    .page-range-row input { flex:1; width:0; min-width:0; padding:.55rem .65rem; font-size:.9rem; }
+    .page-range-sep { color:var(--muted); font-size:.8rem; flex-shrink:0; }
+    .log-date-input { width:100%; padding:.65rem .9rem; font-size:.9rem; }
 
     /* Settings */
     .analytics-wrap { padding:0 1.25rem; }
@@ -556,7 +562,11 @@
 <div class="modal-overlay" id="logModal" onclick="if(event.target===this)closeLogModal()">
   <div class="modal">
     <div class="modal-handle"></div>
-    <p class="modal-title">学習を記録</p>
+    <p class="modal-title" id="logModalTitle">学習を記録</p>
+    <div class="form-group">
+      <label>日付</label>
+      <input type="date" id="logDate" class="log-date-input">
+    </div>
     <div class="form-group">
       <label>資格・目標</label>
       <div class="subj-select-grid" id="logSubjGrid"></div>
@@ -581,11 +591,23 @@
       <label>学習方法（任意）</label>
       <div class="study-type-grid" id="logStudyTypeGrid"></div>
     </div>
+    <div class="form-group" id="logMaterialGroup" style="display:none;">
+      <label>教材（任意）</label>
+      <select id="logMaterial" onchange="onLogMaterialChange()">
+        <option value="">（教材を選択しない）</option>
+      </select>
+      <div class="page-range-row" id="logPageRange" style="display:none;">
+        <input type="number" id="logFromPage" placeholder="開始" min="1">
+        <span class="page-range-sep">〜</span>
+        <input type="number" id="logToPage" placeholder="終了" min="1">
+        <span class="page-range-sep">p</span>
+      </div>
+    </div>
     <div class="form-group">
       <label>メモ（任意）</label>
       <textarea id="logMemo" rows="2" placeholder="今日学んだことや気づき..."></textarea>
     </div>
-    <button class="btn-primary" onclick="saveSession()">記録する</button>
+    <button class="btn-primary" id="logSaveBtn" onclick="saveSession()">記録する</button>
     <button class="btn-cancel" onclick="closeLogModal()">キャンセル</button>
   </div>
 </div>
@@ -1292,13 +1314,17 @@ function renderLog() {
     var items = byDate[date].slice().reverse().map(function(s) {
       var subj = getSubj(s.subjectId);
       var stType = STUDY_TYPES.find(function(t){ return t.id===s.studyType; });
+      var mat = s.materialId ? materials.find(function(m){ return m.id===s.materialId; }) : null;
+      var matText = mat ? (mat.title + (s.fromPage||s.toPage ? ' p.'+(s.fromPage||'?')+'〜'+(s.toPage||'?') : '')) : null;
+      var infoText = [matText, s.memo || (stType ? stType.label : null)].filter(Boolean).join(' · ');
       return '<div class="sess-item">'
         + '<div class="sess-icon" style="background:' + ((subj&&subj.color)||'#3c8cbf') + '22;">' + ((subj&&subj.icon)||'📘') + '</div>'
         + '<div class="sess-info">'
           + '<p class="sess-name">' + ((subj&&subj.name)||'削除された資格') + (stType ? '<span style="font-size:.8rem;margin-left:.4rem;opacity:.75;">'+stType.icon+'</span>' : '') + '</p>'
-          + (s.memo ? '<p class="sess-memo">' + s.memo + '</p>' : (stType ? '<p class="sess-memo">'+stType.label+'</p>' : ''))
+          + (infoText ? '<p class="sess-memo">' + infoText + '</p>' : '')
         + '</div>'
         + '<span class="sess-duration">' + s.duration + '分</span>'
+        + '<button class="sess-edit" onclick="openLogModal(null,null,\'' + s.id + '\')">✏️</button>'
         + '<button class="sess-delete" onclick="deleteSession(\'' + s.id + '\')">🗑</button>'
         + '</div>';
     }).join('');
@@ -1416,17 +1442,70 @@ function renderLearnHeatmap() {
 /* ── Log Modal ── */
 var _logSubjId = null;
 var _logStudyType = null;
+var _logSessionId = null;
 
-function openLogModal(subjId, prefill) {
-  _logSubjId = subjId || (subjects.length ? subjects[0].id : null);
-  _logStudyType = null;
-  document.getElementById('logDur').value  = prefill || 30;
-  document.getElementById('logMemo').value = '';
+function openLogModal(subjId, prefill, sessionId) {
+  _logSessionId = sessionId || null;
+  if (sessionId) {
+    var s = sessions.find(function(x){ return x.id === sessionId; });
+    if (!s) return;
+    _logSubjId = s.subjectId;
+    _logStudyType = s.studyType || null;
+    document.getElementById('logDur').value = s.duration;
+    document.getElementById('logMemo').value = s.memo || '';
+    document.getElementById('logDate').value = s.date;
+    document.getElementById('logMaterial').value = s.materialId || '';
+    document.getElementById('logFromPage').value = s.fromPage || '';
+    document.getElementById('logToPage').value = s.toPage || '';
+    document.getElementById('logModalTitle').textContent = '記録を編集';
+    document.getElementById('logSaveBtn').textContent = '更新する';
+  } else {
+    _logSubjId = subjId || (subjects.length ? subjects[0].id : null);
+    _logStudyType = null;
+    document.getElementById('logDur').value = prefill || 30;
+    document.getElementById('logMemo').value = '';
+    document.getElementById('logDate').value = todayStr();
+    document.getElementById('logMaterial').value = '';
+    document.getElementById('logFromPage').value = '';
+    document.getElementById('logToPage').value = '';
+    document.getElementById('logModalTitle').textContent = '学習を記録';
+    document.getElementById('logSaveBtn').textContent = '記録する';
+  }
   renderLogSubjGrid();
   renderLogStudyTypeGrid();
+  renderLogMaterialSelect();
+  onLogMaterialChange();
   document.getElementById('logModal').classList.add('show');
 }
 function closeLogModal() { document.getElementById('logModal').classList.remove('show'); }
+
+function renderLogMaterialSelect() {
+  var grp = document.getElementById('logMaterialGroup');
+  var sel = document.getElementById('logMaterial');
+  if (!materials.length) { grp.style.display = 'none'; return; }
+  grp.style.display = 'block';
+  var cur = sel.value;
+  sel.innerHTML = '<option value="">（教材を選択しない）</option>'
+    + materials.map(function(m) {
+        return '<option value="' + m.id + '">' + m.title + (m.totalPages ? '（全' + m.totalPages + 'p）' : '') + '</option>';
+      }).join('');
+  if (cur) sel.value = cur;
+}
+
+function onLogMaterialChange() {
+  var mid = document.getElementById('logMaterial').value;
+  var pr = document.getElementById('logPageRange');
+  pr.style.display = mid ? 'flex' : 'none';
+  if (mid) {
+    var mat = materials.find(function(m){ return m.id === mid; });
+    if (mat) {
+      document.getElementById('logToPage').placeholder = mat.totalPages ? mat.totalPages + 'p' : '終了';
+      if (mat.currentPage && !document.getElementById('logFromPage').value && !_logSessionId) {
+        document.getElementById('logFromPage').value = mat.currentPage + 1;
+      }
+    }
+  }
+}
 
 function renderLogSubjGrid() {
   if (!subjects.length) { document.getElementById('logSubjGrid').innerHTML = '<p style="font-size:.8rem;color:var(--muted);">資格・目標がありません</p>'; return; }
@@ -1469,12 +1548,34 @@ function saveSession() {
   var dur = parseInt(document.getElementById('logDur').value) || 0;
   if (dur < 1) { showToast('時間を入力してください'); return; }
   var memo = document.getElementById('logMemo').value.trim();
+  var date = document.getElementById('logDate').value || todayStr();
+  var mid  = document.getElementById('logMaterial').value || null;
+  var fromP = mid ? (parseInt(document.getElementById('logFromPage').value) || null) : null;
+  var toP   = mid ? (parseInt(document.getElementById('logToPage').value)   || null) : null;
+  var data = { subjectId:_logSubjId, date:date, duration:dur, memo:memo, studyType:_logStudyType||null, materialId:mid, fromPage:fromP, toPage:toP };
+
+  if (_logSessionId) {
+    var idx = sessions.findIndex(function(s){ return s.id === _logSessionId; });
+    if (idx >= 0) sessions[idx] = Object.assign(sessions[idx], data);
+    persist(); closeLogModal(); renderAll();
+    showToast('✅ 記録を更新しました');
+    return;
+  }
+
+  data.id = Date.now().toString();
+  data.createdAt = new Date().toISOString();
+  sessions.push(data);
+
+  if (mid && toP) {
+    var mi = materials.findIndex(function(m){ return m.id === mid; });
+    if (mi >= 0 && toP > (materials[mi].currentPage || 0)) materials[mi].currentPage = toP;
+  }
+
   var wasPomodoro = _timerPomodoro; _timerPomodoro = false;
-  sessions.push({ id:Date.now().toString(), subjectId:_logSubjId, date:todayStr(), duration:dur, memo:memo, studyType:_logStudyType||null, createdAt:new Date().toISOString() });
   persist(); closeLogModal(); renderAll();
   var subj = getSubj(_logSubjId);
   if (subj && subj.dailyGoal) {
-    var nowM = minsOnDate(todayStr(), _logSubjId);
+    var nowM = minsOnDate(date, _logSubjId);
     if (nowM >= subj.dailyGoal && nowM - dur < subj.dailyGoal) {
       confetti({ particleCount:80, spread:70, origin:{y:.6}, colors:['#3c8cbf','#5ecfa0','#f5c842'] });
       showToast('🎉 ' + subj.name + ' 目標達成！');
