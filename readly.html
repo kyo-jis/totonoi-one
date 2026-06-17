@@ -144,6 +144,8 @@
     .back-confirm-btn:active{transform:scale(.93);}
     .back-confirm-btn-go{background:var(--accent);color:#fff;}
     .back-confirm-btn-stay{background:var(--surface3);color:var(--text);}
+    .show-more-btn { display:block; width:100%; padding:.8rem; background:var(--surface); border:1px solid var(--border); border-radius:16px; font-size:.82rem; color:var(--muted); font-family:var(--font); cursor:pointer; text-align:center; transition:border-color .15s, color .15s; margin-bottom:.625rem; }
+    .show-more-btn:active { border-color:var(--accent); color:var(--accent); transform:scale(.98); }
   </style>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-E9Q0JQ0V92"></script>
@@ -290,6 +292,8 @@ var currentCat = 'all';
 var currentIdeaStatus = 'all';
 var searchQuery = '';
 var editId = null;
+var listShowAll = false;
+var LIST_LIMIT = 15;
 var IDEA_STATUS_CYCLE = ['pending','progress','done','rejected'];
 var IDEA_STATUS_ICONS = { pending:'⬜', progress:'▶️', done:'✅', rejected:'❌' };
 
@@ -298,6 +302,7 @@ function init() { renderNotes(); updateProUI(); renderStats(); }
 function filterCat(cat, btn) {
   currentCat = cat;
   currentIdeaStatus = 'all';
+  listShowAll = false;
   document.querySelectorAll('.cat-chip').forEach(function(c){ c.classList.remove('active'); });
   btn.classList.add('active');
   var sf = document.getElementById('ideaStatusFilter');
@@ -311,6 +316,7 @@ function filterCat(cat, btn) {
 }
 function filterIdeaStatus(status, btn) {
   currentIdeaStatus = status;
+  listShowAll = false;
   document.querySelectorAll('#ideaStatusFilter .status-chip').forEach(function(c){ c.classList.remove('active'); });
   btn.classList.add('active');
   renderNotes();
@@ -324,7 +330,9 @@ function cycleIdeaStatus(id) {
   notes[i].updatedAt = new Date().toISOString();
   persist();
 }
-function onSearch() { searchQuery = document.getElementById('searchInput').value.toLowerCase(); renderNotes(); }
+function onSearch() { searchQuery = document.getElementById('searchInput').value.toLowerCase(); listShowAll = false; renderNotes(); }
+
+function showAllNotes() { listShowAll = true; renderNotes(); }
 
 function renderNotes() {
   var el = document.getElementById('noteList');
@@ -335,7 +343,9 @@ function renderNotes() {
     return true;
   });
   if (!list.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">📝</div><p>' + (searchQuery?'検索結果がありません':'まだメモがありません。<br>✏️ボタンで書いてみましょう') + '</p></div>'; return; }
-  el.innerHTML = list.map(function(n) {
+  var total = list.length;
+  var shown = (listShowAll || total <= LIST_LIMIT) ? list : list.slice(0, LIST_LIMIT);
+  el.innerHTML = shown.map(function(n) {
     var d = new Date(n.updatedAt || n.createdAt);
     var dateStr = d.getMonth()+1 + '/' + d.getDate();
     var catBadge = '<span class="cat-badge cat-' + n.category + '">' + CAT_LABELS[n.category] + '</span>';
@@ -358,7 +368,7 @@ function renderNotes() {
       + '</div>'
       + '<div class="sync-slot"></div>'
       + '</div>';
-  }).join('');
+  }).join('') + (!listShowAll && total > LIST_LIMIT ? '<button class="show-more-btn" onclick="showAllNotes()">さらに ' + (total - LIST_LIMIT) + ' 件を表示 ↓</button>' : '');
   document.getElementById('countText').textContent = notes.length + (isPro ? '件' : '/30');
 }
 
