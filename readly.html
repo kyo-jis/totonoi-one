@@ -44,12 +44,8 @@
     .search-input { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:.75rem 1rem .75rem 2.5rem; font-size:.9rem; color:var(--text); font-family:var(--font); outline:none; transition:border-color .15s; }
     .search-input:focus { border-color:var(--accent); }
     .search-icon { position:absolute; left:.85rem; top:50%; transform:translateY(-50%); color:var(--muted); font-size:.9rem; }
-    .tabs { display:flex; gap:0; margin:0 1.25rem 1.25rem; background:linear-gradient(160deg, var(--surface) 0%, var(--surface2) 100%); border-radius:14px; padding:4px; border:1px solid var(--border); box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.07); }
-    .tab { flex:1; padding:.58rem .2rem; font-size:.72rem; font-weight:400; color:var(--muted); background:none; border:none; border-radius:10px; cursor:pointer; font-family:var(--font); transition:all .2s var(--spring); }
-    .tab.active { background:var(--surface2); color:var(--text); font-weight:600; box-shadow:var(--shadow-sm); }
-    .tab:active { transform:scale(.93); }
-    .view { display:none; }
-    .view.active { display:block; }
+    .settings-btn { background:var(--surface); border:1px solid var(--border); border-radius:10px; width:34px; height:34px; display:flex; align-items:center; justify-content:center; font-size:.95rem; cursor:pointer; flex-shrink:0; }
+    .settings-btn:active { transform:scale(.9); }
     .cat-filter { display:flex; gap:.4rem; padding:0 1.25rem 1rem; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
     .cat-filter::-webkit-scrollbar { display:none; }
     .cat-chip { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:.3rem .8rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); white-space:nowrap; transition:all .2s; flex-shrink:0; }
@@ -160,7 +156,10 @@
 <div class="app-header">
   <div class="header-top">
     <a class="back-link" href="index.html"> Totonoi One</a>
-    <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
+    <div style="display:flex;gap:.5rem;align-items:center;">
+      <button class="settings-btn" onclick="openSettings()">⚙️</button>
+      <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
+    </div>
   </div>
   <h1 class="app-title" onclick="goAppTop()" style="cursor:pointer;">Read<span>ly</span></h1>
   <p class="app-subtitle">メモ・日記</p>
@@ -181,33 +180,27 @@
   <a href="index.html" class="upgrade-btn">アップグレード</a>
 </div>
 
-<div class="tabs">
-  <button class="tab active" onclick="switchTab('list',this)">一覧</button>
-  <button class="tab" onclick="switchTab('write',this)" id="tabWrite">✏️ 書く</button>
-  <button class="tab" onclick="switchTab('settings',this)">設定</button>
+<div class="cat-filter">
+  <button class="cat-chip active" onclick="filterCat('all',this)">すべて</button>
+  <button class="cat-chip" onclick="filterCat('note',this)">📝 メモ</button>
+  <button class="cat-chip" onclick="filterCat('diary',this)">📔 日記</button>
+  <button class="cat-chip" onclick="filterCat('idea',this)">💡 アイデア</button>
+  <button class="cat-chip" onclick="filterCat('todo',this)">✅ TODO</button>
+  <button class="cat-chip" onclick="filterCat('other',this)">📦 その他</button>
 </div>
-
-<div class="view active" id="view-list">
-  <div class="cat-filter">
-    <button class="cat-chip active" onclick="filterCat('all',this)">すべて</button>
-    <button class="cat-chip" onclick="filterCat('note',this)">📝 メモ</button>
-    <button class="cat-chip" onclick="filterCat('diary',this)">📔 日記</button>
-    <button class="cat-chip" onclick="filterCat('idea',this)">💡 アイデア</button>
-    <button class="cat-chip" onclick="filterCat('todo',this)">✅ TODO</button>
-    <button class="cat-chip" onclick="filterCat('other',this)">📦 その他</button>
-  </div>
-  <div class="idea-status-filter" id="ideaStatusFilter">
-    <button class="status-chip active" onclick="filterIdeaStatus('all',this)">すべて</button>
-    <button class="status-chip" onclick="filterIdeaStatus('pending',this)">⬜ 未着手</button>
-    <button class="status-chip" onclick="filterIdeaStatus('progress',this)">▶️ 進行中</button>
-    <button class="status-chip" onclick="filterIdeaStatus('done',this)">✅ 完了</button>
-    <button class="status-chip" onclick="filterIdeaStatus('rejected',this)">❌ 却下・保留</button>
-  </div>
-  <div class="list-section"><div id="noteList"></div></div>
+<div class="idea-status-filter" id="ideaStatusFilter">
+  <button class="status-chip active" onclick="filterIdeaStatus('all',this)">すべて</button>
+  <button class="status-chip" onclick="filterIdeaStatus('pending',this)">⬜ 未着手</button>
+  <button class="status-chip" onclick="filterIdeaStatus('progress',this)">▶️ 進行中</button>
+  <button class="status-chip" onclick="filterIdeaStatus('done',this)">✅ 完了</button>
+  <button class="status-chip" onclick="filterIdeaStatus('rejected',this)">❌ 却下・保留</button>
 </div>
+<div class="list-section"><div id="noteList"></div></div>
 
-<div class="view" id="view-write">
-  <div class="editor-wrap">
+<!-- Editor Modal -->
+<div id="editorModal" style="position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);z-index:100;display:none;align-items:flex-end;" onclick="if(event.target===this)discardNote()">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:24px 24px 0 0;padding:1.5rem 1.25rem 2rem;width:100%;max-height:92vh;overflow-y:auto;animation:slideUp .3s ease;">
+    <div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 1.25rem;"></div>
     <input type="text" class="editor-title" id="editorTitle" placeholder="タイトル（任意）">
     <div class="editor-meta">
       <select class="editor-cat" id="editorCat">
@@ -228,8 +221,11 @@
   </div>
 </div>
 
-<div class="view" id="view-settings">
-  <div class="analytics-wrap">
+<!-- Settings Modal -->
+<div id="settingsModal" style="position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);z-index:100;display:none;align-items:flex-end;" onclick="if(event.target===this)closeSettings()">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:24px 24px 0 0;padding:1.5rem 1.25rem 2rem;width:100%;max-height:92vh;overflow-y:auto;animation:slideUp .3s ease;">
+    <div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 1.25rem;"></div>
+    <div class="analytics-wrap">
     <div class="analytics-section">
       <p class="analytics-title">統計</p>
       <div class="analysis-grid" id="statsGrid"></div>
@@ -264,6 +260,7 @@
         </div>
       </div>
     </div>
+  </div>
   </div>
 </div>
 
@@ -372,6 +369,11 @@ function renderNotes() {
   document.getElementById('countText').textContent = notes.length + (isPro ? '件' : '/30');
 }
 
+function openEditor() { var m=document.getElementById('editorModal'); m.style.display='flex'; }
+function closeEditor() { document.getElementById('editorModal').style.display='none'; }
+function openSettings() { var m=document.getElementById('settingsModal'); m.style.display='flex'; renderStats(); }
+function closeSettings() { document.getElementById('settingsModal').style.display='none'; }
+
 function newNote() {
   editId = null;
   document.getElementById('editorTitle').value = '';
@@ -379,8 +381,8 @@ function newNote() {
   document.getElementById('editorBody').value = '';
   document.getElementById('editorDate').textContent = new Date().toLocaleDateString('ja-JP',{month:'long',day:'numeric'});
   updateCharCount();
-  switchTab('write', document.querySelectorAll('.tab')[1]);
-  setTimeout(function(){ document.getElementById('editorBody').focus(); }, 200);
+  openEditor();
+  setTimeout(function(){ document.getElementById('editorBody').focus(); }, 300);
 }
 
 function openNote(id) {
@@ -392,7 +394,7 @@ function openNote(id) {
   document.getElementById('editorBody').value = n.body || '';
   document.getElementById('editorDate').textContent = new Date(n.updatedAt||n.createdAt).toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
   updateCharCount();
-  switchTab('write', document.querySelectorAll('.tab')[1]);
+  openEditor();
 }
 
 function saveNote() {
@@ -410,10 +412,10 @@ function saveNote() {
   }
   persist(); editId = null;
   showToast('✅ 保存しました');
-  switchTab('list', document.querySelectorAll('.tab')[0]);
+  closeEditor();
 }
 
-function discardNote() { editId = null; switchTab('list', document.querySelectorAll('.tab')[0]); }
+function discardNote() { editId = null; closeEditor(); }
 
 function deleteNote(id) {
   if (!confirm('削除しますか？')) return;
@@ -435,12 +437,7 @@ function persist() {
   dbSave('notes',notes).then(function(r){_syncStatus=r&&!r.error?'synced':'failed';if(r&&r.error)showToast('⚠️ クラウド同期失敗');updateSyncBadges();});
 }
 
-function switchTab(name, btn) {
-  document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
-  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
-  document.getElementById('view-'+name).classList.add('active');
-  btn.classList.add('active');
-}
+function switchTab() {}
 
 function renderStats() {
   var el = document.getElementById('statsGrid');
@@ -512,8 +509,14 @@ _sb.auth.onAuthStateChange(function(event,session){currentUser=session?session.u
 _sb.auth.getSession().then(function(res){currentUser=res.data.session?res.data.session.user:null;updateAuthUI();if(currentUser)syncFromCloud();});
 
 // ── App top & back guard ──
-function goAppTop(){var t=document.querySelectorAll('.tab')[0];if(t)t.click();window.scrollTo({top:0,behavior:'smooth'});}
-(function(){history.pushState({page:'app'},'');window.addEventListener('popstate',function(){document.getElementById('backConfirm').classList.add('show');history.pushState({page:'app'},'');});})();
+function goAppTop(){ window.scrollTo({top:0,behavior:'smooth'}); }
+(function(){history.pushState({page:'app'},'');window.addEventListener('popstate',function(){
+  var em=document.getElementById('editorModal'), sm=document.getElementById('settingsModal');
+  if(em&&em.style.display==='flex'){closeEditor();}
+  else if(sm&&sm.style.display==='flex'){closeSettings();}
+  else{document.getElementById('backConfirm').classList.add('show');}
+  history.pushState({page:'app'},'');
+});})();
 function confirmBack(go){document.getElementById('backConfirm').classList.remove('show');if(go)window.location.href='index.html';}
 </script>
 <!-- Back confirm dialog -->
