@@ -778,6 +778,17 @@ function loadFromStorage() {
       return Object.assign({ id: 'default_' + i }, c);
     });
     localStorage.setItem('kakely_cats', JSON.stringify(categories));
+  } else {
+    // デフォルトに存在して未登録のカテゴリを末尾に追加（新規追加分の自動補完）
+    var changed = false;
+    DEFAULT_CATS.forEach(function(dc, i) {
+      var exists = categories.some(function(c){ return c.name === dc.name; });
+      if (!exists) {
+        categories.push(Object.assign({ id: 'default_auto_' + i }, dc));
+        changed = true;
+      }
+    });
+    if (changed) localStorage.setItem('kakely_cats', JSON.stringify(categories));
   }
   // 支払い方法が空なら初期支払い方法をセット
   if (paymentMethods.length === 0) {
