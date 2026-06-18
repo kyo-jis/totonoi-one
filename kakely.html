@@ -2496,38 +2496,54 @@ async function autoAddFixedCosts() {
   if (!fixedCosts.length) return;
   var today = new Date();
   var todayDay = today.getDate();
-  var todayStr = localDateStr(today);
   var todayY = today.getFullYear();
   var todayM = today.getMonth();
-  var isCurMonth = (todayY === viewYear && todayM === viewMonth);
-  var cacheKey = 'kakely_txn_' + todayY + '_' + (todayM + 1);
-  var added = 0;
-  for (var i = 0; i < fixedCosts.length; i++) {
-    var fc = fixedCosts[i];
-    if (fc.day !== todayDay) continue;
-    var memoKey = '固定費:' + fc.id;
-    // 重複チェック: 表示中の月はtransactions、それ以外はlocalStorageで確認
-    var checkArr = isCurMonth ? transactions : JSON.parse(localStorage.getItem(cacheKey) || '[]');
-    if (checkArr.some(function(t){ return t.memo && t.memo.indexOf(memoKey) !== -1; })) continue;
-    var payload = { amount:fc.amount, date:todayStr, is_income:false, category_id:fc.category_id||null, payment_method_id:fc.payment_method_id||null, memo:memoKey };
-    var newTxn = Object.assign({ id:'tmp_fix_'+Date.now()+'_'+i }, payload);
-    if (currentUser) {
-      var res = await _sb.from('kakely_transactions').insert(Object.assign({ user_id:currentUser.id }, payload)).select().single();
-      if (res.data) newTxn = res.data;
+  var prevM = todayM === 0 ? 11 : todayM - 1;
+  var prevY = todayM === 0 ? todayY - 1 : todayY;
+  // 当月と先月を対象にする（アプリを開かなかった日の固定費を遡って補完）
+  var slots = [
+    { y: todayY, m: todayM, isCurrent: true },
+    { y: prevY,  m: prevM,  isCurrent: false }
+  ];
+  var totalAdded = 0;
+  var viewDirty = false;
+
+  for (var si = 0; si < slots.length; si++) {
+    var s = slots[si];
+    var cacheKey = 'kakely_txn_' + s.y + '_' + (s.m + 1);
+    var isView = (s.y === viewYear && s.m === viewMonth);
+    var arr = isView ? transactions : JSON.parse(localStorage.getItem(cacheKey) || '[]');
+    var lastDay = new Date(s.y, s.m + 1, 0).getDate();
+    var slotAdded = 0;
+
+    for (var i = 0; i < fixedCosts.length; i++) {
+      var fc = fixedCosts[i];
+      var d = Math.min(fc.day, lastDay);
+      // 当月はまだ引き落とし日が来ていないものはスキップ
+      if (s.isCurrent && d > todayDay) continue;
+      var memoKey = '固定費:' + fc.id;
+      if (arr.some(function(t){ return t.memo && t.memo.indexOf(memoKey) !== -1; })) continue;
+      var dateStr = s.y + '-' + String(s.m + 1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+      var payload = { amount:fc.amount, date:dateStr, is_income:false, category_id:fc.category_id||null, payment_method_id:fc.payment_method_id||null, memo:memoKey };
+      var newTxn = Object.assign({ id:'tmp_fix_'+Date.now()+'_'+si+'_'+i }, payload);
+      if (currentUser) {
+        var res = await _sb.from('kakely_transactions').insert(Object.assign({ user_id:currentUser.id }, payload)).select().single();
+        if (res.data) newTxn = res.data;
+      }
+      arr.unshift(newTxn);
+      slotAdded++;
     }
-    if (isCurMonth) {
-      transactions.unshift(newTxn);
-    } else {
-      var cached = JSON.parse(localStorage.getItem(cacheKey) || '[]');
-      cached.unshift(newTxn);
-      localStorage.setItem(cacheKey, JSON.stringify(cached));
+
+    if (slotAdded > 0) {
+      if (isView) { viewDirty = true; saveMonthCache(); }
+      else { localStorage.setItem(cacheKey, JSON.stringify(arr)); }
+      totalAdded += slotAdded;
     }
-    added++;
   }
-  if (added > 0) {
-    if (isCurMonth) saveMonthCache();
-    renderAll();
-    showToast('🏠 固定費 ' + added + '件を自動追加しました');
+
+  if (totalAdded > 0) {
+    if (viewDirty) renderAll();
+    showToast('🏠 固定費 ' + totalAdded + '件を自動追加しました');
   }
 }
 
