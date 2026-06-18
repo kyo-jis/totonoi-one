@@ -697,6 +697,7 @@ var txnIsIncome = false;
 var txnIsTransfer = false;
 var selectedCatId = null;
 var recentCatIds = JSON.parse(localStorage.getItem('kakely_recent_cats') || '[]');
+var catLastPay   = JSON.parse(localStorage.getItem('kakely_cat_pay')      || '{}');
 var isPro = localStorage.getItem('isPro') === 'true';
 var fixedCosts = JSON.parse(localStorage.getItem('kakely_fixed') || '[]');
 var editFixedId = null;
@@ -1563,6 +1564,10 @@ function pushRecentCat(id) {
 function selectCat(id) {
   selectedCatId = (selectedCatId === id) ? null : id;
   buildCatGrid();
+  if (selectedCatId && catLastPay[selectedCatId]) {
+    var sel = document.getElementById('fPayMethod');
+    if (sel) { sel.value = catLastPay[selectedCatId]; updatePayBalanceHint(); }
+  }
 }
 
 function setTxnType(type) {
@@ -1675,7 +1680,13 @@ async function saveTxn() {
     updateCashBalance(payload.payment_method_id, delta);
   }
 
-  if (!txnIsIncome && selectedCatId) pushRecentCat(selectedCatId);
+  if (!txnIsIncome && selectedCatId) {
+    pushRecentCat(selectedCatId);
+    if (payload.payment_method_id) {
+      catLastPay[selectedCatId] = payload.payment_method_id;
+      localStorage.setItem('kakely_cat_pay', JSON.stringify(catLastPay));
+    }
+  }
   saveMonthCache();
   closeModal('txnModal');
   renderAll();
