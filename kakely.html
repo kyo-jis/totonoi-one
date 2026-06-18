@@ -671,6 +671,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 // ── Date helpers ──
+function findCat(id, isIncome) { return (isIncome ? incomeCategories : categories).find(function(c){ return c.id===id; }); }
 function localDateStr(d) {
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
@@ -688,6 +689,7 @@ function fmtDate(str) {
 
 // ── State ──
 var categories = JSON.parse(localStorage.getItem('kakely_cats') || '[]');
+var incomeCategories = JSON.parse(localStorage.getItem('kakely_income_cats') || '[]');
 var paymentMethods = JSON.parse(localStorage.getItem('kakely_pays') || '[]');
 var transactions = [];
 var now = new Date();
@@ -736,6 +738,15 @@ var DEFAULT_CATS = [
   {icon:'🔐',name:'保険',sort_order:18},
   {icon:'🐾',name:'ペット',sort_order:19},
   {icon:'❓',name:'その他',sort_order:20},
+];
+
+var DEFAULT_INCOME_CATS = [
+  {icon:'💼', name:'給与・賞与',         id:'inc_0'},
+  {icon:'💰', name:'副業・フリーランス', id:'inc_1'},
+  {icon:'📈', name:'投資・配当',          id:'inc_2'},
+  {icon:'🎁', name:'臨時収入',            id:'inc_3'},
+  {icon:'🏠', name:'不動産収入',          id:'inc_4'},
+  {icon:'❓', name:'その他',              id:'inc_5'},
 ];
 
 var DEFAULT_PAYS = [
@@ -789,6 +800,11 @@ function loadFromStorage() {
       }
     });
     if (changed) localStorage.setItem('kakely_cats', JSON.stringify(categories));
+  }
+  // 収入カテゴリが空なら初期セット
+  if (incomeCategories.length === 0) {
+    incomeCategories = DEFAULT_INCOME_CATS.slice();
+    localStorage.setItem('kakely_income_cats', JSON.stringify(incomeCategories));
   }
   // 支払い方法が空なら初期支払い方法をセット
   if (paymentMethods.length === 0) {
@@ -883,7 +899,7 @@ function renderList() {
       + '<div class="day-header"><span class="day-label">' + label + '</span>'
       + (dayTotal ? '<span class="day-total">−¥' + dayTotal.toLocaleString() + '</span>' : '') + '</div>'
       + txns.map(function(t) {
-          var cat = categories.find(function(c){ return c.id===t.category_id; });
+          var cat = findCat(t.category_id, t.is_income);
           var pay = paymentMethods.find(function(p){ return p.id===t.payment_method_id; });
           var isGroup    = !!t.group_id && !t.is_transfer;
           var isFixed    = !!(t.memo && t.memo.indexOf('固定費:') === 0);
@@ -956,7 +972,7 @@ function showCalPopup(dateStr) {
   var d = parseLocalDate(dateStr);
   document.getElementById('calPopupTitle').textContent = (d.getMonth()+1) + '月' + d.getDate() + '日';
   document.getElementById('calPopupItems').innerHTML = dayTxns.map(function(t) {
-    var cat = categories.find(function(c){ return c.id===t.category_id; });
+    var cat = findCat(t.category_id, t.is_income);
     return '<div class="txn-row" onclick="openTxnModal(\'' + t.id + '\')">'
       + '<div class="txn-icon">' + (cat ? cat.icon : '❓') + '</div>'
       + '<div class="txn-info"><p class="txn-name">' + (cat ? cat.name : '未分類') + '</p>'
@@ -1544,8 +1560,9 @@ function openTxnModal(id) {
 }
 
 function buildCatGrid() {
+  var cats = txnIsIncome ? incomeCategories : categories;
   var el = document.getElementById('catSelectGrid');
-  el.innerHTML = categories.map(function(c) {
+  el.innerHTML = cats.map(function(c) {
     return '<div class="cat-chip' + (c.id === selectedCatId ? ' selected' : '') + '" onclick="selectCat(\'' + c.id + '\')">'
       + '<span class="ci">' + c.icon + '</span><span class="cn">' + c.name + '</span></div>';
   }).join('');
@@ -1555,6 +1572,7 @@ function buildCatGrid() {
 function buildRecentRow() {
   var wrap = document.getElementById('catRecentWrap');
   var row  = document.getElementById('catRecentRow');
+  if (txnIsIncome) { wrap.style.display='none'; return; }
   var valid = recentCatIds.filter(function(id){ return categories.find(function(c){ return c.id===id; }); }).slice(0,6);
   if (!valid.length) { wrap.style.display='none'; return; }
   wrap.style.display='block';
@@ -1590,7 +1608,8 @@ function setTxnType(type) {
   document.getElementById('normalTxnWrap').style.display   = txnIsTransfer ? 'none' : '';
   document.getElementById('transferTxnWrap').style.display = txnIsTransfer ? '' : 'none';
   if (!txnIsTransfer) {
-    document.getElementById('catSelectWrap').style.display = txnIsIncome ? 'none' : '';
+    document.getElementById('catSelectWrap').style.display = '';
+    buildCatGrid();
   }
   document.getElementById('saveTxnBtn').textContent = txnIsTransfer ? '移動を記録する' : '記録する';
 }
@@ -1660,7 +1679,7 @@ async function saveTxn() {
 
   var payload = {
     amount: amount, date: date, is_income: txnIsIncome,
-    category_id: txnIsIncome ? null : (selectedCatId || null),
+    category_id: selectedCatId || null,
     payment_method_id: document.getElementById('fPayMethod').value || null,
     memo: document.getElementById('fMemo').value.trim() || null
   };
@@ -2119,6 +2138,13 @@ async function syncFromCloud() {
   if (fcRes.data && fcRes.data.data) {
     fixedCosts = fcRes.data.data;
     localStorage.setItem('kakely_fixed', JSON.stringify(fixedCosts));
+  }
+
+  // Income categories
+  var icRes = await _sb.from('user_data').select('data').eq('user_id', currentUser.id).eq('app', 'kakely').eq('key', 'income_cats').maybeSingle();
+  if (icRes.data && icRes.data.data) {
+    incomeCategories = icRes.data.data;
+    localStorage.setItem('kakely_income_cats', JSON.stringify(incomeCategories));
   }
 
   // Deduplicate categories
