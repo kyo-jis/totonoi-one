@@ -33,16 +33,14 @@ self.addEventListener('fetch', function(e) {
   if (e.request.url.includes('supabase.co')) return;
   if (e.request.url.includes('fonts.googleapis')) return;
 
-  // Stale-While-Revalidate: キャッシュを即返しつつバックグラウンドで更新
+  // ネットワーク優先・失敗時にキャッシュ
   e.respondWith(
     caches.open(CACHE_NAME).then(function(cache) {
-      return cache.match(e.request).then(function(cached) {
-        var networkFetch = fetch(e.request).then(function(res) {
-          if (res.ok) cache.put(e.request, res.clone());
-          return res;
-        }).catch(function() { return cached; });
-
-        return cached || networkFetch;
+      return fetch(e.request).then(function(res) {
+        if (res.ok) cache.put(e.request, res.clone());
+        return res;
+      }).catch(function() {
+        return cache.match(e.request);
       });
     })
   );
