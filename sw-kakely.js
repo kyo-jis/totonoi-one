@@ -1,7 +1,6 @@
-const CACHE_NAME = 'kakely-v3';
+const CACHE_NAME = 'kakely-v4';
+// HTMLはキャッシュしない（常に最新を取得）
 const ASSETS = [
-  '/kakely.html',
-  '/kakely',
   '/manifest-kakely.json',
   '/icon-kakely-192.png',
   '/icon-kakely-512.png',
@@ -28,20 +27,19 @@ self.addEventListener('activate', function(e) {
 });
 
 self.addEventListener('fetch', function(e) {
-  // APIリクエスト・POST等はキャッシュしない
   if (e.request.method !== 'GET') return;
   if (e.request.url.includes('supabase.co')) return;
   if (e.request.url.includes('fonts.googleapis')) return;
 
-  // ネットワーク優先・失敗時にキャッシュ
+  // HTMLは常にネットワーク優先・オフライン時のみキャッシュ
   e.respondWith(
-    caches.open(CACHE_NAME).then(function(cache) {
-      return fetch(e.request).then(function(res) {
-        if (res.ok) cache.put(e.request, res.clone());
-        return res;
-      }).catch(function() {
-        return cache.match(e.request);
-      });
+    fetch(e.request).then(function(res) {
+      if (res.ok) {
+        caches.open(CACHE_NAME).then(function(cache) { cache.put(e.request, res.clone()); });
+      }
+      return res;
+    }).catch(function() {
+      return caches.match(e.request);
     })
   );
 });
