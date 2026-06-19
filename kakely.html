@@ -377,6 +377,10 @@
         </div>
         <div class="chart-box" id="budgetList"></div>
       </div>
+      <div class="graph-section graph-grid-wide" id="payBreakdownSection">
+        <p class="graph-title">支払い方法別 今月の支出</p>
+        <div class="chart-box" id="payBreakdownList"></div>
+      </div>
       <div class="graph-section graph-grid-wide">
         <p class="graph-title">月別収支推移</p>
         <div class="chart-box"><canvas id="barChart" height="180"></canvas></div>
@@ -988,6 +992,7 @@ function renderGraph() {
   var isPC = window.innerWidth >= 768;
   renderPieChart(isPC);
   renderBudgetSection();
+  renderPayBreakdown();
   renderBarChart(isPC);
   if (isPC) { renderTrendChart(); renderHeatmap(); }
 }
@@ -1064,6 +1069,36 @@ function renderBudgetSection() {
       badge.style.color = '#5ecfa0';
     }
   }
+}
+
+function renderPayBreakdown() {
+  var el = document.getElementById('payBreakdownList');
+  var sec = document.getElementById('payBreakdownSection');
+  var expenses = transactions.filter(function(t){ return !t.is_income && !t.is_transfer; });
+  if (!expenses.length) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+
+  var totals = {};
+  expenses.forEach(function(t) {
+    var key = t.payment_method_id || '__none__';
+    totals[key] = (totals[key] || 0) + t.amount;
+  });
+  var total = expenses.reduce(function(s,t){ return s+t.amount; }, 0);
+  var sorted = Object.keys(totals).sort(function(a,b){ return totals[b]-totals[a]; });
+
+  el.innerHTML = sorted.map(function(key) {
+    var p = key === '__none__' ? null : paymentMethods.find(function(p){ return p.id===key; });
+    var icon = p ? p.icon : '❓';
+    var name = p ? p.name : '未設定';
+    var amt  = totals[key];
+    var pct  = total ? Math.round(amt / total * 100) : 0;
+    return '<div class="budget-row">'
+      + '<div class="budget-label"><span>' + icon + '</span><span class="budget-name">' + esc(name) + '</span></div>'
+      + '<div class="budget-bar-wrap"><div class="budget-track"><div class="budget-fill" style="width:' + pct + '%;background:var(--accent)"></div></div></div>'
+      + '<span style="font-size:.78rem;font-weight:600;color:var(--text);flex-shrink:0;min-width:72px;text-align:right">¥' + amt.toLocaleString() + '</span>'
+      + '<span style="font-size:.7rem;color:var(--muted);flex-shrink:0;min-width:32px;text-align:right">' + pct + '%</span>'
+      + '</div>';
+  }).join('');
 }
 
 function renderPieChart(isPC) {
