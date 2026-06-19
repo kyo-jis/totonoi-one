@@ -2857,7 +2857,7 @@ function renderExerciseModal(list) {
       +'<div style="display:flex;align-items:center;gap:.35rem;">'
       +daysBadge
       +starBtn
-      +(MUSCLE_DATA[ex.id] ? '<button class="muscle-btn" onclick="openMuscleModal(\''+ex.id+'\',\''+ex.name+'\',event)" title="筋肉図">💪</button>' : '')
+      +(MUSCLE_DATA && MUSCLE_DATA[ex.id] ? '<button class="muscle-btn" onclick="openMuscleModal(\''+ex.id+'\',\''+ex.name+'\',event)" title="筋肉図">💪</button>' : '')
       +'<a href="'+ytURL+'" target="_blank" onclick="event.stopPropagation()" class="btn-yt">▶ 動画</a>'
       +'</div></div>';
   }
