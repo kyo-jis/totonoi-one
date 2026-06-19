@@ -553,7 +553,7 @@
     </div>
     <div class="form-group" id="cardExpiryWrap" style="display:none">
       <label class="form-label">有効期限（MM/YY）</label>
-      <input type="text" id="fCardExpiry" placeholder="12/28" maxlength="5" inputmode="numeric">
+      <input type="text" id="fCardExpiry" placeholder="12/28" maxlength="5" inputmode="text" oninput="fmtExpiry(this)">
     </div>
     <div class="form-group" id="withdrawalWrap" style="display:none">
       <label class="form-label">引き落とし日</label>
@@ -1843,6 +1843,12 @@ async function deleteCat() {
   closeModal('catModal');
   renderSettings();
   showToast('削除しました');
+}
+
+function fmtExpiry(el) {
+  var v = el.value.replace(/[^0-9]/g, '').slice(0, 4);
+  if (v.length >= 3) v = v.slice(0,2) + '/' + v.slice(2);
+  el.value = v;
 }
 
 // ── Payment Method Modal ──
