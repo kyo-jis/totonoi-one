@@ -816,6 +816,17 @@ function loadFromStorage() {
       return Object.assign({ id: 'defpay_' + i }, p);
     });
     localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
+  } else {
+    // デフォルトに存在して未登録の支払い方法を末尾に追加
+    var payChanged = false;
+    DEFAULT_PAYS.forEach(function(dp, i) {
+      var exists = paymentMethods.some(function(p){ return p.name === dp.name; });
+      if (!exists) {
+        paymentMethods.push(Object.assign({ id: 'defpay_auto_' + i }, dp));
+        payChanged = true;
+      }
+    });
+    if (payChanged) localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
   }
 }
 
