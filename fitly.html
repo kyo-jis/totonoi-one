@@ -451,6 +451,20 @@
     .back-confirm-btn:active{transform:scale(.93);}
     .back-confirm-btn-go{background:var(--accent);color:#fff;}
     .back-confirm-btn-stay{background:var(--surface3);color:var(--text);}
+    .muscle-btn { background:none; border:none; cursor:pointer; padding:.1rem .15rem; font-size:1rem; line-height:1; opacity:.7; transition:opacity .15s; flex-shrink:0; }
+    .muscle-btn:active { opacity:1; transform:scale(.85); }
+    .muscle-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); backdrop-filter:blur(6px); z-index:300; display:none; align-items:flex-end; justify-content:center; }
+    .muscle-modal-overlay.show { display:flex; }
+    .muscle-modal { background:var(--surface); border:1px solid var(--border); border-radius:24px 24px 0 0; padding:1.25rem 1.25rem 2rem; width:100%; max-width:480px; max-height:90vh; overflow-y:auto; animation:slideUp .3s ease; }
+    .muscle-modal-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:0 auto .75rem; }
+    .muscle-modal-title { font-size:1rem; font-weight:600; text-align:center; margin-bottom:.5rem; }
+    .muscle-view-toggle { display:flex; gap:.4rem; justify-content:center; margin-bottom:1rem; }
+    .muscle-view-btn { flex:1; max-width:100px; padding:.45rem; border:1px solid var(--border); border-radius:10px; background:var(--surface2); color:var(--muted); font-size:.8rem; font-family:var(--font); cursor:pointer; transition:all .15s; }
+    .muscle-view-btn.active { border-color:var(--accent); background:rgba(94,207,160,.12); color:var(--accent); }
+    .muscle-svg-wrap { display:flex; justify-content:center; margin-bottom:1rem; }
+    .muscle-legend { display:flex; gap:1rem; justify-content:center; font-size:.72rem; }
+    .muscle-legend-item { display:flex; align-items:center; gap:.3rem; }
+    .muscle-legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
   </style>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-E9Q0JQ0V92"></script>
@@ -2843,6 +2857,7 @@ function renderExerciseModal(list) {
       +'<div style="display:flex;align-items:center;gap:.35rem;">'
       +daysBadge
       +starBtn
+      +(MUSCLE_DATA[ex.id] ? '<button class="muscle-btn" onclick="openMuscleModal(\''+ex.id+'\',\''+ex.name+'\',event)" title="筋肉図">💪</button>' : '')
       +'<a href="'+ytURL+'" target="_blank" onclick="event.stopPropagation()" class="btn-yt">▶ 動画</a>'
       +'</div></div>';
   }
@@ -3812,6 +3827,121 @@ _sb.auth.getSession().then(function(res) {
 function goAppTop(){var t=document.querySelectorAll('.tab')[0];if(t)t.click();window.scrollTo({top:0,behavior:'smooth'});}
 (function(){history.pushState({page:'app'},'');window.addEventListener('popstate',function(){document.getElementById('backConfirm').classList.add('show');history.pushState({page:'app'},'');});})();
 function confirmBack(go){document.getElementById('backConfirm').classList.remove('show');if(go)window.location.href='index.html';}
+
+var MUSCLE_DATA = {
+  'bench':         { primary:['chest'],                      secondary:['ant_delt','triceps'],      defaultView:'front' },
+  'squat':         { primary:['quads','glutes'],             secondary:['hams','abs'],              defaultView:'front' },
+  'deadlift':      { primary:['erector','glutes','hams'],    secondary:['lats','trap','quads'],     defaultView:'back'  },
+  'pullup':        { primary:['lats'],                       secondary:['biceps','trap'],           defaultView:'back'  },
+  'db_shoulder_press':{ primary:['delt'],                    secondary:['triceps','trap'],          defaultView:'back'  },
+  'bent_row':      { primary:['lats','trap'],                secondary:['biceps','erector'],        defaultView:'back'  },
+  'm_leg_press':   { primary:['quads','glutes'],             secondary:['hams'],                    defaultView:'front' },
+  'curl':          { primary:['biceps'],                     secondary:['brachio'],                 defaultView:'front' },
+  'm_tricep_ext':  { primary:['triceps'],                    secondary:[],                          defaultView:'back'  },
+  'plank':         { primary:['abs'],                        secondary:['ant_delt','glutes'],       defaultView:'front' },
+};
+
+var _muscleExId = null;
+var _muscleView = 'front';
+
+function muscleColor(muscleId, primary, secondary) {
+  if (primary.indexOf(muscleId) >= 0)   return '#ff4d4d';
+  if (secondary.indexOf(muscleId) >= 0) return '#ff9a3c';
+  return '#3a3a5a';
+}
+
+function buildMuscleSVG(exId, view) {
+  var d = MUSCLE_DATA[exId];
+  if (!d) return '';
+  var p = d.primary, s = d.secondary;
+  function c(id) { return muscleColor(id, p, s); }
+  var body = '#252545';
+  if (view === 'front') {
+    return '<svg viewBox="0 0 120 285" width="160" height="240" xmlns="http://www.w3.org/2000/svg">'
+    +'<ellipse cx="60" cy="18" rx="13" ry="15" fill="'+body+'"/>'
+    +'<rect x="54" y="31" width="12" height="11" rx="4" fill="'+body+'"/>'
+    +'<path d="M36,40 Q28,44 22,52 L20,118 Q24,130 36,134 L38,150 L82,150 L84,134 Q96,130 100,118 L98,52 Q92,44 84,40 Z" fill="'+body+'"/>'
+    +'<rect x="15" y="46" width="14" height="62" rx="6" fill="'+body+'"/>'
+    +'<rect x="91" y="46" width="14" height="62" rx="6" fill="'+body+'"/>'
+    +'<rect x="16" y="110" width="12" height="48" rx="5" fill="'+body+'"/>'
+    +'<rect x="92" y="110" width="12" height="48" rx="5" fill="'+body+'"/>'
+    +'<ellipse cx="22" cy="162" rx="7" ry="5" fill="'+body+'"/>'
+    +'<ellipse cx="98" cy="162" rx="7" ry="5" fill="'+body+'"/>'
+    +'<rect x="36" y="152" width="21" height="68" rx="9" fill="'+body+'"/>'
+    +'<rect x="63" y="152" width="21" height="68" rx="9" fill="'+body+'"/>'
+    +'<rect x="38" y="222" width="18" height="52" rx="7" fill="'+body+'"/>'
+    +'<rect x="64" y="222" width="18" height="52" rx="7" fill="'+body+'"/>'
+    +'<ellipse cx="47" cy="276" rx="10" ry="6" fill="'+body+'"/>'
+    +'<ellipse cx="73" cy="276" rx="10" ry="6" fill="'+body+'"/>'
+    +'<path d="M37,50 C42,44 56,44 60,51 L58,78 C52,84 36,80 36,72 Z" fill="'+c('chest')+'" opacity=".85"/>'
+    +'<path d="M83,50 C78,44 64,44 60,51 L62,78 C68,84 84,80 84,72 Z" fill="'+c('chest')+'" opacity=".85"/>'
+    +'<ellipse cx="23" cy="50" rx="8" ry="8" fill="'+c('ant_delt')+'" opacity=".85"/>'
+    +'<ellipse cx="97" cy="50" rx="8" ry="8" fill="'+c('ant_delt')+'" opacity=".85"/>'
+    +'<rect x="17" y="56" width="9" height="40" rx="4" fill="'+c('biceps')+'" opacity=".85"/>'
+    +'<rect x="94" y="56" width="9" height="40" rx="4" fill="'+c('biceps')+'" opacity=".85"/>'
+    +'<rect x="49" y="82" width="22" height="52" rx="5" fill="'+c('abs')+'" opacity=".85"/>'
+    +'<rect x="37" y="156" width="19" height="56" rx="8" fill="'+c('quads')+'" opacity=".85"/>'
+    +'<rect x="64" y="156" width="19" height="56" rx="8" fill="'+c('quads')+'" opacity=".85"/>'
+    +'<rect x="17" y="113" width="9" height="30" rx="4" fill="'+c('brachio')+'" opacity=".85"/>'
+    +'<rect x="94" y="113" width="9" height="30" rx="4" fill="'+c('brachio')+'" opacity=".85"/>'
+    +'</svg>';
+  } else {
+    return '<svg viewBox="0 0 120 285" width="160" height="240" xmlns="http://www.w3.org/2000/svg">'
+    +'<ellipse cx="60" cy="18" rx="13" ry="15" fill="'+body+'"/>'
+    +'<rect x="54" y="31" width="12" height="11" rx="4" fill="'+body+'"/>'
+    +'<path d="M36,40 Q28,44 22,52 L20,118 Q24,130 36,134 L38,150 L82,150 L84,134 Q96,130 100,118 L98,52 Q92,44 84,40 Z" fill="'+body+'"/>'
+    +'<rect x="15" y="46" width="14" height="62" rx="6" fill="'+body+'"/>'
+    +'<rect x="91" y="46" width="14" height="62" rx="6" fill="'+body+'"/>'
+    +'<rect x="16" y="110" width="12" height="48" rx="5" fill="'+body+'"/>'
+    +'<rect x="92" y="110" width="12" height="48" rx="5" fill="'+body+'"/>'
+    +'<ellipse cx="22" cy="162" rx="7" ry="5" fill="'+body+'"/>'
+    +'<ellipse cx="98" cy="162" rx="7" ry="5" fill="'+body+'"/>'
+    +'<rect x="36" y="152" width="21" height="68" rx="9" fill="'+body+'"/>'
+    +'<rect x="63" y="152" width="21" height="68" rx="9" fill="'+body+'"/>'
+    +'<rect x="38" y="222" width="18" height="52" rx="7" fill="'+body+'"/>'
+    +'<rect x="64" y="222" width="18" height="52" rx="7" fill="'+body+'"/>'
+    +'<ellipse cx="47" cy="276" rx="10" ry="6" fill="'+body+'"/>'
+    +'<ellipse cx="73" cy="276" rx="10" ry="6" fill="'+body+'"/>'
+    +'<path d="M44,40 L76,40 L70,82 L60,90 L50,82 Z" fill="'+c('trap')+'" opacity=".85"/>'
+    +'<path d="M36,70 L44,66 L50,80 L46,134 L36,138 Z" fill="'+c('lats')+'" opacity=".85"/>'
+    +'<path d="M84,70 L76,66 L70,80 L74,134 L84,138 Z" fill="'+c('lats')+'" opacity=".85"/>'
+    +'<ellipse cx="23" cy="50" rx="8" ry="8" fill="'+c('delt')+'" opacity=".85"/>'
+    +'<ellipse cx="97" cy="50" rx="8" ry="8" fill="'+c('delt')+'" opacity=".85"/>'
+    +'<rect x="16" y="54" width="11" height="46" rx="5" fill="'+c('triceps')+'" opacity=".85"/>'
+    +'<rect x="93" y="54" width="11" height="46" rx="5" fill="'+c('triceps')+'" opacity=".85"/>'
+    +'<rect x="51" y="90" width="7" height="50" rx="3" fill="'+c('erector')+'" opacity=".85"/>'
+    +'<rect x="62" y="90" width="7" height="50" rx="3" fill="'+c('erector')+'" opacity=".85"/>'
+    +'<ellipse cx="47" cy="152" rx="13" ry="13" fill="'+c('glutes')+'" opacity=".85"/>'
+    +'<ellipse cx="73" cy="152" rx="13" ry="13" fill="'+c('glutes')+'" opacity=".85"/>'
+    +'<rect x="37" y="164" width="19" height="52" rx="8" fill="'+c('hams')+'" opacity=".85"/>'
+    +'<rect x="64" y="164" width="19" height="52" rx="8" fill="'+c('hams')+'" opacity=".85"/>'
+    +'</svg>';
+  }
+}
+
+function openMuscleModal(exId, exName, event) {
+  event.stopPropagation();
+  var d = MUSCLE_DATA[exId];
+  if (!d) return;
+  _muscleExId = exId;
+  _muscleView = d.defaultView;
+  document.getElementById('muscleModalTitle').textContent = exName;
+  document.getElementById('muscleBtnFront').classList.toggle('active', _muscleView === 'front');
+  document.getElementById('muscleBtnBack').classList.toggle('active',  _muscleView === 'back');
+  document.getElementById('muscleSvgWrap').innerHTML = buildMuscleSVG(exId, _muscleView);
+  document.getElementById('muscleModal').classList.add('show');
+}
+
+function setMuscleView(view) {
+  _muscleView = view;
+  document.getElementById('muscleBtnFront').classList.toggle('active', view === 'front');
+  document.getElementById('muscleBtnBack').classList.toggle('active',  view === 'back');
+  document.getElementById('muscleSvgWrap').innerHTML = buildMuscleSVG(_muscleExId, view);
+}
+
+function closeMuscleModal() {
+  document.getElementById('muscleModal').classList.remove('show');
+}
 </script>
 
 <!-- 体重記録モーダル -->
@@ -3848,6 +3978,22 @@ function confirmBack(go){document.getElementById('backConfirm').classList.remove
     <p class="back-confirm-title">ダッシュボードに戻りますか？</p>
     <button class="back-confirm-btn back-confirm-btn-go" onclick="confirmBack(true)">戻る</button>
     <button class="back-confirm-btn back-confirm-btn-stay" onclick="confirmBack(false)">このアプリに留まる</button>
+  </div>
+</div>
+<div class="muscle-modal-overlay" id="muscleModal" onclick="if(event.target===this)closeMuscleModal()">
+  <div class="muscle-modal">
+    <div class="muscle-modal-handle"></div>
+    <p class="muscle-modal-title" id="muscleModalTitle"></p>
+    <div class="muscle-view-toggle">
+      <button class="muscle-view-btn active" id="muscleBtnFront" onclick="setMuscleView('front')">前面</button>
+      <button class="muscle-view-btn" id="muscleBtnBack" onclick="setMuscleView('back')">背面</button>
+    </div>
+    <div class="muscle-svg-wrap" id="muscleSvgWrap"></div>
+    <div class="muscle-legend">
+      <div class="muscle-legend-item"><div class="muscle-legend-dot" style="background:#ff4d4d"></div>メイン筋</div>
+      <div class="muscle-legend-item"><div class="muscle-legend-dot" style="background:#ff9a3c"></div>補助筋</div>
+      <div class="muscle-legend-item"><div class="muscle-legend-dot" style="background:#3a3a5a"></div>非対象</div>
+    </div>
   </div>
 </div>
 <!-- Auth Modal -->
