@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kakely-v2';
+const CACHE_NAME = 'kakely-v3';
 const ASSETS = [
   '/kakely.html',
   '/kakely',
