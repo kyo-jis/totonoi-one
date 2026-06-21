@@ -160,6 +160,7 @@
 
     .btn-primary { width:100%; padding:.9rem; background:var(--accent); color:#1a1a24; border:none; border-radius:12px; font-size:.95rem; font-weight:600; font-family:var(--font); cursor:pointer; margin-top:.5rem; }
     .btn-cancel { width:100%; padding:.75rem; background:none; color:var(--muted); border:none; font-size:.88rem; font-family:var(--font); cursor:pointer; }
+    .btn-danger { width:100%; padding:.75rem; background:none; color:#ef4444; border:1px solid rgba(239,68,68,.3); border-radius:12px; font-size:.88rem; font-family:var(--font); cursor:pointer; }
 
     .fab { position:fixed; bottom:calc(72px + env(safe-area-inset-bottom)); right:1.25rem; width:56px; height:56px; border-radius:18px; background:var(--accent); color:#1a1a24; border:none; font-size:1.5rem; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 24px rgba(179,136,255,.4); z-index:50; transition:transform .15s; }
     .fab:active { transform:scale(.92); }
@@ -1297,10 +1298,51 @@ function renderDosageLog() {
             + '<p style="font-size:.88rem;font-weight:500;">' + e.itemName + '</p>'
             + '<p style="font-size:.7rem;color:var(--muted);margin-top:.1rem;">' + e.timing + ' · ' + e.daily + e.unit + '</p>'
           + '</div>'
-          + '<p style="font-size:.75rem;color:var(--muted);flex-shrink:0;">' + e.time + '</p>'
+          + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;flex-shrink:0;">'
+            + '<p style="font-size:.75rem;color:var(--muted);">' + e.time + '</p>'
+            + '<button onclick="openEditDosage(\'' + e.id + '\')" style="background:none;border:none;color:var(--muted);font-size:.82rem;cursor:pointer;padding:.1rem .2rem;line-height:1;">✏️</button>'
+          + '</div>'
           + '</div>';
       }).join('');
   }).join('');
+}
+
+var _editDosageId = null;
+
+function openEditDosage(id) {
+  var e = dosageLog.find(function(x){ return x.id === id; });
+  if (!e) return;
+  _editDosageId = id;
+  document.getElementById('edMedName').textContent = e.icon + ' ' + e.itemName;
+  document.getElementById('edDate').value = e.date;
+  var timeParts = (e.time || '00:00').split(':');
+  document.getElementById('edTime').value = timeParts[0].padStart(2,'0') + ':' + (timeParts[1]||'00').padStart(2,'0');
+  document.getElementById('edTiming').value = e.timing;
+  document.getElementById('editDosageModal').classList.add('show');
+}
+
+function saveEditDosage() {
+  var idx = dosageLog.findIndex(function(x){ return x.id === _editDosageId; });
+  if (idx < 0) return;
+  dosageLog[idx].date   = document.getElementById('edDate').value;
+  dosageLog[idx].time   = document.getElementById('edTime').value;
+  dosageLog[idx].timing = document.getElementById('edTiming').value;
+  dosageLog.sort(function(a,b){ return (b.date+' '+b.time).localeCompare(a.date+' '+a.time); });
+  localStorage.setItem('medlyDosageLog', JSON.stringify(dosageLog));
+  dbSave('dosageLog', dosageLog);
+  document.getElementById('editDosageModal').classList.remove('show');
+  renderDosageLog();
+  showToast('✅ 服用記録を更新しました');
+}
+
+function deleteDosage() {
+  if (!confirm('この服用記録を削除しますか？')) return;
+  dosageLog = dosageLog.filter(function(x){ return x.id !== _editDosageId; });
+  localStorage.setItem('medlyDosageLog', JSON.stringify(dosageLog));
+  dbSave('dosageLog', dosageLog);
+  document.getElementById('editDosageModal').classList.remove('show');
+  renderDosageLog();
+  showToast('🗑 削除しました');
 }
 
 var editPurchaseId = null;
@@ -1812,6 +1854,42 @@ function confirmBack(go){document.getElementById('backConfirm').classList.remove
 </div>
 
 <!-- 購入履歴編集モーダル -->
+<!-- 服用記録編集モーダル -->
+<div class="modal-overlay" id="editDosageModal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <p class="modal-title">服用記録を編集</p>
+    <p id="edMedName" style="text-align:center;font-size:.95rem;color:var(--muted);margin-bottom:1rem;"></p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+      <div class="form-group">
+        <label>日付</label>
+        <input type="date" id="edDate" style="width:100%">
+      </div>
+      <div class="form-group">
+        <label>時刻</label>
+        <input type="time" id="edTime" style="width:100%">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>タイミング</label>
+      <select id="edTiming" style="width:100%">
+        <option value="朝">朝</option>
+        <option value="昼">昼</option>
+        <option value="夕">夕</option>
+        <option value="夜">夜</option>
+        <option value="就寝前">就寝前</option>
+        <option value="運動前">運動前</option>
+        <option value="運動後">運動後</option>
+        <option value="食後">食後</option>
+        <option value="頓服">頓服</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="saveEditDosage()">保存する</button>
+    <button class="btn-cancel" onclick="document.getElementById('editDosageModal').classList.remove('show')">キャンセル</button>
+    <button class="btn-danger" onclick="deleteDosage()" style="margin-top:.4rem;">この記録を削除</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="editPurchaseModal" onclick="if(event.target===this)this.classList.remove('show')">
   <div class="modal">
     <div class="modal-handle"></div>
