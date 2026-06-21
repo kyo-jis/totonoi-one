@@ -198,10 +198,9 @@
 </div>
 <div class="idea-status-filter" id="ideaStatusFilter">
   <button class="status-chip active" onclick="filterIdeaStatus('all',this)">すべて</button>
-  <button class="status-chip" onclick="filterIdeaStatus('pending',this)">⬜ 未着手</button>
-  <button class="status-chip" onclick="filterIdeaStatus('progress',this)">▶️ 進行中</button>
-  <button class="status-chip" onclick="filterIdeaStatus('done',this)">✅ 完了</button>
-  <button class="status-chip" onclick="filterIdeaStatus('rejected',this)">❌ 却下・保留</button>
+  <button class="status-chip" onclick="filterIdeaStatus('pending',this)">未着手</button>
+  <button class="status-chip" onclick="filterIdeaStatus('done',this)">完了</button>
+  <button class="status-chip" onclick="filterIdeaStatus('rejected',this)">却下</button>
 </div>
 <div class="list-section"><div id="noteList"></div></div>
 
@@ -300,8 +299,13 @@ var searchQuery = '';
 var editId = null;
 var listShowAll = false;
 var LIST_LIMIT = 15;
-var IDEA_STATUS_CYCLE = ['pending','progress','done','rejected'];
-var IDEA_STATUS_ICONS = { pending:'⬜', progress:'▶️', done:'✅', rejected:'❌' };
+var IDEA_STATUS_CYCLE = ['pending','done','rejected'];
+var IDEA_STATUS_ICONS = {
+  pending:  '<svg width="20" height="20" viewBox="0 0 20 20" style="display:block"><circle cx="10" cy="10" r="8" fill="none" stroke="#5a5a7a" stroke-width="2"/></svg>',
+  progress: '<svg width="20" height="20" viewBox="0 0 20 20" style="display:block"><circle cx="10" cy="10" r="8" fill="none" stroke="#5a5a7a" stroke-width="2"/></svg>',
+  done:     '<svg width="20" height="20" viewBox="0 0 20 20" style="display:block"><circle cx="10" cy="10" r="10" fill="#22c55e"/><path d="M5.5 10.5 L8.5 13.5 L14.5 7" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  rejected: '<svg width="20" height="20" viewBox="0 0 20 20" style="display:block"><circle cx="10" cy="10" r="10" fill="#ef4444"/><path d="M7 7 L13 13 M13 7 L7 13" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>'
+};
 
 function init() { renderNotes(); updateProUI(); renderStats(); }
 
@@ -379,20 +383,21 @@ function renderNotes() {
     var catBadge = '<span class="cat-badge cat-' + n.category + '">' + CAT_LABELS[n.category] + '</span>';
     var isIdea = n.category === 'idea';
     var isTodo = n.category === 'todo';
-    var isDone = isIdea && (n.status||'pending') === 'done';
+    var ideaStatus = n.status || 'pending';
+    var isInactive = isIdea && (ideaStatus === 'done' || ideaStatus === 'rejected');
     var statusBtn = isIdea
-      ? '<button class="status-btn" onclick="event.stopPropagation();cycleIdeaStatus(\'' + n.id + '\')" title="ステータスを変更">' + IDEA_STATUS_ICONS[n.status||'pending'] + '</button>'
+      ? '<button class="status-btn" onclick="event.stopPropagation();cycleIdeaStatus(\'' + n.id + '\')" title="ステータスを変更">' + (IDEA_STATUS_ICONS[ideaStatus] || IDEA_STATUS_ICONS.pending) + '</button>'
       : '';
     var bodySection = '';
     if (isTodo && n.tasks && n.tasks.length) {
       bodySection = renderTodoCard(n);
     } else if (!isTodo && n.body) {
-      bodySection = '<p class="note-preview' + (isDone?' done':'') + '">' + n.body.replace(/</g,'&lt;') + '</p>';
+      bodySection = '<p class="note-preview">' + n.body.replace(/</g,'&lt;') + '</p>';
     }
-    return '<div class="note-card" onclick="openNote(\'' + n.id + '\')">'
+    return '<div class="note-card" onclick="openNote(\'' + n.id + '\')"' + (isInactive?' style="opacity:.5;"':'') + '>'
       + '<div class="note-card-top">'
         + statusBtn
-        + '<p class="note-title' + (isDone?' done':'') + (!n.title?' untitled':'') + '">' + (n.title||'（タイトルなし）') + '</p>'
+        + '<p class="note-title' + (!n.title?' untitled':'') + '">' + (n.title||'（タイトルなし）') + '</p>'
         + '<span class="note-date">' + dateStr + '</span>'
       + '</div>'
       + bodySection
