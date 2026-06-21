@@ -195,6 +195,7 @@
   <button class="cat-chip" onclick="filterCat('idea',this)">💡 アイデア</button>
   <button class="cat-chip" onclick="filterCat('todo',this)">✅ TODO</button>
   <button class="cat-chip" onclick="filterCat('other',this)">📦 その他</button>
+  <button class="cat-chip" onclick="filterCat('archive',this)">🗂 アーカイブ</button>
 </div>
 <div class="idea-status-filter" id="ideaStatusFilter">
   <button class="status-chip active" onclick="filterIdeaStatus('all',this)">すべて</button>
@@ -324,6 +325,24 @@ function filterCat(cat, btn) {
   }
   renderNotes();
 }
+
+function archiveNote(id) {
+  var i = notes.findIndex(function(x){ return x.id===id; });
+  if (i < 0) return;
+  notes[i].archived = true;
+  notes[i].archivedAt = new Date().toISOString();
+  persist(); renderNotes(); renderStats();
+  showToast('🗂 アーカイブしました');
+}
+
+function restoreNote(id) {
+  var i = notes.findIndex(function(x){ return x.id===id; });
+  if (i < 0) return;
+  notes[i].archived = false;
+  delete notes[i].archivedAt;
+  persist(); renderNotes(); renderStats();
+  showToast('↩ 復元しました');
+}
 function filterIdeaStatus(status, btn) {
   currentIdeaStatus = status;
   listShowAll = false;
@@ -368,13 +387,21 @@ function renderTodoCard(n) {
 
 function renderNotes() {
   var el = document.getElementById('noteList');
+  var isArchiveView = currentCat === 'archive';
   var list = notes.filter(function(n){
+    if (isArchiveView) {
+      if (!n.archived) return false;
+      return !searchQuery || (n.title||'').toLowerCase().includes(searchQuery) || (n.body||'').toLowerCase().includes(searchQuery);
+    }
+    if (n.archived) return false;
     if (currentCat !== 'all' && n.category !== currentCat) return false;
     if (currentCat === 'idea' && currentIdeaStatus !== 'all' && (n.status||'pending') !== currentIdeaStatus) return false;
     if (searchQuery) return (n.title||'').toLowerCase().includes(searchQuery) || (n.body||'').toLowerCase().includes(searchQuery);
     return true;
   });
-  if (!list.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">📝</div><p>' + (searchQuery?'検索結果がありません':'まだメモがありません。<br>✏️ボタンで書いてみましょう') + '</p></div>'; return; }
+  var emptyMsg = isArchiveView ? 'アーカイブにはまだノートがありません' : (searchQuery ? '検索結果がありません' : 'まだメモがありません。<br>✏️ボタンで書いてみましょう');
+  var emptyIcon = isArchiveView ? '🗂' : '📝';
+  if (!list.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">' + emptyIcon + '</div><p>' + emptyMsg + '</p></div>'; return; }
   var total = list.length;
   var shown = (listShowAll || total <= LIST_LIMIT) ? list : list.slice(0, LIST_LIMIT);
   el.innerHTML = shown.map(function(n) {
@@ -385,7 +412,7 @@ function renderNotes() {
     var isTodo = n.category === 'todo';
     var ideaStatus = n.status || 'pending';
     var isInactive = isIdea && (ideaStatus === 'done' || ideaStatus === 'rejected');
-    var statusBtn = isIdea
+    var statusBtn = isIdea && !isArchiveView
       ? '<button class="status-btn" onclick="event.stopPropagation();cycleIdeaStatus(\'' + n.id + '\')" title="ステータスを変更">' + (IDEA_STATUS_ICONS[ideaStatus] || IDEA_STATUS_ICONS.pending) + '</button>'
       : '';
     var bodySection = '';
@@ -394,7 +421,11 @@ function renderNotes() {
     } else if (!isTodo && n.body) {
       bodySection = '<p class="note-preview">' + n.body.replace(/</g,'&lt;') + '</p>';
     }
-    return '<div class="note-card" onclick="openNote(\'' + n.id + '\')"' + (isInactive?' style="opacity:.5;"':'') + '>'
+    var archiveBtn = isArchiveView
+      ? '<button class="btn-icon" onclick="event.stopPropagation();restoreNote(\'' + n.id + '\')" title="復元" style="font-size:.8rem;">↩</button>'
+      : '<button class="btn-icon" onclick="event.stopPropagation();archiveNote(\'' + n.id + '\')" title="アーカイブ" style="font-size:.75rem;">🗂</button>';
+    var cardOpacity = (!isArchiveView && isInactive) ? ' style="opacity:.5;"' : '';
+    return '<div class="note-card" onclick="openNote(\'' + n.id + '\')"' + cardOpacity + '>'
       + '<div class="note-card-top">'
         + statusBtn
         + '<p class="note-title' + (!n.title?' untitled':'') + '">' + (n.title||'（タイトルなし）') + '</p>'
@@ -403,13 +434,15 @@ function renderNotes() {
       + bodySection
       + '<div class="note-footer">' + catBadge
         + '<div class="note-btn-row">'
+          + archiveBtn
           + '<button class="btn-icon" onclick="event.stopPropagation();deleteNote(\'' + n.id + '\')">🗑</button>'
         + '</div>'
       + '</div>'
       + '<div class="sync-slot"></div>'
       + '</div>';
   }).join('') + (!listShowAll && total > LIST_LIMIT ? '<button class="show-more-btn" onclick="showAllNotes()">さらに ' + (total - LIST_LIMIT) + ' 件を表示 ↓</button>' : '');
-  document.getElementById('countText').textContent = notes.length + (isPro ? '件' : '/30');
+  var activeCount = notes.filter(function(n){ return !n.archived; }).length;
+  document.getElementById('countText').textContent = activeCount + (isPro ? '件' : '/30');
 }
 
 function openEditor() { var m=document.getElementById('editorModal'); m.style.display='flex'; }
