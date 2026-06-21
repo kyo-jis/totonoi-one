@@ -142,6 +142,14 @@
     .back-confirm-btn-stay{background:var(--surface3);color:var(--text);}
     .show-more-btn { display:block; width:100%; padding:.8rem; background:var(--surface); border:1px solid var(--border); border-radius:16px; font-size:.82rem; color:var(--muted); font-family:var(--font); cursor:pointer; text-align:center; transition:border-color .15s, color .15s; margin-bottom:.625rem; }
     .show-more-btn:active { border-color:var(--accent); color:var(--accent); transform:scale(.98); }
+    /* TODO */
+    .todo-progress-bar { background:var(--surface3); border-radius:4px; height:5px; margin:.45rem 0 .2rem; overflow:hidden; }
+    .todo-progress-fill { height:100%; border-radius:4px; background:var(--purple); transition:width .3s; }
+    .todo-progress-label { font-size:.66rem; color:var(--muted); }
+    .todo-task-item { display:flex; align-items:flex-start; gap:.4rem; padding:.22rem 0; font-size:.79rem; line-height:1.4; }
+    .todo-task-item input[type=checkbox] { flex-shrink:0; margin-top:.15rem; accent-color:var(--purple); width:14px; height:14px; cursor:pointer; }
+    .todo-task-done { color:var(--muted); text-decoration:line-through; opacity:.55; }
+    .todo-hint { font-size:.72rem; color:var(--muted); margin:.2rem 0 .6rem; line-height:1.5; }
   </style>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-E9Q0JQ0V92"></script>
@@ -203,7 +211,7 @@
     <div style="width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 1.25rem;"></div>
     <input type="text" class="editor-title" id="editorTitle" placeholder="タイトル（任意）">
     <div class="editor-meta">
-      <select class="editor-cat" id="editorCat">
+      <select class="editor-cat" id="editorCat" onchange="onCatChange()">
         <option value="note">📝 メモ</option>
         <option value="diary">📔 日記</option>
         <option value="idea">💡 アイデア</option>
@@ -212,6 +220,7 @@
       </select>
       <span class="editor-date" id="editorDate"></span>
     </div>
+    <p class="todo-hint" id="todoHint" style="display:none;">💡 1行につき1タスク。保存後にチェックできます。</p>
     <textarea class="editor-body" id="editorBody" placeholder="ここに書く..." oninput="updateCharCount()"></textarea>
     <p class="char-count" id="charCount">0文字</p>
     <div class="editor-actions">
@@ -331,6 +340,28 @@ function onSearch() { searchQuery = document.getElementById('searchInput').value
 
 function showAllNotes() { listShowAll = true; renderNotes(); }
 
+function renderTodoCard(n) {
+  var tasks = n.tasks || [];
+  var doneCount = tasks.filter(function(t){ return t.done; }).length;
+  var total = tasks.length;
+  var pct = total ? Math.round(doneCount / total * 100) : 0;
+  // 未完了を上、完了を下
+  var sorted = [];
+  tasks.forEach(function(t, i){ if (!t.done) sorted.push({t:t, i:i}); });
+  tasks.forEach(function(t, i){ if (t.done)  sorted.push({t:t, i:i}); });
+  var shown = sorted.slice(0, 5);
+  var taskHtml = shown.map(function(item){
+    return '<div class="todo-task-item">'
+      + '<input type="checkbox"' + (item.t.done?' checked':'') + ' onclick="event.stopPropagation();toggleTask(\''+n.id+'\','+item.i+')">'
+      + '<span class="' + (item.t.done?'todo-task-done':'') + '">' + item.t.text.replace(/</g,'&lt;') + '</span>'
+      + '</div>';
+  }).join('');
+  return '<div class="todo-progress-bar"><div class="todo-progress-fill" style="width:'+pct+'%"></div></div>'
+    + '<p class="todo-progress-label">' + doneCount + '/' + total + '完了</p>'
+    + '<div style="margin-top:.35rem;">' + taskHtml + '</div>'
+    + (sorted.length > 5 ? '<p style="font-size:.7rem;color:var(--muted);margin-top:.25rem;">他 '+(sorted.length-5)+' 件</p>' : '');
+}
+
 function renderNotes() {
   var el = document.getElementById('noteList');
   var list = notes.filter(function(n){
@@ -347,17 +378,24 @@ function renderNotes() {
     var dateStr = d.getMonth()+1 + '/' + d.getDate();
     var catBadge = '<span class="cat-badge cat-' + n.category + '">' + CAT_LABELS[n.category] + '</span>';
     var isIdea = n.category === 'idea';
+    var isTodo = n.category === 'todo';
     var isDone = isIdea && (n.status||'pending') === 'done';
     var statusBtn = isIdea
       ? '<button class="status-btn" onclick="event.stopPropagation();cycleIdeaStatus(\'' + n.id + '\')" title="ステータスを変更">' + IDEA_STATUS_ICONS[n.status||'pending'] + '</button>'
       : '';
+    var bodySection = '';
+    if (isTodo && n.tasks && n.tasks.length) {
+      bodySection = renderTodoCard(n);
+    } else if (!isTodo && n.body) {
+      bodySection = '<p class="note-preview' + (isDone?' done':'') + '">' + n.body.replace(/</g,'&lt;') + '</p>';
+    }
     return '<div class="note-card" onclick="openNote(\'' + n.id + '\')">'
       + '<div class="note-card-top">'
         + statusBtn
         + '<p class="note-title' + (isDone?' done':'') + (!n.title?' untitled':'') + '">' + (n.title||'（タイトルなし）') + '</p>'
         + '<span class="note-date">' + dateStr + '</span>'
       + '</div>'
-      + (n.body ? '<p class="note-preview' + (isDone?' done':'') + '">' + n.body.replace(/</g,'&lt;') + '</p>' : '')
+      + bodySection
       + '<div class="note-footer">' + catBadge
         + '<div class="note-btn-row">'
           + '<button class="btn-icon" onclick="event.stopPropagation();deleteNote(\'' + n.id + '\')">🗑</button>'
@@ -377,10 +415,11 @@ function closeSettings() { document.getElementById('settingsModal').style.displa
 function newNote() {
   editId = null;
   document.getElementById('editorTitle').value = '';
-  document.getElementById('editorCat').value = 'note';
+  document.getElementById('editorCat').value = currentCat !== 'all' && currentCat !== 'idea' ? currentCat : 'note';
   document.getElementById('editorBody').value = '';
   document.getElementById('editorDate').textContent = new Date().toLocaleDateString('ja-JP',{month:'long',day:'numeric'});
   updateCharCount();
+  onCatChange();
   openEditor();
   setTimeout(function(){ document.getElementById('editorBody').focus(); }, 300);
 }
@@ -391,9 +430,15 @@ function openNote(id) {
   editId = id;
   document.getElementById('editorTitle').value = n.title || '';
   document.getElementById('editorCat').value = n.category || 'note';
-  document.getElementById('editorBody').value = n.body || '';
+  // TODOはタスクテキストを改行区切りで表示
+  if (n.category === 'todo' && n.tasks) {
+    document.getElementById('editorBody').value = n.tasks.map(function(t){ return t.text; }).join('\n');
+  } else {
+    document.getElementById('editorBody').value = n.body || '';
+  }
   document.getElementById('editorDate').textContent = new Date(n.updatedAt||n.createdAt).toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
   updateCharCount();
+  onCatChange();
   openEditor();
 }
 
@@ -404,11 +449,29 @@ function saveNote() {
   if (!body && !title) { showToast('内容を入力してください'); return; }
   if (!editId && notes.length >= FREE_LIMIT && !isPro) { showToast('無料プランは'+FREE_LIMIT+'件まで'); return; }
   var now = new Date().toISOString();
+  // TODOはbodyを行分割してtasks配列に変換（既存のdone状態を引き継ぐ）
+  var tasks = null;
+  if (cat === 'todo') {
+    var lines = body.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
+    var oldDone = {};
+    if (editId) {
+      var existing = notes.find(function(x){ return x.id===editId; });
+      if (existing && existing.tasks) {
+        existing.tasks.forEach(function(t){ oldDone[t.text] = t.done; });
+      }
+    }
+    tasks = lines.map(function(text){
+      return { text: text, done: oldDone[text] || false };
+    });
+  }
   if (editId) {
     var i = notes.findIndex(function(x){ return x.id===editId; });
     notes[i] = Object.assign(notes[i], {title:title, category:cat, body:body, updatedAt:now});
+    if (tasks !== null) notes[i].tasks = tasks;
   } else {
-    notes.unshift({id:Date.now().toString(), title:title, category:cat, body:body, createdAt:now, updatedAt:now});
+    var entry = {id:Date.now().toString(), title:title, category:cat, body:body, createdAt:now, updatedAt:now};
+    if (tasks !== null) entry.tasks = tasks;
+    notes.unshift(entry);
   }
   persist(); editId = null;
   showToast('✅ 保存しました');
@@ -416,6 +479,28 @@ function saveNote() {
 }
 
 function discardNote() { editId = null; closeEditor(); }
+
+function onCatChange() {
+  var cat = document.getElementById('editorCat').value;
+  var hint = document.getElementById('todoHint');
+  var body = document.getElementById('editorBody');
+  if (cat === 'todo') {
+    hint.style.display = 'block';
+    body.placeholder = 'タスクを1行ずつ入力...\n例：資料を作成する\n例：メール返信';
+  } else {
+    hint.style.display = 'none';
+    body.placeholder = 'ここに書く...';
+  }
+}
+
+function toggleTask(noteId, taskIdx) {
+  var i = notes.findIndex(function(x){ return x.id===noteId; });
+  if (i < 0 || !notes[i].tasks || notes[i].tasks[taskIdx] === undefined) return;
+  notes[i].tasks[taskIdx].done = !notes[i].tasks[taskIdx].done;
+  notes[i].updatedAt = new Date().toISOString();
+  persist();
+  renderNotes();
+}
 
 function deleteNote(id) {
   if (!confirm('削除しますか？')) return;
