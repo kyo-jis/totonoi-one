@@ -702,7 +702,7 @@
     </div>
     <div class="form-group">
       <label>URL</label>
-      <input type="url" id="resourceUrl" placeholder="https://" oninput="onResourceUrlInput()">
+      <input type="text" id="resourceUrl" placeholder="https://（任意）" oninput="onResourceUrlInput()">
     </div>
     <div class="form-group">
       <label>種類</label>
@@ -1198,14 +1198,16 @@ function renderResourceCardHtml(r) {
   var thumb = (r.rtype==='youtube'&&r.ytThumb)
     ?'<div class="resource-thumb" style="padding:0;"><img src="'+r.ytThumb+'" alt="" loading="lazy" onerror="this.parentNode.innerHTML=\'▶️\'"></div>'
     :'<div class="resource-thumb">'+icon+'</div>';
-  return '<a href="'+r.url+'" target="_blank" rel="noopener" class="resource-card">'
-    +thumb
+  var inner = thumb
     +'<div style="flex:1;min-width:0;">'
       +'<p class="resource-name">'+r.name+'</p>'
-      +'<span class="resource-url-text">'+r.url+'</span>'
+      +(r.url?'<span class="resource-url-text">'+r.url+'</span>':'')
     +'</div>'
-    +'<button onclick="event.preventDefault();event.stopPropagation();editResourceInline(\''+r.id+'\')" style="background:none;border:none;color:var(--muted);font-size:.85rem;cursor:pointer;flex-shrink:0;">✏️</button>'
-    +'</a>';
+    +'<button onclick="event.stopPropagation();editResourceInline(\''+r.id+'\')" style="background:none;border:none;color:var(--muted);font-size:.85rem;cursor:pointer;flex-shrink:0;">✏️</button>';
+  if(r.url){
+    return '<a href="'+r.url+'" target="_blank" rel="noopener" class="resource-card">'+inner+'</a>';
+  }
+  return '<div class="resource-card" style="cursor:default;">'+inner+'</div>';
 }
 function renderMaterialCardHtml(m) {
   var isBook = m.type==='book';
@@ -1848,7 +1850,6 @@ function saveResource(){
   var name=document.getElementById('resourceName').value.trim();
   var url=document.getElementById('resourceUrl').value.trim();
   if(!name){showToast('名前を入力してください');return;}
-  if(!url){showToast('URLを入力してください');return;}
   var rtype=document.getElementById('resourceType').value;
   var ytThumb=null;
   if(rtype==='youtube'){var vid=getYoutubeId(url);if(vid)ytThumb='https://img.youtube.com/vi/'+vid+'/mqdefault.jpg';}
