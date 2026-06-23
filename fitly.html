@@ -931,11 +931,22 @@ function toggleTheme() {
   }
 })();
 
-var isPro = localStorage.getItem('isPro') === 'true';
-var FREE_MENU_LIMIT = 3;
-var FREE_HISTORY_DAYS = 14;
-var FREE_FAVORITES_LIMIT = 5;
 var favorites = JSON.parse(localStorage.getItem('fitlyFavorites') || '[]');
+
+// isPro の正規計算: is_pro=true OR pro_until が未来
+function calcIsPro(isProFlag, proUntil) {
+  if (isProFlag === true) return true;
+  if (proUntil && new Date(proUntil) > new Date()) return true;
+  return false;
+}
+function applyIsPro(val) {
+  isPro = val;
+  localStorage.setItem('isPro', String(isPro));
+}
+var isPro = calcIsPro(
+  localStorage.getItem('isPro') === 'true',
+  localStorage.getItem('fitlyProUntil') || null
+);
 
 // 日付ユーティリティ（ローカル時間でYYYY-MM-DD）
 function localDateStr(d) {
@@ -2889,14 +2900,11 @@ function toggleFavorite(exId, event) {
     favorites.splice(idx, 1);
     showToast('☆ お気に入りから削除しました');
   } else {
-    if (!isPro && favorites.length >= FREE_FAVORITES_LIMIT) {
-      showToast('無料プランはお気に入り' + FREE_FAVORITES_LIMIT + '種目まで（Proで無制限）');
-      return;
-    }
     favorites.push(exId);
     showToast('⭐ お気に入りに追加しました');
   }
   localStorage.setItem('fitlyFavorites', JSON.stringify(favorites));
+  dbSave('favorites', favorites);
   filterExercises();
 }
 
@@ -3005,9 +3013,6 @@ var mbSelectedCat = 'all';
 var mbSelectedPart = 'all';
 
 function openMenuBuilder(editIdx) {
-  if (!isPro && editIdx === -1 && savedMenus.length >= FREE_MENU_LIMIT) {
-    showToast('無料プランは'+FREE_MENU_LIMIT+'件まで'); return;
-  }
   mbEditIdx = editIdx;
   if (editIdx >= 0) {
     var m = savedMenus[editIdx];
@@ -3202,10 +3207,6 @@ function renderMenuList() {
 
 function openSaveMenu() {
   if (!currentWorkout.exercises.length) { showToast('先に種目を追加してください'); return; }
-  if (!isPro && savedMenus.length>=FREE_MENU_LIMIT) {
-    showToast('無料プランは'+FREE_MENU_LIMIT+'件まで');
-    return;
-  }
   document.getElementById('menuIconInput').value = '💪';
   syncMenuIconBtns('menuIconInput','menuIconBtns');
   document.getElementById('saveMenuModal').classList.add('show');
@@ -3242,13 +3243,9 @@ function deleteMenu(i) {
 // ── History ──
 function renderHistory() {
   var el=document.getElementById('historyList');
-  var cutoff=isPro?0:Date.now()-FREE_HISTORY_DAYS*86400000;
-  var filtered=workoutHistory.filter(function(w){ return isPro||new Date(w.date).getTime()>=cutoff; });
+  var filtered = workoutHistory;
   if (!filtered.length) {
     el.innerHTML='<div class="empty-state"><div class="empty-icon">📅</div><p>まだ記録がありません</p></div>';
-    if (!isPro&&workoutHistory.length>filtered.length) {
-      el.innerHTML+='<div class="card" style="text-align:center;"><p style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem;">'+FREE_HISTORY_DAYS+'日以前の記録は有料プランで閲覧できます</p><button class="btn-upgrade" onclick="startCheckout()">アップグレード</button></div>';
-    }
     return;
   }
   el.innerHTML=filtered.map(function(w){
@@ -3431,11 +3428,6 @@ function destroyChart(id) {
 
 function renderAnalysis() {
   var el = document.getElementById('analysisContent');
-  if (!isPro) {
-    el.innerHTML = '<div class="pro-gate"><div class="pro-gate-icon">📊</div><p class="pro-gate-title">分析機能はProプラン限定</p><p class="pro-gate-text">部位別ボリューム・推移グラフ・PRなどの詳細分析が使えます。</p><button class="btn-upgrade" onclick="startCheckout()">Proにアップグレード</button></div>';
-    return;
-  }
-
   var streak = calcStreak();
   var weekDays = calcWeekDays();
   var partVolume = calcPartVolume();
@@ -3744,7 +3736,7 @@ var currentUser = null;
 var _APP = 'fitly'; var _syncStatus = 'local';
 function syncBadgeHTML(){if(!currentUser)return'<span class="sync-badge sync-local">💾 ローカル</span>';if(_syncStatus==='syncing')return'<span class="sync-badge sync-syncing">🔄 同期中</span>';if(_syncStatus==='synced')return'<span class="sync-badge sync-synced">☁️</span>';return'<span class="sync-badge sync-failed" onclick="retrySync()">⚠️ 再同期</span>';}
 function updateSyncBadges(){var h=syncBadgeHTML();document.querySelectorAll('.sync-slot').forEach(function(el){el.innerHTML=h;});}
-function retrySync(){if(!currentUser)return;_syncStatus='syncing';updateSyncBadges();Promise.all([dbSave('history',workoutHistory),dbSave('menus',savedMenus),dbSave('exSettings',exerciseSettings),dbSave('bodyweight',bodyWeightLog),dbSave('prs',personalRecords)]).then(function(rs){_syncStatus=rs.every(function(r){return r&&!r.error;})?'synced':'failed';if(_syncStatus==='failed')showToast('⚠️ クラウド同期失敗');updateSyncBadges();});}
+function retrySync(){if(!currentUser)return;_syncStatus='syncing';updateSyncBadges();Promise.all([dbSave('history',workoutHistory),dbSave('menus',savedMenus),dbSave('exSettings',exerciseSettings),dbSave('bodyweight',bodyWeightLog),dbSave('prs',personalRecords),dbSave('favorites',favorites)]).then(function(rs){_syncStatus=rs.every(function(r){return r&&!r.error;})?'synced':'failed';if(_syncStatus==='failed')showToast('⚠️ クラウド同期失敗');updateSyncBadges();});}
 
 function dbSave(key, data) {
   localStorage.setItem('fitly_updated_at', Date.now().toString());
@@ -3772,6 +3764,7 @@ async function syncFromCloud() {
       if (row.key === 'exSettings') { if(cloudTime>=localTime){exerciseSettings=row.data||[];localStorage.setItem('exerciseSettings',JSON.stringify(exerciseSettings));}else dbSave('exSettings',exerciseSettings); }
       if (row.key === 'bodyweight') { if(cloudTime>=localTime){bodyWeightLog=row.data||[];localStorage.setItem('fitlyBodyWeight',JSON.stringify(bodyWeightLog));}else dbSave('bodyweight',bodyWeightLog); }
       if (row.key === 'prs')        { if(cloudTime>=localTime){personalRecords=row.data||[];localStorage.setItem('fitlyPRs',JSON.stringify(personalRecords));}else dbSave('prs',personalRecords); }
+      if (row.key === 'favorites')  { if(cloudTime>=localTime){favorites=row.data||[];localStorage.setItem('fitlyFavorites',JSON.stringify(favorites));}else dbSave('favorites',favorites); }
     });
     _syncStatus = 'synced';
   } else if (res.data && res.data.length === 0) {
@@ -3780,10 +3773,20 @@ async function syncFromCloud() {
     if (exerciseSettings.length > 0) dbSave('exSettings', exerciseSettings);
     if (bodyWeightLog.length > 0) dbSave('bodyweight', bodyWeightLog);
     if (personalRecords.length > 0) dbSave('prs', personalRecords);
+    if (favorites.length > 0) dbSave('favorites', favorites);
   }
-  var p = await _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle();
-  if (p.data) { isPro = p.data.is_pro; localStorage.setItem('isPro', String(isPro)); }
-  if (currentUser.email === 'kyouji.o@gmail.com') { isPro = true; localStorage.setItem('isPro', 'true'); }
+  var p = await _sb.from('profiles').select('is_pro,pro_until').eq('id', currentUser.id).maybeSingle();
+  if (p.data) {
+    if (currentUser.email === 'kyouji.o@gmail.com') {
+      applyIsPro(true);
+      localStorage.setItem('fitlyProUntil', '');
+    } else {
+      applyIsPro(calcIsPro(p.data.is_pro, p.data.pro_until));
+      localStorage.setItem('fitlyProUntil', p.data.pro_until || '');
+    }
+  } else if (currentUser.email === 'kyouji.o@gmail.com') {
+    applyIsPro(true);
+  }
   _syncStatus = 'synced';
   renderHistory(); renderMenuList(); renderAnalysis(); updateProUI(); updateSyncBadges();
   showToast('☁️ データを同期しました');
