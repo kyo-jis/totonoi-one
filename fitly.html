@@ -257,6 +257,30 @@
     .pro-gate-text { font-size:.82rem; color:var(--muted); line-height:1.6; margin-bottom:1.25rem; }
     .btn-upgrade { background:var(--yellow); color:#1a1a24; border:none; border-radius:12px; padding:.85rem 2rem; font-size:.95rem; font-weight:600; font-family:var(--font); cursor:pointer; }
 
+    /* Monthly analysis */
+    .analysis-subtab-row { display:flex; gap:.5rem; padding:.75rem 0 .5rem; }
+    .analysis-subtab { flex:1; padding:.55rem; border:1px solid var(--border); border-radius:10px; background:var(--surface2); color:var(--muted); font-size:.8rem; font-weight:500; font-family:var(--font); cursor:pointer; text-align:center; transition:all .15s; }
+    .analysis-subtab.active { background:var(--accent); color:#0c0c18; border-color:var(--accent); }
+    .analysis-subtab:active { transform:scale(.93); }
+    .month-nav-row { display:flex; align-items:center; justify-content:space-between; padding:.25rem 0 .75rem; }
+    .month-nav-btn { width:36px; height:36px; border:1px solid var(--border); border-radius:10px; background:var(--surface2); color:var(--text); font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:var(--font); transition:all .15s; }
+    .month-nav-btn:active { transform:scale(.88); }
+    .month-nav-label { font-size:.95rem; font-weight:500; }
+    .monthly-stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:.6rem; }
+    .monthly-stat-card { background:var(--surface2); border-radius:12px; padding:.85rem; }
+    .monthly-stat-label { font-size:.62rem; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; }
+    .monthly-stat-value { font-size:1.5rem; font-weight:700; margin:.2rem 0 .1rem; letter-spacing:-.02em; }
+    .monthly-stat-sub { font-size:.68rem; color:var(--muted); }
+    .monthly-report-banner { display:flex; align-items:center; gap:.75rem; background:linear-gradient(135deg,var(--surface2),var(--surface3)); border:1px solid var(--border); border-radius:14px; padding:.85rem 1rem; margin-bottom:.75rem; cursor:pointer; transition:transform .15s; }
+    .monthly-report-banner:active { transform:scale(.98); }
+    .monthly-report-banner-icon { font-size:1.5rem; flex-shrink:0; }
+    .monthly-report-banner-text { flex:1; }
+    .monthly-report-banner-title { font-size:.85rem; font-weight:500; }
+    .monthly-report-banner-sub { font-size:.72rem; color:var(--muted); margin-top:.15rem; }
+    .monthly-report-banner-close { color:var(--muted); background:none; border:none; font-size:1.1rem; cursor:pointer; padding:.25rem .4rem; font-family:var(--font); line-height:1; }
+    .btn-share-card { display:flex; align-items:center; justify-content:center; gap:.5rem; width:100%; padding:.7rem; background:var(--surface3); border:1px solid var(--border); border-radius:12px; color:var(--text); font-size:.82rem; font-weight:500; font-family:var(--font); cursor:pointer; margin-top:.6rem; transition:all .15s; }
+    .btn-share-card:active { transform:scale(.95); }
+
     /* FAB */
     .fab { position:fixed; bottom:calc(72px + env(safe-area-inset-bottom)); right:1.25rem; width:58px; height:58px; border-radius:20px; background:linear-gradient(135deg,var(--accent),var(--accent-dark)); color:#0c0c18; border:none; font-size:1.5rem; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 28px rgba(94,207,160,.45); z-index:50; transition:all .2s var(--spring); }
     .fab:active { transform:scale(.88); box-shadow:0 2px 14px rgba(94,207,160,.3); }
@@ -1417,6 +1441,7 @@ function init() {
   initMenuIconPickers();
   renderHistory();
   renderBodyWeightTab();
+  checkMonthlyReportBanner();
   renderAnalysis();
   updateProUI();
   // 未保存ワークアウトの復元
@@ -3426,12 +3451,474 @@ function destroyChart(id) {
   if (_chartInstances[id]) { _chartInstances[id].destroy(); delete _chartInstances[id]; }
 }
 
-function renderAnalysis() {
+// ── 月間レポート: 状態 ──
+var _currentAnalysisView = 'weekly';
+var _currentMonthlyTarget = (function(){
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+})();
+var _pendingReportMonth = null;
+
+function switchAnalysisView(view) {
+  _currentAnalysisView = view;
+  if (view === 'monthly') {
+    var d = new Date();
+    _currentMonthlyTarget = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  }
+  renderAnalysis();
+}
+
+function changeAnalysisMonth(dir) {
+  var p = _currentMonthlyTarget.split('-');
+  var d = new Date(parseInt(p[0]), parseInt(p[1])-1+dir, 1);
+  var now = new Date(); now.setDate(1); now.setHours(0,0,0,0);
+  if (d > now) return;
+  _currentMonthlyTarget = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  renderAnalysis();
+}
+
+function getPrevMonthLabel(month) {
+  var p = month.split('-');
+  return p[0] + '年' + parseInt(p[1]) + '月';
+}
+
+function dismissMonthBanner() {
+  if (_pendingReportMonth) {
+    localStorage.setItem('fitlyMonthReportSeen_' + _pendingReportMonth, '1');
+    _pendingReportMonth = null;
+  }
+  var b = document.getElementById('monthlyReportBannerEl');
+  if (b) b.remove();
+}
+
+function openMonthlyReportView(month) {
+  dismissMonthBanner();
+  _currentAnalysisView = 'monthly';
+  _currentMonthlyTarget = month;
+  renderAnalysis();
+}
+
+// 月初バナー検出
+function checkMonthlyReportBanner() {
+  var d = new Date();
+  var curMonth = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  var lastVisit = localStorage.getItem('fitlyLastVisitMonth') || curMonth;
+  localStorage.setItem('fitlyLastVisitMonth', curMonth);
+  if (lastVisit === curMonth) return;
+  if (localStorage.getItem('fitlyMonthReportSeen_' + lastVisit)) return;
+  var rpt = buildMonthlyReport(lastVisit);
+  if (rpt && rpt.trainingDays >= 3) _pendingReportMonth = lastVisit;
+}
+
+// ── 月間集計 ──
+function buildMonthlyReport(targetMonth) {
+  var EXCLUDE_CATS = { cardio:true, stretch:true, mindfulness:true };
+  var monthWorkouts = workoutHistory.filter(function(w){ return wDateStr(w).startsWith(targetMonth); });
+  var daySet = {};
+  monthWorkouts.forEach(function(w){ daySet[wDateStr(w)] = true; });
+  var trainingDays = Object.keys(daySet).length;
+
+  // 月末日以前の最新体重
+  var monthEndStr = targetMonth + '-31';
+  var refBodyWeight = null;
+  for (var bi = 0; bi < bodyWeightLog.length; bi++) {
+    if (bodyWeightLog[bi].date <= monthEndStr) { refBodyWeight = bodyWeightLog[bi].weight; break; }
+  }
+
+  // ボリューム集計
+  var totalVolume = 0, partVolumeMap = {}, exVolMap = {};
+  monthWorkouts.forEach(function(w) {
+    (w.exercises||[]).forEach(function(ex) {
+      if (EXCLUDE_CATS[ex.cat]) return;
+      var isBodyweight = ex.cat === 'bodyweight';
+      var partLabel = PART_LABELS[ex.part] || 'その他';
+      (ex.sets||[]).forEach(function(s) {
+        if (!s.done) return;
+        var wt = Number(s.weight)||0, rp = Number(s.reps)||0;
+        if (isBodyweight && wt === 0 && refBodyWeight) wt = refBodyWeight;
+        var vol = wt * rp;
+        totalVolume += vol;
+        partVolumeMap[partLabel] = (partVolumeMap[partLabel]||0) + vol;
+        if (!exVolMap[ex.id]) exVolMap[ex.id] = { name:ex.name, vol:0 };
+        exVolMap[ex.id].vol += vol;
+      });
+    });
+  });
+
+  // 前月比
+  var prevDate = new Date(targetMonth + '-01');
+  prevDate.setMonth(prevDate.getMonth() - 1);
+  var prevMonth = prevDate.getFullYear() + '-' + String(prevDate.getMonth()+1).padStart(2,'0');
+  var prevVolume = 0;
+  workoutHistory.filter(function(w){ return wDateStr(w).startsWith(prevMonth); }).forEach(function(w) {
+    (w.exercises||[]).forEach(function(ex) {
+      if (EXCLUDE_CATS[ex.cat]) return;
+      (ex.sets||[]).forEach(function(s) {
+        if (!s.done) return;
+        var wt = Number(s.weight)||0, rp = Number(s.reps)||0;
+        if (ex.cat === 'bodyweight' && wt === 0 && refBodyWeight) wt = refBodyWeight;
+        prevVolume += wt * rp;
+      });
+    });
+  });
+  var volumeDeltaPct = prevVolume > 0 ? Math.round((totalVolume - prevVolume) / prevVolume * 100) : null;
+
+  // 月内最大連続日数
+  var sortedDays = Object.keys(daySet).sort();
+  var streakMax = sortedDays.length ? 1 : 0, curS = 1;
+  for (var si = 1; si < sortedDays.length; si++) {
+    var diff = (new Date(sortedDays[si]) - new Date(sortedDays[si-1])) / 86400000;
+    if (diff === 1) { curS++; if (curS > streakMax) streakMax = curS; }
+    else curS = 1;
+  }
+
+  // 今月のPR
+  var prList = [];
+  Object.keys(personalRecords).forEach(function(exId) {
+    var pr = personalRecords[exId];
+    if (pr.date && pr.date.startsWith(targetMonth))
+      prList.push({ exId:exId, name:pr.name, weight:pr.weight, reps:pr.reps, est1RM:pr.est1RM });
+  });
+
+  // 停滞部位
+  var partKeys = Object.keys(partVolumeMap);
+  var neglectedParts = [];
+  if (partKeys.length >= 3) {
+    var avgVol = totalVolume / partKeys.length;
+    partKeys.forEach(function(p){ if (partVolumeMap[p] < avgVol * 0.3) neglectedParts.push(p); });
+  }
+
+  // 上位種目
+  var topProgress = Object.values(exVolMap)
+    .filter(function(e){ return e.vol > 0; })
+    .sort(function(a,b){ return b.vol - a.vol; }).slice(0,3);
+
+  // 体重推移
+  var weightTrend = bodyWeightLog.filter(function(e){ return e.date.startsWith(targetMonth); })
+    .sort(function(a,b){ return a.date.localeCompare(b.date); });
+
+  return { month:targetMonth, trainingDays:trainingDays, streakMax:streakMax,
+    totalVolume:Math.round(totalVolume), volumeDeltaPct:volumeDeltaPct,
+    prCount:prList.length, prList:prList, partVolume:partVolumeMap,
+    neglectedParts:neglectedParts, topProgress:topProgress, weightTrend:weightTrend };
+}
+
+// ── 月間ビュー描画 ──
+function renderMonthlyAnalysis(targetMonth) {
   var el = document.getElementById('analysisContent');
-  if (!isPro) {
-    el.innerHTML = '<div class="pro-gate"><div class="pro-gate-icon">📊</div><p class="pro-gate-title">分析機能はProプラン限定</p><p class="pro-gate-text">部位別ボリューム・推移グラフ・PRなどの詳細分析が使えます。</p><button class="btn-upgrade" onclick="startCheckout()">Proにアップグレード</button></div>';
+  var report = buildMonthlyReport(targetMonth);
+  var ymP = targetMonth.split('-');
+  var ymLabel = ymP[0] + '年' + parseInt(ymP[1]) + '月';
+  var now = new Date(); now.setDate(1); now.setHours(0,0,0,0);
+  var tDate = new Date(parseInt(ymP[0]), parseInt(ymP[1])-1, 1);
+  var canGoNext = tDate < now;
+
+  var bannerHtml = '';
+  if (_pendingReportMonth && _pendingReportMonth !== targetMonth) {
+    bannerHtml = '<div id="monthlyReportBannerEl" class="monthly-report-banner" onclick="openMonthlyReportView(\''+_pendingReportMonth+'\')">'
+      +'<div class="monthly-report-banner-icon">📊</div>'
+      +'<div class="monthly-report-banner-text"><div class="monthly-report-banner-title">先月のまとめができました</div>'
+      +'<div class="monthly-report-banner-sub">'+getPrevMonthLabel(_pendingReportMonth)+'の記録を見る</div></div>'
+      +'<button class="monthly-report-banner-close" onclick="event.stopPropagation();dismissMonthBanner()">✕</button>'
+      +'</div>';
+  }
+
+  var subTabHtml = '<div class="analysis-subtab-row">'
+    +'<button class="analysis-subtab" onclick="switchAnalysisView(\'weekly\')">週間</button>'
+    +'<button class="analysis-subtab active" onclick="switchAnalysisView(\'monthly\')">月間</button>'
+    +'</div>';
+
+  var monthNavHtml = '<div class="month-nav-row">'
+    +'<button class="month-nav-btn" onclick="changeAnalysisMonth(-1)">‹</button>'
+    +'<span class="month-nav-label">'+ymLabel+'</span>'
+    +'<button class="month-nav-btn" onclick="changeAnalysisMonth(1)" '
+    +(canGoNext?'':'disabled style="opacity:.3;pointer-events:none;"')+'>›</button>'
+    +'</div>';
+
+  if (!report || report.trainingDays === 0) {
+    el.innerHTML = bannerHtml + subTabHtml + monthNavHtml
+      +'<div style="text-align:center;padding:2.5rem 0;">'
+      +'<p style="font-size:2rem;margin-bottom:.75rem;">📅</p>'
+      +'<p style="color:var(--muted);font-size:.88rem;">'+ymLabel+'の記録なし</p></div>';
     return;
   }
+
+  var dPct = report.volumeDeltaPct !== null
+    ? '<span style="color:'+(report.volumeDeltaPct>=0?'var(--accent)':'var(--accent2)')+';">'
+      +(report.volumeDeltaPct>=0?'+':'')+report.volumeDeltaPct+'%</span>' : '—';
+
+  var freeHtml = '<div class="analysis-card"><p class="analysis-title">📅 '+ymLabel+' のサマリー</p>'
+    +'<div class="monthly-stat-grid">'
+    +'<div class="monthly-stat-card"><div class="monthly-stat-label">トレーニング</div>'
+    +'<div class="monthly-stat-value">'+report.trainingDays+'</div><div class="monthly-stat-sub">日</div></div>'
+    +'<div class="monthly-stat-card"><div class="monthly-stat-label">最大連続</div>'
+    +'<div class="monthly-stat-value">'+report.streakMax+'</div><div class="monthly-stat-sub">日連続</div></div>'
+    +'<div class="monthly-stat-card"><div class="monthly-stat-label">総ボリューム</div>'
+    +'<div class="monthly-stat-value">'+(report.totalVolume/1000).toFixed(1)+'</div>'
+    +'<div class="monthly-stat-sub">t &nbsp; 前月比 '+dPct+'</div></div>'
+    +'<div class="monthly-stat-card"><div class="monthly-stat-label">PR更新</div>'
+    +'<div class="monthly-stat-value">'+report.prCount+'</div><div class="monthly-stat-sub">件</div></div>'
+    +'</div>';
+  if (report.trainingDays >= 3) {
+    freeHtml += '<button class="btn-share-card" onclick="generateShareCard(\''+targetMonth+'\')">'
+      +'📤 月間サマリーをシェア</button>';
+    if (report.prList.length > 0)
+      freeHtml += '<button class="btn-share-card" style="margin-top:.4rem;" onclick="openPRShareSelector(\''+targetMonth+'\')">'
+        +'🏆 PRカードをシェア</button>';
+  }
+  freeHtml += '</div>';
+
+  var proInner = '';
+  if (!isPro) {
+    proInner = '<div class="pro-gate"><div class="pro-gate-icon">📈</div>'
+      +'<p class="pro-gate-title">詳細分析はProプラン限定</p>'
+      +'<p class="pro-gate-text">部位別ボリューム・停滞部位・種目別の伸び・体重推移が確認できます。</p>'
+      +'<button class="btn-upgrade" onclick="startCheckout()">Proにアップグレード</button></div>';
+  } else {
+    var partKeys2 = Object.keys(report.partVolume);
+    var partCard2 = partKeys2.length
+      ? '<div class="analysis-card"><p class="analysis-title">💪 部位別ボリューム</p>'
+        +'<div style="max-width:220px;margin:0 auto;"><canvas id="chartMonthPart"></canvas></div></div>' : '';
+    var neglectCard = report.neglectedParts.length
+      ? '<div class="analysis-card"><p class="analysis-title">⚠️ 停滞部位</p>'
+        +report.neglectedParts.map(function(p){
+          return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--border);">'
+            +'<span style="font-size:.88rem;">'+p+'</span><span style="font-size:.75rem;color:var(--muted);">ボリューム低め</span></div>';
+        }).join('')+'</div>' : '';
+    var topCard = report.topProgress.length
+      ? '<div class="analysis-card"><p class="analysis-title">🚀 ボリューム上位種目</p>'
+        +report.topProgress.map(function(e,i){
+          return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--border);">'
+            +'<div style="display:flex;align-items:center;gap:.5rem;"><span style="font-size:.7rem;color:var(--muted);width:1rem;">'+(i+1)+'</span>'
+            +'<span style="font-size:.88rem;">'+e.name+'</span></div>'
+            +'<span style="font-size:.85rem;font-weight:600;color:var(--accent);">'+(e.vol/1000).toFixed(1)+'t</span></div>';
+        }).join('')+'</div>' : '';
+    var weightCard = '';
+    if (report.weightTrend.length >= 2) {
+      var first = report.weightTrend[0].weight, last = report.weightTrend[report.weightTrend.length-1].weight;
+      var wDiff = Math.round((last-first)*10)/10;
+      weightCard = '<div class="analysis-card"><p class="analysis-title">⚖️ 体重推移</p>'
+        +'<canvas id="chartMonthWeight" style="max-height:110px;"></canvas>'
+        +'<div style="display:flex;gap:1.5rem;margin-top:.75rem;">'
+        +'<div><p style="font-size:.65rem;color:var(--muted);">開始</p><p style="font-size:1rem;font-weight:600;">'+first+' kg</p></div>'
+        +'<div><p style="font-size:.65rem;color:var(--muted);">終了</p><p style="font-size:1rem;font-weight:600;">'+last+' kg</p></div>'
+        +'<div><p style="font-size:.65rem;color:var(--muted);">変化</p>'
+        +'<p style="font-size:1rem;font-weight:600;color:'+(wDiff<=0?'var(--accent)':'var(--accent2)')+';">'
+        +(wDiff>0?'+':'')+wDiff+' kg</p></div>'
+        +'</div></div>';
+    } else if (report.weightTrend.length === 1) {
+      weightCard = '<div class="analysis-card"><p class="analysis-title">⚖️ 体重</p>'
+        +'<p style="font-size:1.4rem;font-weight:600;margin-top:.25rem;">'+report.weightTrend[0].weight+' kg</p></div>';
+    }
+    var prCard2 = report.prList.length
+      ? '<div class="analysis-card analysis-pc-wide"><p class="analysis-title">🏆 今月のPR更新</p>'
+        +report.prList.map(function(p){
+          return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--border);">'
+            +'<span style="font-size:.88rem;">'+p.name+'</span>'
+            +'<div style="text-align:right;"><p style="font-size:.88rem;font-weight:600;color:var(--yellow);">'+p.weight+'kg × '+p.reps+'回</p>'
+            +'<p style="font-size:.65rem;color:var(--muted);">推定1RM '+p.est1RM+'kg</p></div></div>';
+        }).join('')+'</div>' : '';
+    proInner = '<div class="analysis-wrap-pc"><div class="analysis-pc-grid">'
+      +partCard2+neglectCard+topCard+weightCard+prCard2+'</div></div>';
+  }
+
+  el.innerHTML = bannerHtml + subTabHtml + monthNavHtml
+    +'<div class="analysis-wrap-pc"><div class="analysis-pc-grid">'+freeHtml+'</div></div>'
+    + proInner;
+
+  if (isPro) {
+    var partKeys3 = Object.keys(report.partVolume);
+    var partColorMap2 = {'💪 胸':'#ff7c6e','🦅 背中':'#6c8eff','🏋️ 肩':'#b388ff',
+      '💪 腕':'#f5c842','🦵 脚':'#5ecfa0','🧘 体幹':'#8888a0','🌟 全身':'#ffa07a','その他':'#888'};
+    if (partKeys3.length && document.getElementById('chartMonthPart')) {
+      destroyChart('monthPart');
+      _chartInstances['monthPart'] = new Chart(document.getElementById('chartMonthPart'), {
+        type:'doughnut',
+        data:{ labels:partKeys3, datasets:[{ data:partKeys3.map(function(k){ return report.partVolume[k]; }),
+          backgroundColor:partKeys3.map(function(k){ return partColorMap2[k]||'#aaa'; }), borderWidth:0, hoverOffset:8 }] },
+        options:{ plugins:{ legend:{ labels:{ color:'#9494b8', font:{ family:"'Outfit', sans-serif", size:11 }, boxWidth:12 } } },
+          cutout:'68%', animation:{ animateRotate:true, duration:900 } }
+      });
+    }
+    if (report.weightTrend.length >= 2 && document.getElementById('chartMonthWeight')) {
+      destroyChart('monthWeight');
+      _chartInstances['monthWeight'] = new Chart(document.getElementById('chartMonthWeight'), {
+        type:'line',
+        data:{ labels:report.weightTrend.map(function(e){ var d=e.date.split('-'); return d[1]+'/'+parseInt(d[2]); }),
+          datasets:[{ data:report.weightTrend.map(function(e){ return e.weight; }),
+            borderColor:'#6c8eff', backgroundColor:'rgba(108,142,255,.1)',
+            borderWidth:2, pointRadius:3, fill:true, tension:.3 }] },
+        options:{ plugins:{ legend:{ display:false } },
+          scales:{ x:{ ticks:{ color:'#9494b8', font:{ size:9 } }, grid:{ color:'rgba(46,46,80,.5)' } },
+            y:{ ticks:{ color:'#9494b8', font:{ size:9 } }, grid:{ color:'rgba(46,46,80,.5)' }, beginAtZero:false } },
+          animation:{ duration:700 } }
+      });
+    }
+  }
+}
+
+// ── シェアカード ──
+function generateShareCard(month) {
+  var report = buildMonthlyReport(month);
+  if (!report || report.trainingDays < 3) { showToast('記録が少ないためカード生成できません（3日以上必要）'); return; }
+  var ymP = month.split('-');
+  var ymLabel = ymP[0] + '年' + parseInt(ymP[1]) + '月';
+  var W = 1080, H = 600;
+  var cvs = document.createElement('canvas');
+  cvs.width = W; cvs.height = H;
+  var ctx = cvs.getContext('2d');
+  // 背景
+  var bg = ctx.createLinearGradient(0,0,W,H);
+  bg.addColorStop(0,'#13132a'); bg.addColorStop(1,'#1c1c38');
+  ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+  // 装飾円
+  ctx.fillStyle = 'rgba(94,207,160,.07)';
+  ctx.beginPath(); ctx.arc(W*.85,H*.2,200,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = 'rgba(108,142,255,.05)';
+  ctx.beginPath(); ctx.arc(W*.1,H*.85,160,0,Math.PI*2); ctx.fill();
+  // 月ラベル
+  ctx.font = '400 30px "Outfit","Helvetica Neue",sans-serif';
+  ctx.fillStyle = 'rgba(162,162,200,.75)';
+  ctx.textAlign = 'left';
+  ctx.fillText(ymLabel + ' の記録', 80, 90);
+  // ステータス
+  var stats = [
+    { label:'トレーニング日数', value:report.trainingDays+'日' },
+    { label:'最大連続日数', value:report.streakMax+'日' },
+    { label:'総ボリューム', value:(report.totalVolume/1000).toFixed(1)+'t' },
+    { label:'PR更新', value:report.prCount+'件' }
+  ];
+  stats.forEach(function(s,i) {
+    var col = i % 2, row = Math.floor(i / 2);
+    var x = 80 + col * 500, y = 190 + row * 180;
+    ctx.font = 'bold 72px "Outfit","Helvetica Neue",sans-serif';
+    ctx.fillStyle = '#5ecfa0';
+    ctx.fillText(s.value, x, y);
+    ctx.font = '400 26px "Outfit","Helvetica Neue",sans-serif';
+    ctx.fillStyle = 'rgba(162,162,200,.75)';
+    ctx.fillText(s.label, x, y+36);
+  });
+  // 前月比
+  if (report.volumeDeltaPct !== null) {
+    var sign = report.volumeDeltaPct >= 0 ? '+' : '';
+    ctx.font = '500 30px "Outfit","Helvetica Neue",sans-serif';
+    ctx.fillStyle = report.volumeDeltaPct >= 0 ? '#5ecfa0' : '#ff7c6e';
+    ctx.fillText('前月比 ' + sign + report.volumeDeltaPct + '%', 80, 530);
+  }
+  // ブランド刻印
+  ctx.font = '400 24px "Outfit","Helvetica Neue",sans-serif';
+  ctx.fillStyle = 'rgba(162,162,200,.4)';
+  ctx.textAlign = 'right';
+  ctx.fillText('Fitly | 筋トレ記録', W-60, H-44);
+  _shareCanvas(cvs, 'fitly-monthly-'+month+'.png');
+}
+
+function generatePRShareCard(exId) {
+  var pr = personalRecords[exId];
+  if (!pr) return;
+  var W = 1080, H = 600;
+  var cvs = document.createElement('canvas');
+  cvs.width = W; cvs.height = H;
+  var ctx = cvs.getContext('2d');
+  var bg = ctx.createLinearGradient(0,0,W,H);
+  bg.addColorStop(0,'#13132a'); bg.addColorStop(1,'#1c1c38');
+  ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+  // 装飾: 大トロフィー（後ろに薄く）
+  ctx.font = '200px serif'; ctx.fillStyle = 'rgba(232,113,138,.06)';
+  ctx.textAlign = 'center'; ctx.fillText('🏆', W*.82, H*.55);
+  // タグ
+  ctx.font = '500 28px "Outfit","Helvetica Neue",sans-serif';
+  ctx.fillStyle = '#e8718a'; ctx.textAlign = 'left';
+  ctx.fillText('NEW PERSONAL RECORD', 80, 100);
+  // 種目名
+  ctx.font = 'bold 54px "Outfit","Helvetica Neue",sans-serif';
+  ctx.fillStyle = '#f4f4fc';
+  ctx.fillText(pr.name, 80, 195);
+  // 値
+  ctx.font = 'bold 86px "Outfit","Helvetica Neue",sans-serif';
+  ctx.fillStyle = '#5ecfa0';
+  ctx.fillText(pr.weight + ' kg × ' + pr.reps + ' 回', 80, 320);
+  // 推定1RM
+  ctx.font = '500 36px "Outfit","Helvetica Neue",sans-serif';
+  ctx.fillStyle = 'rgba(162,162,200,.85)';
+  ctx.fillText('推定1RM: ' + pr.est1RM + ' kg', 80, 400);
+  // ブランド刻印
+  ctx.font = '400 24px "Outfit","Helvetica Neue",sans-serif';
+  ctx.fillStyle = 'rgba(162,162,200,.4)';
+  ctx.textAlign = 'right';
+  ctx.fillText('Fitly | 筋トレ記録', W-60, H-44);
+  _shareCanvas(cvs, 'fitly-pr-'+exId+'.png');
+}
+
+function _shareCanvas(cvs, filename) {
+  cvs.toBlob(function(blob) {
+    if (!blob) { showToast('画像生成に失敗しました'); return; }
+    if (navigator.share) {
+      var file = new File([blob], filename, { type:'image/png' });
+      if (navigator.canShare && navigator.canShare({ files:[file] })) {
+        navigator.share({ title:'Fitly 記録', files:[file] }).catch(function(){});
+        return;
+      }
+    }
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    showToast('✅ 画像を保存しました');
+  }, 'image/png');
+}
+
+function openPRShareSelector(month) {
+  var report = buildMonthlyReport(month);
+  if (!report || !report.prList.length) return;
+  if (report.prList.length === 1) { generatePRShareCard(report.prList[0].exId); return; }
+  var existingModal = document.getElementById('prShareModal');
+  if (existingModal) existingModal.remove();
+  var html = '<div class="modal-overlay show" id="prShareModal" onclick="if(event.target===this)document.getElementById(\'prShareModal\').remove()">'
+    +'<div class="modal"><div class="modal-handle"></div>'
+    +'<p style="font-weight:500;text-align:center;margin-bottom:1rem;">シェアするPRを選択</p>'
+    +report.prList.map(function(p){
+      return '<button onclick="document.getElementById(\'prShareModal\').remove();generatePRShareCard(\''+p.exId+'\')" '
+        +'style="width:100%;text-align:left;padding:.75rem;background:var(--surface2);border:1px solid var(--border);'
+        +'border-radius:12px;color:var(--text);font-size:.88rem;font-family:var(--font);cursor:pointer;margin-bottom:.5rem;">'
+        +p.name+' — '+p.weight+'kg × '+p.reps+'回</button>';
+    }).join('')
+    +'<button class="btn-cancel" onclick="document.getElementById(\'prShareModal\').remove()">キャンセル</button>'
+    +'</div></div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function renderAnalysis() {
+  var el = document.getElementById('analysisContent');
+
+  if (_currentAnalysisView === 'monthly') {
+    renderMonthlyAnalysis(_currentMonthlyTarget);
+    return;
+  }
+
+  // ── 週間ビュー ──
+  var subTabHtml = '<div class="analysis-subtab-row">'
+    +'<button class="analysis-subtab active" onclick="switchAnalysisView(\'weekly\')">週間</button>'
+    +'<button class="analysis-subtab" onclick="switchAnalysisView(\'monthly\')">月間</button>'
+    +'</div>';
+  var bannerHtml = '';
+  if (_pendingReportMonth) {
+    bannerHtml = '<div id="monthlyReportBannerEl" class="monthly-report-banner" onclick="openMonthlyReportView(\''+_pendingReportMonth+'\')">'
+      +'<div class="monthly-report-banner-icon">📊</div>'
+      +'<div class="monthly-report-banner-text"><div class="monthly-report-banner-title">先月のまとめができました</div>'
+      +'<div class="monthly-report-banner-sub">'+getPrevMonthLabel(_pendingReportMonth)+'の記録を見る</div></div>'
+      +'<button class="monthly-report-banner-close" onclick="event.stopPropagation();dismissMonthBanner()">✕</button>'
+      +'</div>';
+  }
+
+  if (!isPro) {
+    el.innerHTML = bannerHtml + subTabHtml
+      +'<div class="pro-gate"><div class="pro-gate-icon">📊</div><p class="pro-gate-title">週間分析はProプラン限定</p>'
+      +'<p class="pro-gate-text">部位別ボリューム・推移グラフ・PRなどの詳細分析が使えます。</p>'
+      +'<button class="btn-upgrade" onclick="startCheckout()">Proにアップグレード</button></div>';
+    return;
+  }
+
   var streak = calcStreak();
   var weekDays = calcWeekDays();
   var partVolume = calcPartVolume();
@@ -3446,10 +3933,9 @@ function renderAnalysis() {
     var vol = workoutHistory.filter(function(h){ var d=new Date(h.date); return d>=ws&&d<we; })
       .reduce(function(s,h){ return s+(h.totalVolume||0); }, 0);
     weekLabels.push((ws.getMonth()+1)+'/'+ws.getDate()+'週');
-    weekVolData.push(Math.round(vol/1000*10)/10); // トン単位
+    weekVolData.push(Math.round(vol/1000*10)/10);
   }
 
-  // 部位別チャートデータ
   var partKeys = Object.keys(partVolume);
   var partColorMap = {
     '💪 胸':'#ff7c6e','🦅 背中':'#6c8eff','🏋️ 肩':'#b388ff',
@@ -3494,56 +3980,30 @@ function renderAnalysis() {
         +'</div>';
     }).join('')+'</div>' : '';
 
-  el.innerHTML = '<div class="analysis-wrap-pc"><div class="analysis-pc-grid">'
+  el.innerHTML = bannerHtml + subTabHtml
+    +'<div class="analysis-wrap-pc"><div class="analysis-pc-grid">'
     + streakCard + partCard + weekCard + prCard
     + '</div></div>';
 
-  // カウントアップ
   countUp(document.getElementById('streakNum'), streak, 800);
   countUp(document.getElementById('anaWeekWo'), weekWo, 600);
   countUp(document.getElementById('anaWeekVol'), parseInt(weekVol.replace(/,/g,'')||0), 700, ' kg');
 
-  // Chart.js: 部位別ドーナツ
   if (partKeys.length && document.getElementById('chartPart')) {
     destroyChart('part');
     _chartInstances['part'] = new Chart(document.getElementById('chartPart'), {
       type: 'doughnut',
-      data: {
-        labels: partKeys,
-        datasets: [{ data: partKeys.map(function(k){ return partVolume[k]; }), backgroundColor: doughnutColors, borderWidth: 0, hoverOffset: 8 }]
-      },
-      options: {
-        plugins: { legend: { labels: { color: '#9494b8', font: { family: "'Outfit', sans-serif", size: 11 }, boxWidth: 12 } } },
-        cutout: '68%', animation: { animateRotate: true, duration: 900 }
-      }
+      data: { labels: partKeys, datasets: [{ data: partKeys.map(function(k){ return partVolume[k]; }), backgroundColor: doughnutColors, borderWidth: 0, hoverOffset: 8 }] },
+      options: { plugins: { legend: { labels: { color: '#9494b8', font: { family: "'Outfit', sans-serif", size: 11 }, boxWidth: 12 } } }, cutout: '68%', animation: { animateRotate: true, duration: 900 } }
     });
   }
 
-  // Chart.js: 週間ボリューム折れ線
   if (document.getElementById('chartWeek')) {
     destroyChart('week');
     _chartInstances['week'] = new Chart(document.getElementById('chartWeek'), {
       type: 'bar',
-      data: {
-        labels: weekLabels,
-        datasets: [{
-          label: 'ボリューム (t)',
-          data: weekVolData,
-          backgroundColor: 'rgba(94,207,160,.25)',
-          borderColor: '#5ecfa0',
-          borderWidth: 2,
-          borderRadius: 6,
-          borderSkipped: false
-        }]
-      },
-      options: {
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { color: '#9494b8', font: { size: 10 } }, grid: { color: 'rgba(46,46,80,.5)' } },
-          y: { ticks: { color: '#9494b8', font: { size: 10 } }, grid: { color: 'rgba(46,46,80,.5)' }, beginAtZero: true }
-        },
-        animation: { duration: 900, easing: 'easeOutQuart' }
-      }
+      data: { labels: weekLabels, datasets: [{ label: 'ボリューム (t)', data: weekVolData, backgroundColor: 'rgba(94,207,160,.25)', borderColor: '#5ecfa0', borderWidth: 2, borderRadius: 6, borderSkipped: false }] },
+      options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#9494b8', font: { size: 10 } }, grid: { color: 'rgba(46,46,80,.5)' } }, y: { ticks: { color: '#9494b8', font: { size: 10 } }, grid: { color: 'rgba(46,46,80,.5)' }, beginAtZero: true } }, animation: { duration: 900, easing: 'easeOutQuart' } }
     });
   }
 }
