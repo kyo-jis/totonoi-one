@@ -3428,6 +3428,10 @@ function destroyChart(id) {
 
 function renderAnalysis() {
   var el = document.getElementById('analysisContent');
+  if (!isPro) {
+    el.innerHTML = '<div class="pro-gate"><div class="pro-gate-icon">📊</div><p class="pro-gate-title">分析機能はProプラン限定</p><p class="pro-gate-text">部位別ボリューム・推移グラフ・PRなどの詳細分析が使えます。</p><button class="btn-upgrade" onclick="startCheckout()">Proにアップグレード</button></div>';
+    return;
+  }
   var streak = calcStreak();
   var weekDays = calcWeekDays();
   var partVolume = calcPartVolume();
