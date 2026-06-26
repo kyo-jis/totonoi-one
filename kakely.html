@@ -92,6 +92,7 @@
     .group-badge { display: inline-block; font-size: .58rem; background: rgba(108,142,255,.18); color: #a0c4ff; border-radius: 4px; padding: 1px 4px; margin-left: .3rem; vertical-align: middle; }
     .fixed-badge { display: inline-block; font-size: .58rem; background: rgba(245,166,35,.15); color: var(--accent); border-radius: 4px; padding: 1px 4px; margin-left: .3rem; vertical-align: middle; }
     .transfer-badge { display: inline-block; font-size: .58rem; background: rgba(108,142,255,.15); color: #6c8eff; border-radius: 4px; padding: 1px 4px; margin-left: .3rem; vertical-align: middle; }
+    .withdraw-badge { display: inline-block; font-size: .58rem; background: rgba(94,207,160,.14); color: #5ecfa0; border-radius: 4px; padding: 1px 4px; margin-left: .3rem; vertical-align: middle; }
     .preset-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1rem; }
     .preset-chip { padding: .4rem .75rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; font-size: .78rem; color: var(--muted); cursor: pointer; display: flex; align-items: center; gap: .3rem; white-space: nowrap; font-family: var(--font); }
     .preset-chip:active { opacity: .7; }
@@ -381,6 +382,10 @@
         <p class="graph-title">支払い方法別 今月の支出</p>
         <div class="chart-box" id="payBreakdownList"></div>
       </div>
+      <div class="graph-section graph-grid-wide" id="withdrawScheduleSection" style="display:none">
+        <p class="graph-title">クレカ引き落とし予定（今月の利用分）</p>
+        <div class="chart-box" id="withdrawScheduleList"></div>
+      </div>
       <div class="graph-section graph-grid-wide">
         <p class="graph-title">月別収支推移</p>
         <div class="chart-box"><canvas id="barChart" height="180"></canvas></div>
@@ -555,9 +560,15 @@
       <label class="form-label">有効期限（MM/YY）</label>
       <input type="text" id="fCardExpiry" placeholder="12/28" maxlength="5" inputmode="text" oninput="fmtExpiry(this)">
     </div>
+    <div class="form-group" id="closingWrap" style="display:none">
+      <label class="form-label">締め日</label>
+      <input type="number" id="fClosing" placeholder="15" min="1" max="31" inputmode="numeric">
+      <p style="font-size:.68rem;color:var(--muted);margin-top:.3rem">この日までの利用が翌月の引き落とし対象（例: 15日締め）</p>
+    </div>
     <div class="form-group" id="withdrawalWrap" style="display:none">
       <label class="form-label">引き落とし日</label>
       <input type="number" id="fWithdrawal" placeholder="27" min="1" max="31" inputmode="numeric">
+      <p style="font-size:.68rem;color:var(--muted);margin-top:.3rem">締め日の翌月のこの日に引き落とし（例: 翌月10日）</p>
     </div>
     <div class="form-group" id="balanceWrap" style="display:none">
       <label class="form-label">現在の残高（円）</label>
@@ -690,6 +701,30 @@ function fmtDate(str) {
   var d = parseLocalDate(str);
   return (d.getMonth()+1) + '/' + d.getDate() + '（' + ['日','月','火','水','木','金','土'][d.getDay()] + '）';
 }
+// クレカ利用日 → 実際の引き落とし日（YYYY-MM-DD）を計算
+// closingDay: 締め日, withdrawalDay: 引き落とし日（締めの翌月）
+function calcWithdrawalDate(usedStr, closingDay, withdrawalDay) {
+  if (!closingDay || !withdrawalDay) return null;
+  var d = parseLocalDate(usedStr);
+  if (!d) return null;
+  var y = d.getFullYear(), m = d.getMonth(), day = d.getDate();
+  var closeLast = new Date(y, m+1, 0).getDate();   // 締め月の末日
+  var cd = Math.min(closingDay, closeLast);
+  var closeM = day > cd ? m + 1 : m;               // 締め日を過ぎた利用は翌月締め
+  var first = new Date(y, closeM + 1, 1);          // 引き落としは締めの翌月
+  var wy = first.getFullYear(), wmo = first.getMonth();
+  var payLast = new Date(wy, wmo+1, 0).getDate();
+  var wd = Math.min(withdrawalDay, payLast);
+  return localDateStr(new Date(wy, wmo, wd));
+}
+// 取引が「実際にいつ口座から落ちるか」（クレカは計算、それ以外は利用日）
+function txnSettleDate(t) {
+  var p = paymentMethods.find(function(x){ return x.id === t.payment_method_id; });
+  if (p && p.type === 'card' && p.closing_day && p.withdrawal_date) {
+    return calcWithdrawalDate(t.date, p.closing_day, p.withdrawal_date) || t.date;
+  }
+  return t.date;
+}
 
 // ── State ──
 var categories = JSON.parse(localStorage.getItem('kakely_cats') || '[]');
@@ -755,7 +790,7 @@ var DEFAULT_INCOME_CATS = [
 
 var DEFAULT_PAYS = [
   {icon:'💴',name:'現金',          type:'cash',   withdrawal_date:null},
-  {icon:'💳',name:'クレジットカード', type:'card',   withdrawal_date:27},
+  {icon:'💳',name:'クレジットカード', type:'card',   withdrawal_date:27, closing_day:15},
   {icon:'📱',name:'PayPay',        type:'emoney', withdrawal_date:null},
   {icon:'🚃',name:'Suica',         type:'emoney', withdrawal_date:null},
   {icon:'🚌',name:'PASMO',         type:'emoney', withdrawal_date:null},
@@ -926,6 +961,10 @@ function renderList() {
             nameLine = esc(cat ? cat.name : '未分類') + (pay ? ' · ' + pay.icon + esc(pay.name) : '');
             if (isGroup) nameLine += ' <span class="group-badge">まとめ</span>';
             if (isFixed) nameLine += ' <span class="fixed-badge">固定費</span>';
+            if (!t.is_income && pay && pay.type === 'card' && pay.closing_day && pay.withdrawal_date) {
+              var wstr = calcWithdrawalDate(t.date, pay.closing_day, pay.withdrawal_date);
+              if (wstr) { var wd2 = parseLocalDate(wstr); nameLine += ' <span class="withdraw-badge">' + (wd2.getMonth()+1) + '/' + wd2.getDate() + ' 引落</span>'; }
+            }
           }
           var memoTxt = (!isFixed && !isTransfer && t.memo) ? esc(t.memo) : '';
           var delFn = isTransfer
@@ -1004,6 +1043,7 @@ function renderGraph() {
   renderPieChart(isPC);
   renderBudgetSection();
   renderPayBreakdown();
+  renderWithdrawSchedule();
   renderBarChart(isPC);
   if (isPC) { renderTrendChart(); renderHeatmap(); }
 }
@@ -1110,6 +1150,43 @@ function renderPayBreakdown() {
       + '<span style="font-size:.7rem;color:var(--muted);flex-shrink:0;min-width:32px;text-align:right">' + pct + '%</span>'
       + '</div>';
   }).join('');
+}
+
+function renderWithdrawSchedule() {
+  var el = document.getElementById('withdrawScheduleList');
+  var sec = document.getElementById('withdrawScheduleSection');
+  if (!el || !sec) return;
+  // 今月利用したクレカ支出のみ対象
+  var cardTxns = transactions.filter(function(t) {
+    if (t.is_income || t.is_transfer) return false;
+    var p = paymentMethods.find(function(x){ return x.id === t.payment_method_id; });
+    return p && p.type === 'card' && p.closing_day && p.withdrawal_date;
+  });
+  if (!cardTxns.length) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+
+  // 引き落とし日（YYYY-MM-DD）ごとに集計
+  var byDate = {};
+  cardTxns.forEach(function(t) {
+    var ws = txnSettleDate(t);
+    byDate[ws] = (byDate[ws] || 0) + t.amount;
+  });
+  var total = cardTxns.reduce(function(s,t){ return s+t.amount; }, 0);
+  var dates = Object.keys(byDate).sort();
+
+  el.innerHTML = dates.map(function(ds) {
+    var amt = byDate[ds];
+    var pct = total ? Math.round(amt / total * 100) : 0;
+    return '<div class="budget-row">'
+      + '<div class="budget-label"><span>📅</span><span class="budget-name">' + fmtDate(ds) + '</span></div>'
+      + '<div class="budget-bar-wrap"><div class="budget-track"><div class="budget-fill" style="width:' + pct + '%;background:#5ecfa0"></div></div></div>'
+      + '<span style="font-size:.78rem;font-weight:600;color:var(--text);flex-shrink:0;min-width:72px;text-align:right">¥' + amt.toLocaleString() + '</span>'
+      + '</div>';
+  }).join('')
+  + '<div class="budget-row" style="margin-top:.4rem;border-top:1px solid var(--border);padding-top:.6rem">'
+  + '<div class="budget-label"><span>💳</span><span class="budget-name">今月利用分の合計</span></div>'
+  + '<span style="font-size:.85rem;font-weight:700;color:#5ecfa0;margin-left:auto">¥' + total.toLocaleString() + '</span>'
+  + '</div>';
 }
 
 function renderPieChart(isPC) {
@@ -1375,6 +1452,7 @@ function renderSettings() {
     var subParts = [PAY_TYPE[p.type]||p.type];
     if (p.type === 'card' && p.brand) subParts.push(p.brand);
     if (p.type === 'card' && p.expiry) subParts.push(p.expiry);
+    if (p.type === 'card' && p.closing_day) subParts.push(p.closing_day + '日締め');
     if (p.withdrawal_date) subParts.push(p.withdrawal_date + '日引き落とし');
     if (hasBalance) subParts.push('¥' + p.balance.toLocaleString());
     return '<div class="settings-row" data-pay-id="' + p.id + '">'
@@ -1874,6 +1952,7 @@ function openPayModal(id) {
     document.getElementById('fPayName').value = p.name;
     document.getElementById('fPayType').value = p.type;
     document.getElementById('fWithdrawal').value = p.withdrawal_date || '';
+    document.getElementById('fClosing').value    = p.closing_day || '';
     document.getElementById('fCardBrand').value  = p.brand || '';
     document.getElementById('fCardExpiry').value = p.expiry || '';
     var hasBalType = p.type === 'cash' || p.type === 'emoney';
@@ -1881,6 +1960,7 @@ function openPayModal(id) {
     document.getElementById('fBalance').value       = hasBalType && p.balance != null ? p.balance : '';
     document.getElementById('cardBrandWrap').style.display  = isCard ? '' : 'none';
     document.getElementById('cardExpiryWrap').style.display = isCard ? '' : 'none';
+    document.getElementById('closingWrap').style.display    = isCard ? '' : 'none';
     document.getElementById('withdrawalWrap').style.display = isCard ? '' : 'none';
     document.getElementById('balanceWrap').style.display    = hasBalType ? '' : 'none';
   } else {
@@ -1888,11 +1968,13 @@ function openPayModal(id) {
     document.getElementById('fPayName').value   = '';
     document.getElementById('fPayType').value   = 'cash';
     document.getElementById('fWithdrawal').value = '';
+    document.getElementById('fClosing').value    = '';
     document.getElementById('fCardBrand').value  = '';
     document.getElementById('fCardExpiry').value = '';
     document.getElementById('fBalance').value   = '';
     document.getElementById('cardBrandWrap').style.display  = 'none';
     document.getElementById('cardExpiryWrap').style.display = 'none';
+    document.getElementById('closingWrap').style.display    = 'none';
     document.getElementById('withdrawalWrap').style.display = 'none';
     document.getElementById('balanceWrap').style.display    = '';
   }
@@ -1903,6 +1985,7 @@ document.getElementById('fPayType').addEventListener('change', function() {
   var isCard = this.value === 'card';
   document.getElementById('cardBrandWrap').style.display  = isCard ? '' : 'none';
   document.getElementById('cardExpiryWrap').style.display = isCard ? '' : 'none';
+  document.getElementById('closingWrap').style.display    = isCard ? '' : 'none';
   document.getElementById('withdrawalWrap').style.display = isCard ? '' : 'none';
   document.getElementById('balanceWrap').style.display    = (this.value === 'cash' || this.value === 'emoney') ? '' : 'none';
 });
@@ -1912,6 +1995,7 @@ async function savePay() {
   var name   = document.getElementById('fPayName').value.trim();
   var type   = document.getElementById('fPayType').value;
   var wd     = parseInt(document.getElementById('fWithdrawal').value) || null;
+  var cdcl   = type === 'card' ? (parseInt(document.getElementById('fClosing').value) || null) : null;
   var brand  = type === 'card' ? (document.getElementById('fCardBrand').value.trim() || null) : null;
   var expiry = type === 'card' ? (document.getElementById('fCardExpiry').value.trim() || null) : null;
   if (!name) { showToast('名前を入力してください'); return; }
@@ -1921,6 +2005,7 @@ async function savePay() {
   // ローカル用（brand/expiry含む）
   var localPayload = { icon: icon, name: name, type: type };
   if (wd != null) localPayload.withdrawal_date = wd;
+  if (cdcl != null) localPayload.closing_day = cdcl;
   if (brand != null) localPayload.brand = brand;
   if (expiry != null) localPayload.expiry = expiry;
   if (bal != null) localPayload.balance = bal;
@@ -1928,6 +2013,7 @@ async function savePay() {
   // Supabase用
   var dbPayload = { icon: icon, name: name, type: type };
   if (wd != null) dbPayload.withdrawal_date = wd;
+  if (cdcl != null) dbPayload.closing_day = cdcl;
   if (brand != null) dbPayload.brand = brand;
   if (expiry != null) dbPayload.expiry = expiry;
   if (bal != null) dbPayload.balance = bal;
@@ -2169,6 +2255,7 @@ async function syncFromCloud() {
         var lpPayload = { icon: lp.icon, name: lp.name, type: lp.type, withdrawal_date: lp.withdrawal_date || null, balance: lp.balance || null };
         if (lp.brand) lpPayload.brand = lp.brand;
         if (lp.expiry) lpPayload.expiry = lp.expiry;
+        if (lp.closing_day) lpPayload.closing_day = lp.closing_day;
         var upr = await _sb.from('kakely_payment_methods').insert(Object.assign({ user_id: currentUser.id }, lpPayload)).select().single();
         if (upr.data) paymentMethods.push(upr.data);
       }
