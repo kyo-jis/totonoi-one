@@ -2163,7 +2163,10 @@ async function savePay() {
     if (currentUser) {
       if (isUuid(editPayId)) {
         var upRes = await _sb.from('kakely_payment_methods').update(dbPayload).eq('id', editPayId);
-        if (upRes.error) console.warn('kakely_payment_methods update:', upRes.error.message);
+        if (upRes.error) {
+          console.warn('kakely_payment_methods update:', upRes.error.message);
+          if (bal != null) setPendingBalance(editPayId, bal); // 残高は次回同期で再送
+        }
       } else {
         // ローカルIDの支払い方法はensurePayIdでクラウド登録（編集後の内容で）
         await ensurePayId(editPayId);
@@ -2296,13 +2299,28 @@ async function deleteGroupTxns(groupId, event) {
 }
 
 // ── 残高管理 ──
+// クラウド書き込みが成功するまでローカル残高を保護するpendingキュー
+function getPendingBalances() { return JSON.parse(localStorage.getItem('kakely_pending_bal') || '{}'); }
+function setPendingBalance(id, bal) { var q = getPendingBalances(); q[id] = bal; localStorage.setItem('kakely_pending_bal', JSON.stringify(q)); }
+function clearPendingBalance(id) { var q = getPendingBalances(); delete q[id]; localStorage.setItem('kakely_pending_bal', JSON.stringify(q)); }
+
+function pushBalanceToCloud(p) {
+  if (!currentUser || !isUuid(p.id)) return;
+  // 先にpending記録 → 書き込み成功を確認してから消す（リロードで消失しない）
+  setPendingBalance(p.id, p.balance);
+  _sb.from('kakely_payment_methods').update({ balance: p.balance }).eq('id', p.id).then(function(res) {
+    if (res.error) console.error('balance update error', res.error);
+    else clearPendingBalance(p.id);
+  });
+}
+
 function updateCashBalance(payId, delta) {
   if (!payId) return;
   var p = paymentMethods.find(function(x){ return x.id === payId; });
   if (!p || (p.type !== 'cash' && p.type !== 'emoney') || p.balance == null) return;
   p.balance = p.balance + delta;
   localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
-  if (currentUser && isUuid(payId)) _sb.from('kakely_payment_methods').update({ balance: p.balance }).eq('id', payId);
+  pushBalanceToCloud(p);
   updateBalanceDisplay();
   renderSettings();
 }
@@ -2395,11 +2413,22 @@ async function syncFromCloud() {
       // ローカルにあってSupabaseに未保存の項目（tmp_プレフィックスまたはIDがクラウドにない）
       var localOnly = localPays.filter(function(p){ return cloudIds.indexOf(p.id) === -1; });
       // ローカルのbalanceをSupabaseのnullで上書きしない（IDで一致）
+      // pending（クラウド書き込み未確認）の残高は最新値としてクラウド値より優先
+      var pendingBal = getPendingBalances();
       paymentMethods = payRes.data.map(function(p) {
         var local = localPays.find(function(l){ return l.id === p.id; });
         var merged = Object.assign({}, p);
-        if (p.balance == null && local && local.balance != null) merged.balance = local.balance;
+        if (pendingBal[p.id] != null) merged.balance = pendingBal[p.id];
+        else if (p.balance == null && local && local.balance != null) merged.balance = local.balance;
         return merged;
+      });
+      // pending残高をクラウドに再送（成功したらpending解除）
+      Object.keys(pendingBal).forEach(function(pid) {
+        if (!isUuid(pid)) { clearPendingBalance(pid); return; }
+        _sb.from('kakely_payment_methods').update({ balance: pendingBal[pid] }).eq('id', pid).then(function(res) {
+          if (res.error) console.error('pending balance flush error', res.error);
+          else clearPendingBalance(pid);
+        });
       });
       // ローカルのみの項目をSupabaseにアップロード
       for (var li = 0; li < localOnly.length; li++) {
