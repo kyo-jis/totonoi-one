@@ -357,8 +357,14 @@ var PRESETS = [
   {name:'パスポート', icon:'🛂', cat:'passport'},     {name:'車検',      icon:'🔧', cat:'vehicle'},
   {name:'クレカ',     icon:'💳', cat:'card'},         {name:'スマホ契約',icon:'📱', cat:'subscription'},
   {name:'マイナンバーカード', icon:'🆔', cat:'license'}, {name:'マイナ電子証明書', icon:'🔐', cat:'license'},
-  {name:'危険物取扱者', icon:'🧪', cat:'cert'}, {name:'救命講習', icon:'🚑', cat:'cert'},
+  // ここから「もっと見る」で展開（更新期限のある資格）
+  {name:'危険物取扱者', icon:'🧪', cat:'cert'},   {name:'救命講習',       icon:'🚑', cat:'cert'},
+  {name:'宅建士証',     icon:'🏠', cat:'cert'},   {name:'ケアマネ更新',   icon:'🤝', cat:'cert'},
+  {name:'小型船舶免許', icon:'⛵', cat:'cert'},   {name:'電気工事士講習', icon:'⚡', cat:'cert'},
+  {name:'AWS認定',      icon:'☁️', cat:'cert'},   {name:'TOEICスコア',    icon:'📝', cat:'cert'},
 ];
+var PRESET_VISIBLE = 10; // 初期表示数（それ以降は「もっと見る」）
+var _presetsExpanded = false;
 var items = JSON.parse(localStorage.getItem('renewly_items') || '[]');
 var editId = null;
 var currentCat = 'all';
@@ -480,10 +486,21 @@ function renderStats() {
 }
 
 function buildPresets() {
-  document.getElementById('presetArea').innerHTML = PRESETS.map(function(p) {
+  var list = _presetsExpanded ? PRESETS : PRESETS.slice(0, PRESET_VISIBLE);
+  document.getElementById('presetArea').innerHTML = list.map(function(p) {
     return '<button class="preset-btn" onclick="selectPreset(this,\'' + p.name + '\',\'' + p.icon + '\',\'' + p.cat + '\')">'
       + '<span class="p-icon">' + p.icon + '</span><span class="p-name">' + p.name + '</span></button>';
-  }).join('');
+  }).join('')
+  + (PRESETS.length > PRESET_VISIBLE
+    ? '<button class="preset-btn" style="color:var(--muted);" onclick="togglePresets(event)">'
+      + '<span class="p-icon">' + (_presetsExpanded ? '▲' : '▼') + '</span>'
+      + '<span class="p-name">' + (_presetsExpanded ? '閉じる' : 'もっと見る') + '</span></button>'
+    : '');
+}
+function togglePresets(e) {
+  e.stopPropagation();
+  _presetsExpanded = !_presetsExpanded;
+  buildPresets();
 }
 function selectPreset(btn, name, icon, cat) {
   document.querySelectorAll('.preset-btn').forEach(function(b){ b.classList.remove('selected'); });
