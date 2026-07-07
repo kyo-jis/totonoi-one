@@ -40,6 +40,11 @@
     .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
     .auth-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: .3rem .85rem; font-size: .72rem; color: var(--muted); cursor: pointer; font-family: var(--font); transition: all .2s; white-space: nowrap; }
     .auth-chip.logged-in { border-color: var(--accent); color: var(--accent); }
+    .sync-btn { background: none; border: 1px solid var(--border); border-radius: 20px; padding: .3rem .7rem; font-size: .72rem; color: var(--muted); cursor: pointer; font-family: var(--font); transition: all .2s; display: none; align-items: center; gap: .3rem; }
+    .sync-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .sync-btn.spinning .sync-icon { display: inline-block; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .header-actions { display: flex; align-items: center; gap: .5rem; }
     /* Login Notice */
     .login-notice { margin: -.25rem 1.25rem .75rem; background: rgba(148,148,184,.07); border: 1px solid rgba(148,148,184,.18); border-radius: 12px; padding: .6rem 1rem; display: flex; align-items: center; gap: .65rem; cursor: pointer; font-size: .78rem; color: var(--muted); transition: opacity .2s; }
     .login-notice:active { opacity: .7; }
@@ -303,7 +308,12 @@
 <div class="app-header">
   <div class="header-top">
     <a class="back-link" href="index.html">← Totonoi One</a>
-    <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
+    <div class="header-actions">
+      <button class="sync-btn" id="syncBtn" onclick="fullSyncFromCloud()" title="データを再同期">
+        <span class="sync-icon">🔄</span><span>更新</span>
+      </button>
+      <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
+    </div>
   </div>
   <h1 class="app-title">Kake<span>ly</span></h1>
   <p class="app-subtitle">家計簿</p>
@@ -2326,6 +2336,34 @@ async function prefetchRecentMonths() {
   }
 }
 
+async function fullSyncFromCloud() {
+  if (!currentUser || _syncing) return;
+  var btn = document.getElementById('syncBtn');
+  if (btn) btn.classList.add('spinning');
+  // 全データ再同期（マスターデータ）
+  await syncFromCloud();
+  // 過去6か月分をキャッシュ強制更新
+  for (var i = 1; i <= 6; i++) {
+    var d = new Date(viewYear, viewMonth - i, 1);
+    var y = d.getFullYear(), m = d.getMonth();
+    var from = y + '-' + String(m + 1).padStart(2, '0') + '-01';
+    var lastDay = new Date(y, m + 1, 0).getDate();
+    var to   = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(lastDay).padStart(2, '0');
+    var res = await _sb.from('kakely_transactions').select('*')
+      .eq('user_id', currentUser.id).gte('date', from).lte('date', to)
+      .order('date', { ascending: false });
+    if (res.data) localStorage.setItem('kakely_txn_' + y + '_' + (m + 1), JSON.stringify(res.data));
+  }
+  if (btn) btn.classList.remove('spinning');
+  showToast('☁️ 過去6か月分を再同期しました');
+}
+
+function updateSyncBtn() {
+  var btn = document.getElementById('syncBtn');
+  if (!btn) return;
+  btn.style.display = currentUser ? 'inline-flex' : 'none';
+}
+
 async function fetchMonthTransactions() {
   var from = viewYear + '-' + String(viewMonth+1).padStart(2,'0') + '-01';
   var lastDay = new Date(viewYear, viewMonth+1, 0).getDate();
@@ -2357,14 +2395,14 @@ function openAuthModal() {
 
 _sb.auth.onAuthStateChange(function(event, session) {
   currentUser = session ? session.user : null;
-  updateAuthUI();
+  updateAuthUI(); updateSyncBtn();
   if (currentUser && event === 'SIGNED_IN') syncFromCloud();
   if (!currentUser) updateProUI();
 });
 
 _sb.auth.getSession().then(function(res) {
   currentUser = res.data.session ? res.data.session.user : null;
-  updateAuthUI();
+  updateAuthUI(); updateSyncBtn();
   if (currentUser) syncFromCloud();
 });
 
