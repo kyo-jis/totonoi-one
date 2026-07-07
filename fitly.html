@@ -477,6 +477,7 @@
     .sound-btn { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:.45rem .7rem; font-size:.75rem; color:var(--muted); cursor:pointer; font-family:var(--font); display:flex; align-items:center; gap:.35rem; transition:all .15s; }
     .sound-btn.active { border-color:var(--accent); color:var(--accent); background:rgba(94,207,160,.1); }
     .sound-preview { font-size:.65rem; color:var(--muted); background:none; border:none; cursor:pointer; padding:0; font-family:var(--font); }
+    .sound-desc { font-size:.6rem; color:var(--muted); opacity:.75; }
     .vol-slider { -webkit-appearance:none; width:100%; height:4px; border-radius:2px; background:var(--border); outline:none; cursor:pointer; margin-top:.1rem; }
     .vol-slider::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--accent); cursor:pointer; box-shadow:0 1px 6px rgba(94,207,160,.45); }
     .vol-slider::-moz-range-thumb { width:18px; height:18px; border-radius:50%; background:var(--accent); cursor:pointer; border:none; }
@@ -2744,19 +2745,21 @@ function resetTimer() {
 // ── Sound ──
 var _audioCtx = null;
 var selectedSound = localStorage.getItem('fitlySound') || 'chime';
+// 廃止音（bowl/drum/beep）を保存していた場合はbellにフォールバック
+if (['bowl','drum','beep'].indexOf(selectedSound) !== -1) { selectedSound = 'bell'; localStorage.setItem('fitlySound','bell'); }
 var soundVolume = parseFloat(localStorage.getItem('fitlySoundVolume') || '0.7');
 
 var SOUNDS = [
-  { id:'bell',       label:'🔔 ベル',           desc:'クラシックベル' },
-  { id:'chime',      label:'🎵 チャイム',       desc:'和音アルペジオ' },
-  { id:'bowl',       label:'🎶 ボウル',         desc:'シンギングボウル' },
-  { id:'crystal',    label:'✨ クリスタル',     desc:'高音ペンタトニック' },
-  { id:'synth',      label:'🎺 シンセ',         desc:'クリーンな電子音' },
-  { id:'beep',       label:'📳 ビープ',         desc:'短いビープ音' },
-  { id:'whistle',    label:'🎵 笛',             desc:'ホイッスル' },
-  { id:'drum',       label:'🥁 ドラム',         desc:'バスドラム' },
-  { id:'countdown',  label:'⏱ カウントダウン', desc:'3連ビープ' },
-  { id:'none',       label:'🔕 なし',           desc:'無音' },
+  { id:'bell',      label:'🔔 目覚ましベル',   desc:'ジリリリ！' },
+  { id:'chime',     label:'🏫 学校チャイム',   desc:'キンコンカンコン' },
+  { id:'doorbell',  label:'🚪 ドアチャイム',   desc:'ピンポーン' },
+  { id:'microwave', label:'🍳 レンジ',         desc:'チーン！' },
+  { id:'phone',     label:'☎️ 電話ベル',       desc:'プルルル' },
+  { id:'crystal',   label:'✨ キラキラ',       desc:'キラキラーン' },
+  { id:'synth',     label:'🎺 ファンファーレ', desc:'パパパパーン！' },
+  { id:'whistle',   label:'📣 ホイッスル',     desc:'ピッピーッ！' },
+  { id:'countdown', label:'🚀 カウントダウン', desc:'ピッピッピーン' },
+  { id:'none',      label:'🔕 なし',           desc:'無音' },
 ];
 
 function getAudioCtx() {
@@ -2765,6 +2768,20 @@ function getAudioCtx() {
   return _audioCtx;
 }
 document.addEventListener('touchstart', function(){ getAudioCtx(); }, { once: true });
+
+// 単音生成ヘルパー
+function _tone(ctx, master, opts) {
+  var o = ctx.createOscillator(), g = ctx.createGain();
+  o.connect(g); g.connect(master);
+  o.type = opts.type || 'sine';
+  o.frequency.setValueAtTime(opts.f, opts.t);
+  if (opts.fEnd) o.frequency.exponentialRampToValueAtTime(opts.fEnd, opts.t + opts.dur);
+  var atk = opts.attack || 0.012;
+  g.gain.setValueAtTime(0, opts.t);
+  g.gain.linearRampToValueAtTime(opts.peak, opts.t + atk);
+  g.gain.exponentialRampToValueAtTime(0.001, opts.t + opts.dur);
+  o.start(opts.t); o.stop(opts.t + opts.dur + 0.05);
+}
 
 function playSound(id) {
   var sid = id || selectedSound;
@@ -2776,95 +2793,97 @@ function playSound(id) {
     master.gain.value = soundVolume;
     master.connect(ctx.destination);
     if (sid === 'bell') {
-      var o = ctx.createOscillator(), g = ctx.createGain();
-      o.connect(g); g.connect(master);
-      o.type = 'sine';
-      o.frequency.setValueAtTime(880, now);
-      o.frequency.exponentialRampToValueAtTime(440, now + 1.5);
-      g.gain.setValueAtTime(0.7, now);
-      g.gain.exponentialRampToValueAtTime(0.001, now + 2.5);
-      o.start(now); o.stop(now + 2.5);
+      // ジリリリ！ 機械式目覚まし（20Hzトレモロ）
+      var o = ctx.createOscillator(), g = ctx.createGain(), env = ctx.createGain();
+      o.type = 'square'; o.frequency.value = 880;
+      o.connect(g); g.connect(env); env.connect(master);
+      g.gain.value = 0.13;
+      var lfo = ctx.createOscillator(), lg = ctx.createGain();
+      lfo.type = 'square'; lfo.frequency.value = 20; lg.gain.value = 0.13;
+      lfo.connect(lg); lg.connect(g.gain);
+      env.gain.setValueAtTime(1, now);
+      env.gain.setValueAtTime(1, now + 1.5);
+      env.gain.linearRampToValueAtTime(0, now + 1.8);
+      o.start(now); o.stop(now + 1.8); lfo.start(now); lfo.stop(now + 1.8);
     } else if (sid === 'chime') {
-      [523.25, 659.25, 783.99, 1046.50].forEach(function(freq, i) {
-        var o = ctx.createOscillator(), g = ctx.createGain();
-        o.connect(g); g.connect(master);
-        o.type = 'sine'; o.frequency.value = freq;
-        var t = now + i * 0.18;
-        g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(0.4, t + 0.01);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
-        o.start(t); o.stop(t + 1.2);
+      // キンコンカンコーン（ウェストミンスターの鐘）
+      var seq = [659.25, 523.25, 587.33, 392, null, 392, 587.33, 659.25, 523.25];
+      seq.forEach(function(f, i) {
+        if (!f) return;
+        var t = now + i * 0.42;
+        _tone(ctx, master, { type:'triangle', f:f, t:t, dur:1.4, peak:0.5 });
+        _tone(ctx, master, { type:'sine', f:f*2, t:t, dur:0.9, peak:0.14 });
       });
-    } else if (sid === 'bowl') {
-      [432, 648].forEach(function(freq, i) {
-        var o = ctx.createOscillator(), g = ctx.createGain();
-        o.connect(g); g.connect(master);
-        o.type = 'sine'; o.frequency.value = freq;
-        g.gain.setValueAtTime(0, now);
-        g.gain.linearRampToValueAtTime(i === 0 ? 0.5 : 0.15, now + 0.5);
-        g.gain.exponentialRampToValueAtTime(0.001, now + 5);
-        o.start(now); o.stop(now + 5);
+    } else if (sid === 'doorbell') {
+      // ピンポーン（玄関チャイム）
+      _tone(ctx, master, { type:'sine', f:659.25, t:now, dur:1.0, peak:0.6 });
+      _tone(ctx, master, { type:'sine', f:1318.5, t:now, dur:0.5, peak:0.12 });
+      _tone(ctx, master, { type:'sine', f:523.25, t:now+0.45, dur:1.6, peak:0.6 });
+      _tone(ctx, master, { type:'sine', f:1046.5, t:now+0.45, dur:0.7, peak:0.12 });
+    } else if (sid === 'microwave') {
+      // チーン！（金属ベルの一撃、非整数倍音）
+      _tone(ctx, master, { type:'sine', f:900,  t:now, dur:2.5, peak:0.55, attack:0.005 });
+      _tone(ctx, master, { type:'sine', f:2484, t:now, dur:1.4, peak:0.22, attack:0.005 });
+      _tone(ctx, master, { type:'sine', f:4860, t:now, dur:0.7, peak:0.08, attack:0.005 });
+    } else if (sid === 'phone') {
+      // プルルル プルルル（固定電話の着信ベル）
+      [0, 1.3].forEach(function(dl) {
+        var t = now + dl;
+        [1000, 1250].forEach(function(f) {
+          var o = ctx.createOscillator(), g = ctx.createGain();
+          o.type = 'sine'; o.frequency.value = f;
+          o.connect(g); g.connect(master);
+          var lfo = ctx.createOscillator(), lg = ctx.createGain();
+          lfo.type = 'sine'; lfo.frequency.value = 25; lg.gain.value = 0.13;
+          lfo.connect(lg); lg.connect(g.gain);
+          g.gain.setValueAtTime(0.13, t);
+          g.gain.setValueAtTime(0.13, t + 0.85);
+          g.gain.linearRampToValueAtTime(0, t + 0.95);
+          o.start(t); o.stop(t + 0.95); lfo.start(t); lfo.stop(t + 0.95);
+        });
       });
     } else if (sid === 'crystal') {
-      [1174.66, 1318.51, 1567.98, 1760, 2093].forEach(function(freq, i) {
-        var o = ctx.createOscillator(), g = ctx.createGain();
-        o.connect(g); g.connect(master);
-        o.type = 'sine'; o.frequency.value = freq;
-        var t = now + i * 0.11;
-        g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(0.25, t + 0.01);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
-        o.start(t); o.stop(t + 0.9);
+      // キラキラーン（ハープのグリッサンド上昇）
+      [1046.5, 1174.66, 1318.51, 1568, 1760, 2093, 2349.3, 2637].forEach(function(f, i) {
+        _tone(ctx, master, { type:'triangle', f:f, t:now + i*0.07, dur:0.9, peak:0.3 });
       });
     } else if (sid === 'synth') {
-      [0, 0.35].forEach(function(delay) {
-        var o = ctx.createOscillator(), g = ctx.createGain();
-        o.connect(g); g.connect(master);
-        o.type = 'triangle'; o.frequency.value = 660;
-        var t = now + delay;
-        g.gain.setValueAtTime(0.5, t);
-        g.gain.linearRampToValueAtTime(0, t + 0.18);
-        o.start(t); o.stop(t + 0.2);
+      // パパパ パーン！（ファンファーレ）
+      [[523.25,0,0.14],[523.25,0.18,0.14],[523.25,0.36,0.14],[783.99,0.54,1.0]].forEach(function(n) {
+        _tone(ctx, master, { type:'sawtooth', f:n[0], t:now+n[1], dur:n[2], peak:0.28, attack:0.02 });
       });
-    } else if (sid === 'beep') {
-      var o = ctx.createOscillator(), g = ctx.createGain();
-      o.connect(g); g.connect(master);
-      o.type = 'square'; o.frequency.value = 880;
-      g.gain.setValueAtTime(0.3, now);
-      g.gain.setValueAtTime(0.3, now + 0.1);
-      g.gain.linearRampToValueAtTime(0, now + 0.15);
-      o.start(now); o.stop(now + 0.18);
+      _tone(ctx, master, { type:'sawtooth', f:659.25, t:now+0.54, dur:1.0, peak:0.15, attack:0.02 });
+      _tone(ctx, master, { type:'sawtooth', f:523.25, t:now+0.54, dur:1.0, peak:0.13, attack:0.02 });
     } else if (sid === 'whistle') {
-      var o = ctx.createOscillator(), g = ctx.createGain();
-      o.connect(g); g.connect(master);
-      o.type = 'sine';
-      o.frequency.setValueAtTime(1400, now);
-      o.frequency.exponentialRampToValueAtTime(1900, now + 0.25);
-      g.gain.setValueAtTime(0, now);
-      g.gain.linearRampToValueAtTime(0.55, now + 0.04);
-      g.gain.setValueAtTime(0.55, now + 0.2);
-      g.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-      o.start(now); o.stop(now + 0.5);
-    } else if (sid === 'drum') {
-      var o = ctx.createOscillator(), g = ctx.createGain();
-      o.connect(g); g.connect(master);
-      o.type = 'sine';
-      o.frequency.setValueAtTime(200, now);
-      o.frequency.exponentialRampToValueAtTime(40, now + 0.3);
-      g.gain.setValueAtTime(0.9, now);
-      g.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
-      o.start(now); o.stop(now + 0.45);
-    } else if (sid === 'countdown') {
-      [880, 880, 1047].forEach(function(freq, i) {
-        var t = now + i * 0.32;
+      // ピッ ピーーッ！（審判ホイッスル: 矩形波＋トリル＋息ノイズ）
+      var pip = function(t, dur) {
         var o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'square'; o.frequency.setValueAtTime(2900, t);
         o.connect(g); g.connect(master);
-        o.type = 'sine'; o.frequency.value = freq;
+        var lfo = ctx.createOscillator(), lg = ctx.createGain();
+        lfo.type = 'sine'; lfo.frequency.value = 35; lg.gain.value = 70;
+        lfo.connect(lg); lg.connect(o.frequency);
         g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(0.45, t + 0.01);
-        g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
-        o.start(t); o.stop(t + 0.3);
-      });
+        g.gain.linearRampToValueAtTime(0.2, t + 0.015);
+        g.gain.setValueAtTime(0.2, t + dur - 0.05);
+        g.gain.linearRampToValueAtTime(0, t + dur);
+        o.start(t); o.stop(t + dur); lfo.start(t); lfo.stop(t + dur);
+        var nb = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate);
+        var data = nb.getChannelData(0);
+        for (var i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+        var ns = ctx.createBufferSource(); ns.buffer = nb;
+        var bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2900; bp.Q.value = 6;
+        var ng = ctx.createGain(); ng.gain.value = 0.12;
+        ns.connect(bp); bp.connect(ng); ng.connect(master);
+        ns.start(t); ns.stop(t + dur);
+      };
+      pip(now, 0.18);
+      pip(now + 0.3, 0.85);
+    } else if (sid === 'countdown') {
+      // ピッ ピッ ピーン！（3,2,1,GO!）
+      _tone(ctx, master, { type:'sine', f:660,  t:now,       dur:0.18, peak:0.55 });
+      _tone(ctx, master, { type:'sine', f:660,  t:now + 0.5, dur:0.18, peak:0.55 });
+      _tone(ctx, master, { type:'sine', f:1320, t:now + 1.0, dur:0.9,  peak:0.6 });
     }
   } catch(e) {}
 }
@@ -2894,6 +2913,7 @@ function buildSoundSelector() {
   el.innerHTML = SOUNDS.map(function(s) {
     return '<button class="sound-btn'+(s.id===selectedSound?' active':'')+'" onclick="selectSound(\''+s.id+'\')">'
       +s.label
+      +(s.id!=='none'?'<span class="sound-desc">'+s.desc+'</span>':'')
       +(s.id!=='none'?'<span class="sound-preview" onclick="event.stopPropagation();playSound(\''+s.id+'\')">▶</span>':'')
       +'</button>';
   }).join('')
@@ -2917,6 +2937,7 @@ function selectSound(id) {
   selectedSound = id;
   localStorage.setItem('fitlySound', id);
   buildSoundSelector();
+  if (id !== 'none') playSound(id); // 選択と同時に試聴
 }
 
 // ── Interval Timer ──
