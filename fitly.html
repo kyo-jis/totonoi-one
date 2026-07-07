@@ -513,16 +513,8 @@
     .muscle-svg-wrap { display:flex; justify-content:center; margin-bottom:1rem; }
     .muscle-svg-wrap svg { display:block; height:min(340px,45vh); width:auto; max-width:100%; }
     .muscle-svg-wrap .skin path, .muscle-svg-wrap .muscle path { fill:#252548; stroke:#12131a; stroke-width:1.2; }
-    .form-anim-title { font-size:.78rem; color:var(--muted); text-align:center; margin:1rem 0 .35rem; }
-    .form-anim-wrap { display:flex; justify-content:center; }
-    .form-anim-wrap svg { width:min(240px,70%); height:auto; background:var(--surface2); border-radius:14px; }
-    .form-anim-wrap .pose-a { animation:formPoseA 1.6s linear infinite; }
-    .form-anim-wrap .pose-b { animation:formPoseB 1.6s linear infinite; opacity:0; }
-    @keyframes formPoseA { 0%,49% { opacity:1; } 50%,100% { opacity:0; } }
-    @keyframes formPoseB { 0%,49% { opacity:0; } 50%,100% { opacity:1; } }
-    .form-anim-wrap .pose-static { animation:formBreath 2.6s ease-in-out infinite alternate; }
-    @keyframes formBreath { from { transform:translateY(0); } to { transform:translateY(2.5px); } }
-    @media (prefers-reduced-motion:reduce){ .form-anim-wrap g { animation:none!important; } .form-anim-wrap .pose-b { opacity:0!important; } }
+    .form-video-btn { display:flex; align-items:center; justify-content:center; gap:.4rem; margin-top:1rem; padding:.7rem; border:1px solid var(--border); border-radius:12px; background:var(--surface2); color:var(--text); font-size:.85rem; text-decoration:none; transition:all .15s; }
+    .form-video-btn:active { transform:scale(.97); }
     .muscle-legend { display:flex; gap:1rem; justify-content:center; font-size:.72rem; }
     .muscle-legend-item { display:flex; align-items:center; gap:.3rem; }
     .muscle-legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
@@ -4594,98 +4586,12 @@ function buildMuscleSVG(exId, view) {
   return svg.outerHTML;
 }
 
-// ── 種目フォームアニメーション（2コマ切り替え・自作素材） ──
-var _FB = 'fill="none" stroke="#a9a9d6" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"';
-var _EQ = 'stroke="#6c8eff" stroke-width="5" stroke-linecap="round" fill="none"';
-var _FLOOR = '<line x1="20" y1="136" x2="180" y2="136" stroke="#2e2e50" stroke-width="3" stroke-linecap="round"/>';
-function _head(x, y) { return '<circle cx="'+x+'" cy="'+y+'" r="7.5" fill="#a9a9d6"/>'; }
-function _pl(pts) { return '<polyline points="'+pts+'" '+_FB+'/>'; }
-
-var FORM_ANIMS = {
-  bench: {
-    static: _FLOOR
-      + '<rect x="45" y="98" width="105" height="9" rx="4" fill="#32325e"/>'
-      + '<line x1="60" y1="107" x2="60" y2="136" stroke="#32325e" stroke-width="5"/>'
-      + '<line x1="135" y1="107" x2="135" y2="136" stroke="#32325e" stroke-width="5"/>',
-    a: _head(139,93) + _pl('80,94 128,94') + _pl('80,94 62,112 62,136')
-      + _pl('122,94 104,82 112,64')
-      + '<line x1="94" y1="64" x2="132" y2="64" '+_EQ+'/><circle cx="94" cy="64" r="6" fill="#6c8eff"/><circle cx="132" cy="64" r="6" fill="#6c8eff"/>',
-    b: _head(139,93) + _pl('80,94 128,94') + _pl('80,94 62,112 62,136')
-      + _pl('122,94 118,72 116,48')
-      + '<line x1="98" y1="48" x2="136" y2="48" '+_EQ+'/><circle cx="98" cy="48" r="6" fill="#6c8eff"/><circle cx="136" cy="48" r="6" fill="#6c8eff"/>'
-  },
-  squat: {
-    static: _FLOOR,
-    a: _head(100,30) + _pl('100,38 100,88') + _pl('100,88 100,112 100,136') + _pl('100,136 112,136')
-      + '<line x1="86" y1="50" x2="114" y2="50" '+_EQ+'/><circle cx="86" cy="50" r="5" fill="#6c8eff"/><circle cx="114" cy="50" r="5" fill="#6c8eff"/>',
-    b: _head(116,62) + _pl('110,70 94,98') + _pl('94,98 116,108 108,136') + _pl('108,136 120,136')
-      + '<line x1="96" y1="68" x2="124" y2="68" '+_EQ+'/><circle cx="96" cy="68" r="5" fill="#6c8eff"/><circle cx="124" cy="68" r="5" fill="#6c8eff"/>'
-  },
-  deadlift: {
-    static: _FLOOR,
-    a: _head(121,63) + _pl('110,66 86,92') + _pl('86,92 104,114 108,136') + _pl('110,66 123,112')
-      + '<circle cx="125" cy="124" r="11" '+_EQ+'/>',
-    b: _head(104,47) + _pl('104,58 104,88') + _pl('104,88 104,112 104,136') + _pl('104,58 110,100')
-      + '<circle cx="112" cy="102" r="11" '+_EQ+'/>'
-  },
-  pullup: {
-    static: '<line x1="60" y1="26" x2="140" y2="26" '+_EQ+'/>',
-    a: _head(107,50) + _pl('100,26 100,52') + _pl('100,52 98,92') + _pl('98,92 92,112 96,128'),
-    b: _head(106,24) + _pl('100,26 90,34 100,40') + _pl('100,40 96,80') + _pl('96,80 88,98 94,114')
-  },
-  db_shoulder_press: {
-    static: _FLOOR,
-    a: _head(100,32) + _pl('100,40 100,88') + _pl('100,88 100,136') + _pl('100,48 114,56 116,42')
-      + '<line x1="110" y1="40" x2="122" y2="40" '+_EQ+'/>',
-    b: _head(100,32) + _pl('100,40 100,88') + _pl('100,88 100,136') + _pl('100,48 106,32 106,18')
-      + '<line x1="100" y1="15" x2="112" y2="15" '+_EQ+'/>'
-  },
-  bent_row: {
-    static: _FLOOR,
-    a: _head(122,64) + _pl('112,68 84,94') + _pl('84,94 98,114 100,136') + _pl('112,68 120,110')
-      + '<circle cx="121" cy="118" r="9" '+_EQ+'/>',
-    b: _head(122,64) + _pl('112,68 84,94') + _pl('84,94 98,114 100,136') + _pl('112,68 112,88')
-      + '<circle cx="113" cy="95" r="9" '+_EQ+'/>'
-  },
-  m_leg_press: {
-    static: _FLOOR + '<line x1="50" y1="82" x2="92" y2="122" stroke="#32325e" stroke-width="9" stroke-linecap="round"/>',
-    a: _head(57,79) + _pl('64,88 85,110') + _pl('85,110 106,104 110,88')
-      + '<line x1="100" y1="72" x2="124" y2="94" '+_EQ+'/>',
-    b: _head(57,79) + _pl('64,88 85,110') + _pl('85,110 104,92 120,74')
-      + '<line x1="112" y1="58" x2="136" y2="80" '+_EQ+'/>'
-  },
-  curl: {
-    static: _FLOOR,
-    a: _head(100,32) + _pl('100,40 100,88') + _pl('100,88 100,136') + _pl('100,50 102,72 104,92')
-      + '<line x1="97" y1="93" x2="111" y2="93" '+_EQ+'/>',
-    b: _head(100,32) + _pl('100,40 100,88') + _pl('100,88 100,136') + _pl('100,50 102,72 114,58')
-      + '<line x1="108" y1="55" x2="122" y2="55" '+_EQ+'/>'
-  },
-  m_tricep_ext: {
-    static: _FLOOR + '<line x1="132" y1="10" x2="132" y2="60" stroke="#32325e" stroke-width="6" stroke-linecap="round"/><circle cx="126" cy="14" r="4" fill="#32325e"/>',
-    a: _head(96,30) + _pl('98,38 100,88') + _pl('100,88 100,136')
-      + '<line x1="126" y1="14" x2="115" y2="60" stroke="#5f5f9e" stroke-width="2"/>'
-      + _pl('99,50 106,68 114,62') + '<line x1="108" y1="59" x2="122" y2="63" '+_EQ+'/>',
-    b: _head(96,30) + _pl('98,38 100,88') + _pl('100,88 100,136')
-      + '<line x1="126" y1="14" x2="117" y2="88" stroke="#5f5f9e" stroke-width="2"/>'
-      + _pl('99,50 106,68 116,90') + '<line x1="110" y1="88" x2="124" y2="92" '+_EQ+'/>'
-  },
-  plank: {
-    static: _FLOOR,
-    single: _head(55,97) + _pl('62,124 84,124') + _pl('64,103 63,123')
-      + _pl('66,103 110,110 150,130')
-  }
-};
-
-function buildFormAnim(exId) {
-  var f = FORM_ANIMS[exId];
-  if (!f) return '';
-  var body = f.single
-    ? '<g class="pose-static">' + f.single + '</g>'
-    : '<g class="pose-a">' + f.a + '</g><g class="pose-b">' + f.b + '</g>';
-  return '<p class="form-anim-title">🎬 動きのイメージ</p>'
-    + '<div class="form-anim-wrap"><svg viewBox="0 0 200 150" xmlns="http://www.w3.org/2000/svg">'
-    + (f.static || '') + body + '</svg></div>';
+// ── フォーム動画リンク（YouTube検索） ──
+function buildFormVideoLink(exId, exName) {
+  var ex = EXERCISE_DB.find(function(e){ return e.id === exId; });
+  var q = encodeURIComponent(((ex && ex.keyword) || exName) + ' やり方 フォーム');
+  return '<a class="form-video-btn" href="https://www.youtube.com/results?search_query='+q+'" target="_blank" rel="noopener">'
+    + '▶️ YouTubeでフォーム動画を見る</a>';
 }
 
 function openMuscleModal(exId, exName, event) {
@@ -4698,7 +4604,7 @@ function openMuscleModal(exId, exName, event) {
   document.getElementById('muscleBtnFront').classList.toggle('active', _muscleView === 'front');
   document.getElementById('muscleBtnBack').classList.toggle('active',  _muscleView === 'back');
   document.getElementById('muscleSvgWrap').innerHTML = buildMuscleSVG(exId, _muscleView);
-  document.getElementById('formAnimWrap').innerHTML = buildFormAnim(exId);
+  document.getElementById('formAnimWrap').innerHTML = buildFormVideoLink(exId, exName);
   document.getElementById('muscleModal').classList.add('show');
 }
 
