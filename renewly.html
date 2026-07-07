@@ -352,16 +352,26 @@ var isPro = localStorage.getItem('isPro') === 'true';
 var CAT_LABELS = { all:'すべて', insurance:'🛡 保険', license:'🪪 免許・証明書', cert:'🎓 資格', subscription:'📱 契約', card:'💳 カード', vehicle:'🚗 車', passport:'🛂 パスポート', other:'📦 その他' };
 var CAT_ICONS  = { insurance:'🛡', license:'🪪', cert:'🎓', subscription:'📱', card:'💳', vehicle:'🚗', passport:'🛂', other:'📦' };
 var PRESETS = [
-  {name:'自動車保険', icon:'🚗', cat:'insurance'},   {name:'生命保険', icon:'🛡', cat:'insurance'},
-  {name:'火災保険',   icon:'🏠', cat:'insurance'},   {name:'運転免許',  icon:'🪪', cat:'license'},
-  {name:'パスポート', icon:'🛂', cat:'passport'},     {name:'車検',      icon:'🔧', cat:'vehicle'},
-  {name:'クレカ',     icon:'💳', cat:'card'},         {name:'スマホ契約',icon:'📱', cat:'subscription'},
-  {name:'マイナンバーカード', icon:'🆔', cat:'license'}, {name:'マイナ電子証明書', icon:'🔐', cat:'license'},
-  // ここから「もっと見る」で展開（更新期限のある資格）
-  {name:'危険物取扱者', icon:'🧪', cat:'cert'},   {name:'救命講習',       icon:'🚑', cat:'cert'},
-  {name:'宅建士証',     icon:'🏠', cat:'cert'},   {name:'ケアマネ更新',   icon:'🤝', cat:'cert'},
-  {name:'小型船舶免許', icon:'⛵', cat:'cert'},   {name:'電気工事士講習', icon:'⚡', cat:'cert'},
-  {name:'AWS認定',      icon:'☁️', cat:'cert'},   {name:'TOEICスコア',    icon:'📝', cat:'cert'},
+  // 保有者数の多い順（運転免許 約8,100万人 / マイナカード保有率75%超 / クレカ約87% 等の公的統計・調査に基づく）
+  {name:'運転免許',           icon:'🪪', cat:'license'},
+  {name:'マイナンバーカード', icon:'🆔', cat:'license'},
+  {name:'マイナ電子証明書',   icon:'🔐', cat:'license'},
+  {name:'クレジットカード',   icon:'💳', cat:'card'},
+  {name:'スマホ契約',         icon:'📱', cat:'subscription'},
+  {name:'生命保険',           icon:'🛡', cat:'insurance'},
+  {name:'自動車保険',         icon:'🚗', cat:'insurance'},
+  {name:'火災保険',           icon:'🏠', cat:'insurance'},
+  {name:'車検',               icon:'🔧', cat:'vehicle'},
+  {name:'パスポート',         icon:'🛂', cat:'passport'},
+  // ここから「もっと見る」で展開。資格はあいうえお順（英字は末尾）
+  {name:'危険物取扱者',   icon:'🧪', cat:'cert'},
+  {name:'救命講習',       icon:'🚑', cat:'cert'},
+  {name:'ケアマネージャー', icon:'🤝', cat:'cert'},
+  {name:'小型船舶免許',   icon:'⛵', cat:'cert'},
+  {name:'宅建士',         icon:'🏢', cat:'cert'},
+  {name:'電気工事士',     icon:'⚡', cat:'cert'},
+  {name:'AWS認定',        icon:'☁️', cat:'cert'},
+  {name:'TOEIC',          icon:'📝', cat:'cert'},
 ];
 var PRESET_VISIBLE = 10; // 初期表示数（それ以降は「もっと見る」）
 var _presetsExpanded = false;
