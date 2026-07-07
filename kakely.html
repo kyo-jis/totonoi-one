@@ -1756,6 +1756,26 @@ function handleSaveTxn() {
   else saveTxn();
 }
 
+// ローカルID（defpay_等）の支払い方法をSupabaseに登録して実UUIDを返す
+async function ensurePayId(payId) {
+  if (!payId || !currentUser) return payId;
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(payId)) return payId;
+  var p = paymentMethods.find(function(x){ return x.id === payId; });
+  if (!p) return payId;
+  var payload = { user_id: currentUser.id, icon: p.icon, name: p.name, type: p.type,
+    withdrawal_date: p.withdrawal_date || null, balance: p.balance || null };
+  if (p.brand) payload.brand = p.brand;
+  if (p.expiry) payload.expiry = p.expiry;
+  if (p.closing_day) payload.closing_day = p.closing_day;
+  var res = await _sb.from('kakely_payment_methods').insert(payload).select().single();
+  if (res.error) { console.error('ensurePayId error', res.error); return payId; }
+  var oldId = p.id;
+  p.id = res.data.id;
+  localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
+  transactions.forEach(function(t){ if (t.payment_method_id === oldId) t.payment_method_id = res.data.id; });
+  return res.data.id;
+}
+
 async function saveTransfer() {
   var fromId = document.getElementById('fTransferFrom').value;
   var toId   = document.getElementById('fTransferTo').value;
@@ -1798,6 +1818,11 @@ async function saveTransfer() {
   transactions.unshift(fromPay);
 
   if (currentUser) {
+    // ローカルIDの支払い方法をSupabaseに登録してUUIDに変換
+    var cloudFromId = await ensurePayId(fromId);
+    var cloudToId   = await ensurePayId(toId);
+    if (cloudFromId !== fromId) { fromPay.payment_method_id = cloudFromId; fromId = cloudFromId; }
+    if (cloudToId   !== toId)   { toPay.payment_method_id   = cloudToId;   toId   = cloudToId; }
     var fromPayload = { user_id: currentUser.id, amount: amount, date: date,
       is_income: false, is_transfer: true, group_id: groupId,
       payment_method_id: fromId, category_id: null, memo: null };
@@ -1807,6 +1832,8 @@ async function saveTransfer() {
     var r1 = await _sb.from('kakely_transactions').insert(fromPayload).select().single();
     var r2 = await _sb.from('kakely_transactions').insert(toPayload).select().single();
     if (r1.error || r2.error) {
+      var tfErr = (r1.error || r2.error);
+      console.error('transfer insert error', r1.error, r2.error);
       fromPay.id = 'pending_tf_from_' + Date.now();
       toPay.id   = 'pending_tf_to_'   + Date.now();
       updateCashBalance(fromId, -amount);
@@ -1814,7 +1841,7 @@ async function saveTransfer() {
       saveMonthCache();
       closeModal('txnModal');
       renderAll();
-      showToast('📱 ローカルに保存しました（再同期で送信）');
+      showToast('⚠️ クラウド保存エラー: ' + (tfErr.message || tfErr.code || '不明'));
       return;
     }
     if (r1.data) fromPay.id = r1.data.id;
@@ -1865,15 +1892,21 @@ async function saveTxn() {
     var newTxn = Object.assign({ id: 'temp_' + Date.now() }, payload);
     transactions.unshift(newTxn);
     if (currentUser) {
+      if (payload.payment_method_id) {
+        var cloudPayId = await ensurePayId(payload.payment_method_id);
+        payload.payment_method_id = cloudPayId;
+        newTxn.payment_method_id = cloudPayId;
+      }
       var res = await _sb.from('kakely_transactions').insert(Object.assign({ user_id: currentUser.id }, payload)).select().single();
       if (res.error) {
+        console.error('txn insert error', res.error);
         newTxn.id = 'pending_' + Date.now();
         if (payload.payment_method_id) updateCashBalance(payload.payment_method_id, payload.is_income ? payload.amount : -payload.amount);
         if (!txnIsIncome && selectedCatId) pushRecentCat(selectedCatId);
         saveMonthCache();
         closeModal('txnModal');
         renderAll();
-        showToast('📱 ローカルに保存しました（再同期で送信）');
+        showToast('⚠️ クラウド保存エラー: ' + (res.error.message || res.error.code || '不明'));
         return;
       } else if (res.data) {
         newTxn.id = res.data.id;
