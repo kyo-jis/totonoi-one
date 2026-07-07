@@ -242,6 +242,21 @@
     /* Group Input */
     .fab-group { position:fixed; bottom:calc(60px + env(safe-area-inset-bottom)); right:calc(1.25rem + 56px + .75rem); width:auto; height:40px; border-radius:20px; background:var(--surface2); color:var(--muted); border:1px solid var(--border); font-size:.75rem; font-family:var(--font); cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0 .9rem; gap:.35rem; z-index:50; white-space:nowrap; box-shadow:0 2px 10px rgba(0,0,0,.3); }
     .fab-group:active { transform:scale(.93); }
+    .fab-receipt { position:fixed; bottom:calc(60px + env(safe-area-inset-bottom) + 48px); right:calc(1.25rem + 56px + .75rem); height:40px; border-radius:20px; background:var(--surface2); color:var(--muted); border:1px solid var(--border); font-size:.75rem; font-family:var(--font); cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0 .9rem; gap:.35rem; z-index:50; white-space:nowrap; box-shadow:0 2px 10px rgba(0,0,0,.3); }
+    .fab-receipt:active { transform:scale(.93); }
+    /* レシートAI読込モーダル */
+    .rc-step { display:none; }
+    .rc-step.active { display:block; }
+    .rc-guide { font-size:.72rem; color:var(--muted); line-height:1.6; }
+    #rcPasteArea { width:100%; height:180px; background:var(--surface2); border:1px solid var(--border); border-radius:12px; color:var(--text); font-family:var(--font); font-size:.8rem; padding:.7rem; resize:vertical; margin-bottom:.6rem; }
+    #rcPromptFallback { width:100%; height:130px; background:var(--surface2); border:1px solid var(--border); border-radius:12px; color:var(--text); font-size:.72rem; padding:.6rem; margin-bottom:.6rem; }
+    .rc-item-row { display:flex; gap:.35rem; align-items:center; margin-bottom:.35rem; padding:.25rem; border-radius:8px; }
+    .rc-item-row.review { background:rgba(255,214,64,.14); }
+    .rc-item-row input, .rc-item-row select { background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--font); font-size:.78rem; padding:.45rem .5rem; min-width:0; }
+    .rc-name { flex:2.2; }
+    .rc-amt { flex:1; max-width:76px; }
+    .rc-cat { flex:1.6; }
+    .rc-del { background:none; border:none; color:var(--muted); font-size:.9rem; cursor:pointer; padding:.2rem; }
     .group-row { display:flex; gap:.4rem; align-items:center; margin-bottom:.4rem; }
     .group-row select { flex:1; min-width:0; font-size:.82rem; }
     .group-row .g-amt { width:90px; flex-shrink:0; font-size:.88rem; text-align:right; }
@@ -432,6 +447,7 @@
   </div>
 </div>
 
+<button class="fab-receipt" onclick="openReceiptModal()">🧾 レシートAI</button>
 <button class="fab-group" onclick="openGroupModal()">📋 まとめ入力</button>
 <button class="fab" onclick="openTxnModal()">＋</button>
 <div class="ad-banner" id="adBanner">
@@ -679,6 +695,55 @@
     </div>
     <button class="btn-primary" id="groupSaveBtn" onclick="saveGroupTxns()" style="opacity:.4;pointer-events:none">保存する</button>
     <button class="btn-cancel" onclick="closeModal('groupModal')">キャンセル</button>
+  </div>
+</div>
+
+<!-- Receipt AI Modal -->
+<div class="modal-overlay" id="receiptModal" onclick="if(event.target===this)closeModal('receiptModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <p class="modal-title">🧾 レシートAI読込</p>
+
+    <div class="rc-step" id="rcStep1">
+      <p class="rc-guide" style="margin-bottom:.75rem">① プロンプトをコピー → ② Claude や ChatGPT などのAIアプリにレシート写真と一緒に貼り付け → ③ AIの返答をKakelyに貼り付けて登録できます。</p>
+      <button class="btn-primary" onclick="copyReceiptPrompt('basic')" style="margin-bottom:.5rem">📄 通常レシート用をコピー</button>
+      <button class="btn-primary" onclick="copyReceiptPrompt('long')" style="margin-bottom:.75rem;background:var(--surface3);color:var(--text)">📜 長いレシート（分割撮影）用をコピー</button>
+      <textarea id="rcPromptFallback" style="display:none" readonly></textarea>
+      <details style="margin-bottom:.9rem">
+        <summary class="rc-guide" style="cursor:pointer">📸 撮影のコツ</summary>
+        <p class="rc-guide" style="padding:.4rem 0 0 .5rem">・長いレシートは上部・中部・下部に分けて撮影（多少重なってOK）<br>・明るい場所で真上から撮影<br>・感熱紙は端が薄れやすいので特に注意</p>
+      </details>
+      <button class="btn-primary" onclick="rcGoStep(2)">AIの結果を貼り付ける →</button>
+      <button class="btn-cancel" onclick="closeModal('receiptModal')">キャンセル</button>
+    </div>
+
+    <div class="rc-step" id="rcStep2">
+      <label class="form-label" style="display:block;margin-bottom:.4rem">AIの出力を貼り付け</label>
+      <textarea id="rcPasteArea" placeholder="【店舗】〇〇スーパー&#10;【日付】2026/07/08&#10;&#10;■ 食料品&#10;・キャベツ - 128円&#10;小計: 128円&#10;&#10;合計: 128円"></textarea>
+      <p id="rcParseError" style="display:none;color:var(--red);font-size:.75rem;margin:0 0 .5rem"></p>
+      <button class="btn-primary" onclick="parseReceiptAndShow()">解析する</button>
+      <button class="btn-cancel" onclick="rcGoStep(1)">← 戻る</button>
+    </div>
+
+    <div class="rc-step" id="rcStep3">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">店舗</label><input type="text" id="rcStore" placeholder="〇〇スーパー"></div>
+        <div class="form-group"><label class="form-label">日付</label><input type="date" id="rcDate"></div>
+      </div>
+      <div class="form-group"><label class="form-label">支払い方法</label><select id="rcPayMethod"><option value="">未設定</option></select></div>
+      <label class="form-label" style="display:block;margin-bottom:.4rem">明細（黄色は要確認）</label>
+      <div id="rcItemRows"></div>
+      <button class="btn-add-row" onclick="rcAddRow()">＋ 行を追加</button>
+      <div class="group-remaining"><span class="group-remaining-label">合計</span><span class="group-remaining-amt" id="rcTotalAmt">¥0</span></div>
+      <p id="rcTotalWarn" style="display:none;color:var(--red);font-size:.72rem;margin:0 0 .5rem">⚠️ AIが読み取った合計と一致しません。明細を確認してください。</p>
+      <p class="rc-guide" style="margin-bottom:.6rem">🧾 レシートの印字合計と照合してから登録してください。</p>
+      <div style="display:flex;gap:.9rem;margin-bottom:.75rem;font-size:.8rem">
+        <label style="display:flex;align-items:center;gap:.3rem;cursor:pointer"><input type="radio" name="rcGroupBy" value="item" checked> 品目ごとに登録</label>
+        <label style="display:flex;align-items:center;gap:.3rem;cursor:pointer"><input type="radio" name="rcGroupBy" value="category"> カテゴリごとに1件</label>
+      </div>
+      <button class="btn-primary" onclick="saveReceiptTxns()">登録する</button>
+      <button class="btn-cancel" onclick="rcGoStep(2)">← 戻る</button>
+    </div>
   </div>
 </div>
 
@@ -2779,6 +2844,278 @@ async function saveGroupTxns() {
   closeModal('groupModal');
   renderAll();
   showToast('まとめて記録しました ✓');
+}
+
+// ── レシートAI読込 ──
+var BASIC_RECEIPT_PROMPT = [
+'このレシート画像を読み取って、購入品目を分類してください。',
+'',
+'# カテゴリ',
+'{{CATEGORY_LIST}}',
+'',
+'# 出力形式',
+'店舗名と購入日を最初に記載し、その後カテゴリごとに',
+'「品目名 - 金額」の形式でリストにしてください。',
+'各カテゴリの小計と、全体の合計金額も出してください。',
+'金額の読み取りに自信がないものには (要確認) と付けてください。',
+'',
+'値引き・ポイント利用・クーポン等の行は品目の実質購入額として',
+'処理し、内訳リストとは別に注記してください。',
+'',
+'# 出力例',
+'【店舗】〇〇スーパー',
+'【日付】2026/07/07',
+'',
+'■ 食料品',
+'・キャベツ - 128円',
+'・卵1パック - 258円',
+'小計: 386円',
+'',
+'■ 日用品',
+'・ティッシュ - 198円',
+'小計: 198円',
+'',
+'合計: 584円'
+].join('\n');
+
+var LONG_RECEIPT_PROMPT = [
+'これは1枚の長いレシートを分割で撮影したものです。',
+'上から順に画像1→画像2→画像3として、',
+'1つのレシートとして通しで読み取り、分類してください。',
+'重複している品目があれば1回だけカウントしてください。',
+'',
+'文字が薄い/潰れている箇所は無理に読み取らず、',
+'「判読不可」と明記してください。金額の桁を誤読すると',
+'合計と品目の内訳が合わなくなるので、慎重に確認してください。',
+'',
+'# カテゴリ',
+'{{CATEGORY_LIST}}',
+'',
+'# 出力形式',
+'店舗名と購入日を最初に記載し、その後カテゴリごとに',
+'「品目名 - 金額」の形式でリストにしてください。',
+'各カテゴリの小計と、全体の合計金額も出してください。',
+'金額の読み取りに自信がないものには (要確認) と付けてください。',
+'',
+'値引き・ポイント利用・クーポン等の行は品目の実質購入額として',
+'処理し、内訳リストとは別に注記してください。',
+'',
+'# 出力例',
+'【店舗】〇〇スーパー',
+'【日付】2026/07/07',
+'',
+'■ 食料品',
+'・キャベツ - 128円',
+'小計: 128円',
+'',
+'合計: 128円'
+].join('\n');
+
+var _rcParsed = null;
+var _rcItems = [];
+
+function openReceiptModal() {
+  _rcParsed = null; _rcItems = [];
+  document.getElementById('rcPasteArea').value = '';
+  document.getElementById('rcParseError').style.display = 'none';
+  document.getElementById('rcPromptFallback').style.display = 'none';
+  rcGoStep(1);
+  document.getElementById('receiptModal').classList.add('show');
+}
+
+function rcGoStep(n) {
+  [1,2,3].forEach(function(i){ document.getElementById('rcStep'+i).classList.toggle('active', i===n); });
+}
+
+function buildReceiptPrompt(type) {
+  var list = categories.map(function(c){ return c.name; }).join(' / ');
+  var tpl = type === 'long' ? LONG_RECEIPT_PROMPT : BASIC_RECEIPT_PROMPT;
+  return tpl.replace('{{CATEGORY_LIST}}', list);
+}
+
+function copyReceiptPrompt(type) {
+  var prompt = buildReceiptPrompt(type);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(prompt).then(function() {
+      showToast('📋 プロンプトをコピーしました');
+    }).catch(function() { rcShowFallback(prompt); });
+  } else {
+    rcShowFallback(prompt);
+  }
+}
+
+function rcShowFallback(prompt) {
+  var ta = document.getElementById('rcPromptFallback');
+  ta.value = prompt; ta.style.display = 'block'; ta.select();
+  showToast('自動コピーできません。全選択してコピーしてください');
+}
+
+function normalizeReceiptDate(s) {
+  if (!s) return localDateStr(new Date());
+  var m = String(s).match(/(\d{4})[\/\-年.](\d{1,2})[\/\-月.](\d{1,2})/);
+  if (!m) return localDateStr(new Date());
+  return m[1] + '-' + String(m[2]).padStart(2,'0') + '-' + String(m[3]).padStart(2,'0');
+}
+
+function parseReceiptText(text) {
+  text = String(text || '').replace(/\r/g, '');
+  var storeM = text.match(/【店舗】\s*(.+)/);
+  var dateM  = text.match(/【日付】\s*(.+)/);
+  var blocks = [];
+  var blockRe = /■\s*(.+?)\n([\s\S]*?)小計[:：]\s*([\d,，]+)\s*円/g;
+  var m;
+  while ((m = blockRe.exec(text)) !== null) {
+    var items = [];
+    var itemRe = /^\s*[・\-•]\s*(.+?)\s*[-–−]\s*([\d,，]+)\s*円\s*(（要確認）|\(要確認\))?\s*$/gm;
+    var im;
+    while ((im = itemRe.exec(m[2])) !== null) {
+      items.push({
+        name: im[1].trim(),
+        amount: parseInt(im[2].replace(/[,，]/g, ''), 10) || 0,
+        review: !!im[3]
+      });
+    }
+    blocks.push({
+      category: m[1].trim(),
+      items: items,
+      subtotal: parseInt(m[3].replace(/[,，]/g, ''), 10) || 0
+    });
+  }
+  var totalM = text.match(/合計[:：]\s*([\d,，]+)\s*円/);
+  return {
+    store: storeM ? storeM[1].trim() : '',
+    date: normalizeReceiptDate(dateM ? dateM[1].trim() : ''),
+    categories: blocks,
+    total: totalM ? parseInt(totalM[1].replace(/[,，]/g, ''), 10) : 0
+  };
+}
+
+function parseReceiptAndShow() {
+  var text = document.getElementById('rcPasteArea').value;
+  var p = parseReceiptText(text);
+  var errEl = document.getElementById('rcParseError');
+  var itemCount = p.categories.reduce(function(a, c){ return a + c.items.length; }, 0);
+  if (!p.categories.length || !itemCount) {
+    errEl.textContent = '解析できませんでした。AIの出力形式（■カテゴリ、・品目 - 金額円、小計:）を確認するか、まとめ入力をご利用ください。';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+  _rcParsed = p;
+  _rcItems = [];
+  p.categories.forEach(function(c) {
+    var cat = categories.find(function(x){ return x.name === c.category; });
+    c.items.forEach(function(it) {
+      _rcItems.push({ name: it.name, amount: it.amount, catId: cat ? cat.id : '', review: it.review });
+    });
+  });
+  document.getElementById('rcStore').value = p.store;
+  document.getElementById('rcDate').value = p.date;
+  document.getElementById('rcPayMethod').innerHTML = '<option value="">未設定</option>'
+    + paymentMethods.map(function(pm){ return '<option value="'+pm.id+'">'+pm.icon+' '+esc(pm.name)+'</option>'; }).join('');
+  rcRenderRows();
+  rcGoStep(3);
+}
+
+function rcCatOptions(selId) {
+  return '<option value="">未分類</option>' + categories.map(function(c) {
+    return '<option value="'+c.id+'"'+(c.id === selId ? ' selected' : '')+'>'+c.icon+' '+esc(c.name)+'</option>';
+  }).join('');
+}
+
+function rcRenderRows() {
+  document.getElementById('rcItemRows').innerHTML = _rcItems.map(function(it, i) {
+    return '<div class="rc-item-row'+(it.review ? ' review' : '')+'">'
+      + '<input type="text" class="rc-name" value="'+esc(it.name)+'" oninput="rcUpd('+i+',\'name\',this.value)">'
+      + '<input type="number" class="rc-amt" value="'+it.amount+'" inputmode="numeric" oninput="rcUpd('+i+',\'amount\',this.value)">'
+      + '<select class="rc-cat" onchange="rcUpd('+i+',\'catId\',this.value)">'+rcCatOptions(it.catId)+'</select>'
+      + '<button class="rc-del" onclick="rcDelRow('+i+')">✕</button>'
+      + '</div>';
+  }).join('');
+  rcUpdateTotal();
+}
+
+function rcUpd(i, k, v) {
+  if (!_rcItems[i]) return;
+  if (k === 'amount') { _rcItems[i].amount = parseInt(v) || 0; rcUpdateTotal(); }
+  else _rcItems[i][k] = v;
+}
+function rcDelRow(i) { _rcItems.splice(i, 1); rcRenderRows(); }
+function rcAddRow() { _rcItems.push({ name:'', amount:0, catId:'', review:false }); rcRenderRows(); }
+
+function rcUpdateTotal() {
+  var t = _rcItems.reduce(function(a, it){ return a + (it.amount || 0); }, 0);
+  document.getElementById('rcTotalAmt').textContent = '¥' + t.toLocaleString();
+  var warn = document.getElementById('rcTotalWarn');
+  warn.style.display = (_rcParsed && _rcParsed.total && _rcParsed.total !== t) ? 'block' : 'none';
+}
+
+async function saveReceiptTxns() {
+  var valid = _rcItems.filter(function(it){ return it.amount > 0; });
+  if (!valid.length) { showToast('明細がありません'); return; }
+  var date  = document.getElementById('rcDate').value || localDateStr(new Date());
+  var store = document.getElementById('rcStore').value.trim();
+  var payId = document.getElementById('rcPayMethod').value || null;
+  var groupByEl = document.querySelector('input[name="rcGroupBy"]:checked');
+  var groupBy = groupByEl ? groupByEl.value : 'item';
+
+  // レシート日付の月へ自動移動（saveTxnと同じ挙動）
+  var d = parseLocalDate(date);
+  if (d && (d.getFullYear() !== viewYear || d.getMonth() !== viewMonth)) {
+    viewYear = d.getFullYear(); viewMonth = d.getMonth();
+    updateMonthNav(); loadFromStorage();
+  }
+
+  var rows;
+  if (groupBy === 'category') {
+    var byCat = {};
+    valid.forEach(function(it) {
+      var key = it.catId || '';
+      byCat[key] = (byCat[key] || 0) + it.amount;
+    });
+    rows = Object.keys(byCat).map(function(k) {
+      return { name: (store || 'レシート') + ' まとめ買い', amount: byCat[k], catId: k };
+    });
+  } else {
+    rows = valid.map(function(it){ return { name: it.name, amount: it.amount, catId: it.catId }; });
+  }
+
+  var groupId = rows.length > 1 ? generateUUID() : null;
+  var localRows = rows.map(function(r, i) {
+    return { id: 'tmp_rc_' + Date.now() + '_' + i, amount: r.amount, date: date, is_income: false,
+      category_id: r.catId || null, payment_method_id: payId, memo: r.name || null, group_id: groupId };
+  });
+  localRows.slice().reverse().forEach(function(t){ transactions.unshift(t); });
+  saveMonthCache();
+
+  var effPayId = payId;
+  if (currentUser) {
+    var cloudPayId = payId ? await ensurePayId(payId) : null;
+    if (cloudPayId) effPayId = cloudPayId;
+    var dbRows = [];
+    for (var i = 0; i < rows.length; i++) {
+      var cid = rows[i].catId ? await ensureCatId(rows[i].catId, false) : null;
+      dbRows.push({ user_id: currentUser.id, amount: rows[i].amount, date: date, is_income: false,
+        category_id: cid, payment_method_id: cloudPayId, memo: rows[i].name || null, group_id: groupId });
+    }
+    var res = await _sb.from('kakely_transactions').insert(dbRows).select();
+    if (res.error) {
+      console.error('receipt insert error', res.error);
+      showToast('⚠️ クラウド保存エラー: ' + (res.error.message || '不明'));
+    } else if (res.data && res.data.length) {
+      var tmpIds = localRows.map(function(t){ return t.id; });
+      transactions = transactions.filter(function(t){ return tmpIds.indexOf(t.id) === -1; });
+      res.data.slice().reverse().forEach(function(t){ transactions.unshift(t); });
+      saveMonthCache();
+    }
+  }
+  if (effPayId) {
+    var rcTotal = rows.reduce(function(a, r){ return a + r.amount; }, 0);
+    updateCashBalance(effPayId, -rcTotal);
+  }
+  closeModal('receiptModal');
+  renderAll();
+  showToast('🧾 ' + rows.length + '件を登録しました ✓');
 }
 
 // ── Subly連携 ──
