@@ -161,6 +161,14 @@
     .rest-progress { width:200px; height:4px; background:var(--surface); border-radius:2px; margin-top:1.5rem; overflow:hidden; }
     .rest-progress-bar { height:100%; background:var(--accent); border-radius:2px; transition:width 1s linear; }
 
+    /* Rest Timer Alert Flash */
+    .rest-timer-alert { animation:restFlash .6s ease-in-out infinite; border-radius:14px; }
+    @keyframes restFlash {
+      0%,100% { background:rgba(255,59,48,.18); }
+      50%      { background:transparent; }
+    }
+    .timer-big.timer-finished { font-size:5.8rem; font-weight:800; color:var(--accent); }
+
     /* Add Exercise Modal */
     .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); backdrop-filter:blur(6px); z-index:100; display:none; align-items:flex-end; }
     .modal-overlay.show { display:flex; }
@@ -705,9 +713,13 @@
 
 <!-- タイマータブ -->
 <div class="view" id="view-timer">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.85rem 1rem;margin-bottom:1rem;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.85rem 1rem;margin-bottom:.6rem;">
     <p style="font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;">🔊 サウンド設定</p>
     <div class="sound-selector" id="soundSelector"></div>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.85rem 1rem;margin-bottom:1rem;">
+    <p style="font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.65rem;">🔔 休憩終了の知らせ方</p>
+    <div id="timerNotifySettings" style="display:flex;flex-direction:column;gap:.5rem;"></div>
   </div>
   <div class="timer-display">
     <p style="font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;">インターバルタイマー</p>
@@ -1310,6 +1322,86 @@ var restTotalTime = defaultRestTime;
 var currentRestExId = null;
 var timerSeconds = defaultRestTime;
 var timerTotal = defaultRestTime;
+
+// ── 休憩終了通知設定 ──────────────────────────────────────────────
+var rtFlashEnabled   = localStorage.getItem('rtFlash')   !== 'false';
+var rtVibrateEnabled = localStorage.getItem('rtVibrate') !== 'false';
+
+function saveRtSettings() {
+  localStorage.setItem('rtFlash',   rtFlashEnabled);
+  localStorage.setItem('rtVibrate', rtVibrateEnabled);
+}
+
+function toggleRtSetting(key) {
+  if (key === 'flash')   rtFlashEnabled   = !rtFlashEnabled;
+  if (key === 'vibrate') rtVibrateEnabled = !rtVibrateEnabled;
+  // 両方OFFにしようとした場合は確認
+  if (!rtFlashEnabled && !rtVibrateEnabled) {
+    if (!confirm('画面点滅・バイブレーションが両方OFFになります。\n音のみでの通知になり、マナーモード中は気づきにくい場合があります。\nこのまま続けますか？')) {
+      if (key === 'flash')   rtFlashEnabled   = true;
+      if (key === 'vibrate') rtVibrateEnabled = true;
+    }
+  }
+  saveRtSettings();
+  buildTimerNotifySettings();
+}
+
+function buildTimerNotifySettings() {
+  var el = document.getElementById('timerNotifySettings');
+  if (!el) return;
+  var items = [
+    { key:'flash',   label:'📳 画面点滅', desc:'タイマーエリアが赤く点滅',       val:rtFlashEnabled },
+    { key:'vibrate', label:'📳 バイブレーション', desc:'スマートフォンが振動',     val:rtVibrateEnabled },
+  ];
+  el.innerHTML = items.map(function(item) {
+    var on = item.val;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.25rem 0;">'
+      + '<div><span style="font-size:.85rem;color:var(--text);">'+item.label+'</span>'
+      + '<p style="font-size:.68rem;color:var(--muted);margin:.1rem 0 0;">'+item.desc+'</p></div>'
+      + '<button onclick="toggleRtSetting(\''+item.key+'\')" style="'
+      + 'min-width:46px;height:26px;border-radius:13px;border:none;cursor:pointer;font-size:.7rem;font-weight:700;'
+      + 'background:'+(on?'var(--accent)':'var(--surface2)')+';'
+      + 'color:'+(on?'#1a1a24':'var(--muted)')+';'
+      + 'transition:all .2s;">'+(on?'ON':'OFF')+'</button>'
+      + '</div>';
+  }).join('');
+}
+
+// 休憩終了 — 統合トリガー
+function onRestTimerEnd(isIndependent) {
+  if (rtFlashEnabled) {
+    var target = isIndependent
+      ? document.querySelector('.timer-display')
+      : document.getElementById('restOverlay');
+    if (target) target.classList.add('rest-timer-alert');
+    var tb = document.getElementById(isIndependent ? 'timerDisplay' : 'restTime');
+    if (tb) tb.classList.add('timer-finished');
+  }
+  if (rtVibrateEnabled && navigator.vibrate) {
+    navigator.vibrate([200, 100, 200, 100, 400]);
+  }
+  playSound();
+  localStorage.removeItem('restTimerEnd');
+}
+
+function dismissRestTimerAlert() {
+  document.querySelectorAll('.rest-timer-alert').forEach(function(el){ el.classList.remove('rest-timer-alert'); });
+  document.querySelectorAll('.timer-finished').forEach(function(el){ el.classList.remove('timer-finished'); });
+}
+
+// バックグラウンド復帰時補正
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden) return;
+  var endTime = Number(localStorage.getItem('restTimerEnd'));
+  if (!endTime || Date.now() < endTime) return;
+  // 時間が過ぎていた場合
+  if (restTimerInterval) { clearInterval(restTimerInterval); restTimerInterval = null; }
+  if (timerInterval)     { clearInterval(timerInterval);     timerInterval = null; timerRunning = false; }
+  document.getElementById('restOverlay').classList.remove('show');
+  var btnMain = document.getElementById('btnTimerMain');
+  if (btnMain) btnMain.textContent = '▶ スタート';
+  onRestTimerEnd(false);
+});
 var timerInterval = null;
 var timerRunning = false;
 var selectedCat = 'all';
@@ -1487,6 +1579,7 @@ function checkAndUpdatePRs(exercises) {
 function init() {
   buildCatFilter();
   buildSoundSelector();
+  buildTimerNotifySettings();
   // インターバルタイマーの初期表示を復元
   document.getElementById('ivWorkSec').textContent = ivState.work;
   document.getElementById('ivRestSec').textContent = ivState.rest;
@@ -2425,7 +2518,8 @@ function completeSet(ei, si) {
       showToast('🎉 ' + ex.name + ' 種目完了！');
       if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
     }
-    // 休憩タイマー
+    // 休憩タイマー（点滅をクリアしてから開始）
+    dismissRestTimerAlert();
     var restTime = ex.restTime || defaultRestTime;
     if (ex.cat !== 'cardio' && ex.cat !== 'stretch' && ex.cat !== 'mindfulness') {
       startRestTimer(restTime, ex.name, ex.id);
@@ -2497,14 +2591,14 @@ function startRestTimer(seconds, exerciseName, exId) {
   document.getElementById('restExerciseName').textContent = exerciseName + ' — 次のセット準備';
   document.getElementById('restOverlay').classList.add('show');
   updateRestDisplay();
+  localStorage.setItem('restTimerEnd', Date.now() + restTimeLeft * 1000);
   restTimerInterval = setInterval(function() {
     restTimeLeft--;
     updateRestDisplay();
     if (restTimeLeft <= 0) {
       clearInterval(restTimerInterval);
       document.getElementById('restOverlay').classList.remove('show');
-      playSound();
-      if (navigator.vibrate) navigator.vibrate([200,100,200]);
+      onRestTimerEnd(false);
       showToast('🔔 休憩終了！次のセットへ');
       // 休憩時間を種目別に記憶
       if (exId) {
@@ -2553,13 +2647,14 @@ function setRestTime(s) {
 
 function startRestTimerFromCurrent() {
   if (restTimerInterval) clearInterval(restTimerInterval);
+  localStorage.setItem('restTimerEnd', Date.now() + restTimeLeft * 1000);
   restTimerInterval = setInterval(function() {
     restTimeLeft--;
     updateRestDisplay();
     if (restTimeLeft <= 0) {
       clearInterval(restTimerInterval);
       document.getElementById('restOverlay').classList.remove('show');
-      if (navigator.vibrate) navigator.vibrate([200,100,200]);
+      onRestTimerEnd(false);
       showToast('🔔 休憩終了！次のセットへ');
     }
   }, 1000);
@@ -2575,6 +2670,7 @@ function adjustRest(delta) {
 function skipRest() {
   clearInterval(restTimerInterval);
   document.getElementById('restOverlay').classList.remove('show');
+  localStorage.removeItem('restTimerEnd');
 }
 
 // ── Independent Timer ──
@@ -2616,6 +2712,7 @@ function toggleTimer() {
   } else {
     timerRunning=true;
     document.getElementById('btnTimerMain').textContent='⏸ 一時停止';
+    localStorage.setItem('restTimerEnd', Date.now() + timerSeconds * 1000);
     timerInterval = setInterval(function() {
       timerSeconds--;
       updateTimerDisplay();
@@ -2623,8 +2720,7 @@ function toggleTimer() {
       if (timerSeconds<=0) {
         clearInterval(timerInterval); timerRunning=false;
         document.getElementById('btnTimerMain').textContent='▶ スタート';
-        playSound();
-        if (navigator.vibrate) navigator.vibrate([300,100,300]);
+        onRestTimerEnd(true);
         showToast('🔔 タイマー終了！');
       }
     },1000);
@@ -2637,6 +2733,8 @@ function resetTimer() {
   updateTimerDisplay();
   document.getElementById('timerProgressBar').style.width='100%';
   document.getElementById('btnTimerMain').textContent='▶ スタート';
+  dismissRestTimerAlert();
+  localStorage.removeItem('restTimerEnd');
 }
 
 // ── Sound ──
