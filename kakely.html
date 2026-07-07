@@ -1839,7 +1839,13 @@ async function saveTxn() {
       var res = await _sb.from('kakely_transactions').insert(Object.assign({ user_id: currentUser.id }, payload)).select().single();
       if (res.error) {
         newTxn.id = 'pending_' + Date.now();
-        showToast('⚠️ クラウド保存に失敗しました。次回同期時に再試行します');
+        if (payload.payment_method_id) updateCashBalance(payload.payment_method_id, payload.is_income ? payload.amount : -payload.amount);
+        if (!txnIsIncome && selectedCatId) pushRecentCat(selectedCatId);
+        saveMonthCache();
+        closeModal('txnModal');
+        renderAll();
+        showToast('📱 ローカルに保存しました（再同期で送信）');
+        return;
       } else if (res.data) {
         newTxn.id = res.data.id;
       }
@@ -2228,7 +2234,8 @@ async function syncFromCloud() {
   if (!currentUser || _syncing) return;
   logAction('open');
   _syncing = true; updateSyncBadges();
-  await retryPendingTransactions();
+  try { await retryPendingTransactions(); } catch(e) { console.warn('retryPending error', e); }
+  try {
 
   // Categories
   var catRes = await _sb.from('kakely_categories').select('*').eq('user_id', currentUser.id).order('sort_order');
@@ -2318,13 +2325,14 @@ async function syncFromCloud() {
 
   renderAll(); updateProUI();
   showToast('☁️ データを同期しました');
-  _syncing = false; updateSyncBadges();
   // Subly連携: 今日が請求日のサブスクを自動追加
   autoAddSublyTransactions();
   // 固定費: 今日が引き落とし日のものを自動追加
   autoAddFixedCosts();
   // バックグラウンドで直近3か月分を先読み（月ナビを押さなくても表示できるように）
   prefetchRecentMonths();
+  } catch(e) { console.error('syncFromCloud error', e); }
+  finally { _syncing = false; updateSyncBadges(); }
 }
 
 async function retryPendingTransactions() {
