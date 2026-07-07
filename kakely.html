@@ -1797,6 +1797,17 @@ async function saveTransfer() {
       payment_method_id: toId,   category_id: null, memo: null };
     var r1 = await _sb.from('kakely_transactions').insert(fromPayload).select().single();
     var r2 = await _sb.from('kakely_transactions').insert(toPayload).select().single();
+    if (r1.error || r2.error) {
+      fromPay.id = 'pending_tf_from_' + Date.now();
+      toPay.id   = 'pending_tf_to_'   + Date.now();
+      updateCashBalance(fromId, -amount);
+      updateCashBalance(toId,    amount);
+      saveMonthCache();
+      closeModal('txnModal');
+      renderAll();
+      showToast('📱 ローカルに保存しました（再同期で送信）');
+      return;
+    }
     if (r1.data) fromPay.id = r1.data.id;
     if (r2.data) toPay.id   = r2.data.id;
   }
@@ -2347,8 +2358,15 @@ async function retryPendingTransactions() {
       return /^(pending_|temp_|tmp_)/.test(String(t.id));
     });
     if (!pendingItems.length) continue;
+    // pending_tf_from/to ペアは group_id で対応付けてまとめて再送
+    var handledGroups = {};
     for (var j = 0; j < pendingItems.length; j++) {
       var item = pendingItems[j];
+      var isTfPending = /^pending_tf_(from|to)_/.test(String(item.id));
+      if (isTfPending) {
+        if (item.group_id && handledGroups[item.group_id]) continue; // ペア済み
+        if (item.group_id) handledGroups[item.group_id] = true;
+      }
       var payload = {
         user_id: currentUser.id,
         amount: item.amount, date: item.date, is_income: item.is_income,
@@ -2356,6 +2374,7 @@ async function retryPendingTransactions() {
         payment_method_id: item.payment_method_id || null,
         memo: item.memo || null
       };
+      if (item.is_transfer) { payload.is_transfer = true; payload.group_id = item.group_id; }
       var res = await _sb.from('kakely_transactions').insert(payload).select().single();
       if (res.data) {
         var idx = cached.findIndex(function(t) { return t.id === item.id; });
@@ -2427,7 +2446,7 @@ async function fetchMonthTransactions() {
     // temp_/pending_/tmp_ は未送信。実UUIDでもSELECTに含まれない場合（レース）は保護する
     var toPreserve = transactions.filter(function(t) {
       var id = String(t.id);
-      if (/^(pending_|temp_|tmp_)/.test(id)) return true;
+      if (/^(pending_|temp_|tmp_|tf_)/.test(id)) return true;
       return !res.data.some(function(d) { return d.id === id; });
     });
     transactions = res.data;
