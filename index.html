@@ -307,6 +307,23 @@
     .promo-wrap { max-height:0; overflow:hidden; transition:max-height .3s ease; }
     .promo-wrap.open { max-height:120px; }
 
+    /* ── PC layout ≥768px ── */
+    @media (min-width: 768px) {
+      header { padding: 3.5rem 2rem 2rem; }
+      .bento {
+        grid-template-columns: repeat(3, 1fr);
+        max-width: 960px;
+        gap: 14px;
+        padding: 2rem 1.5rem 4rem;
+      }
+      .bc.full { grid-column: span 1; min-height: 148px; }
+      footer { max-width: 960px; margin: 0 auto; }
+      .login-notice { max-width: 960px; margin-left: auto; margin-right: auto; }
+    }
+    @media (min-width: 1200px) {
+      .bento { grid-template-columns: repeat(4, 1fr); max-width: 1280px; }
+    }
+
     /* ── Footer ── */
     footer {
       text-align: center;

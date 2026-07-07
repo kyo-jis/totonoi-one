@@ -144,6 +144,16 @@
     .share-x { background:#000; color:#fff; }
     .share-line { background:#06c755; color:#fff; }
     .share-copy { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+    /* PC layout ≥768px */
+    @media (min-width: 768px) {
+      body { padding-bottom: 2rem; }
+      .app-header { max-width: 1040px; margin-left: auto; margin-right: auto; padding-left: 2rem; padding-right: 2rem; }
+      .login-notice, .summary-card { max-width: 1040px; margin-left: auto; margin-right: auto; }
+      .tabs { max-width: 1040px; margin-left: auto; margin-right: auto; }
+      .view { max-width: 1040px; margin-left: auto; margin-right: auto; padding: 0 2rem; }
+      .fab { bottom: 2rem; right: 2rem; }
+      .ad-banner { display: none !important; }
+    }
     /* Back confirm dialog */
     .back-confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
     .back-confirm-overlay.show{opacity:1;pointer-events:all;}
