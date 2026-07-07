@@ -1806,7 +1806,7 @@ async function saveTransfer() {
     editTxnId = null;
   }
 
-  var groupId = 'tf_' + Date.now();
+  var groupId = generateUUID();
   var fromPay = { id: groupId + '_from', amount: amount, date: date,
     is_income: false, is_transfer: true, group_id: groupId,
     payment_method_id: fromId, category_id: null, memo: null };
@@ -2170,7 +2170,7 @@ async function handleCharge() {
   var to   = paymentMethods.find(function(x){ return x.id === chargePayId; });
   var from = paymentMethods.find(function(x){ return x.id === fromId; });
   if (!to || !from) return;
-  var gid = 'charge_' + Date.now();
+  var gid = generateUUID();
   var today = localDateStr(new Date());
   var outTxn = { id: 'tmp_' + Date.now() + '_out', amount: amount, date: today, is_income: false, is_transfer: true, group_id: gid, payment_method_id: fromId,      memo: 'チャージ→' + to.name };
   var inTxn  = { id: 'tmp_' + Date.now() + '_in',  amount: amount, date: today, is_income: true,  is_transfer: true, group_id: gid, payment_method_id: chargePayId, memo: 'チャージ←' + from.name };
@@ -2406,18 +2406,13 @@ async function retryPendingTransactions() {
     var key = 'kakely_txn_' + y + '_' + (m + 1);
     var cached = JSON.parse(localStorage.getItem(key) || '[]');
     var pendingItems = cached.filter(function(t) {
-      return /^(pending_|temp_|tmp_)/.test(String(t.id));
+      return /^(pending_|temp_|tmp_|tf_)/.test(String(t.id));
     });
     if (!pendingItems.length) continue;
-    // pending_tf_from/to ペアは group_id で対応付けてまとめて再送
-    var handledGroups = {};
+    // 旧形式（tf_/charge_等）のgroup_idはUUIDに変換（ペアで同じUUIDを共有）
+    var gidMap = {};
     for (var j = 0; j < pendingItems.length; j++) {
       var item = pendingItems[j];
-      var isTfPending = /^pending_tf_(from|to)_/.test(String(item.id));
-      if (isTfPending) {
-        if (item.group_id && handledGroups[item.group_id]) continue; // ペア済み
-        if (item.group_id) handledGroups[item.group_id] = true;
-      }
       var payload = {
         user_id: currentUser.id,
         amount: item.amount, date: item.date, is_income: item.is_income,
@@ -2425,15 +2420,25 @@ async function retryPendingTransactions() {
         payment_method_id: item.payment_method_id || null,
         memo: item.memo || null
       };
-      if (item.is_transfer) { payload.is_transfer = true; payload.group_id = item.group_id; }
+      if (item.is_transfer) {
+        payload.is_transfer = true;
+        var gid = item.group_id;
+        if (gid && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(gid)) {
+          if (!gidMap[gid]) gidMap[gid] = generateUUID();
+          gid = gidMap[gid];
+        }
+        payload.group_id = gid || generateUUID();
+      }
       var res = await _sb.from('kakely_transactions').insert(payload).select().single();
       if (res.data) {
         var idx = cached.findIndex(function(t) { return t.id === item.id; });
-        if (idx !== -1) cached[idx].id = res.data.id;
+        if (idx !== -1) { cached[idx].id = res.data.id; if (payload.group_id) cached[idx].group_id = payload.group_id; }
         if (y === viewYear && m === viewMonth) {
           var ti = transactions.findIndex(function(t) { return t.id === item.id; });
-          if (ti !== -1) transactions[ti].id = res.data.id;
+          if (ti !== -1) { transactions[ti].id = res.data.id; if (payload.group_id) transactions[ti].group_id = payload.group_id; }
         }
+      } else if (res.error) {
+        console.error('retryPending insert error', res.error, item);
       }
     }
     localStorage.setItem(key, JSON.stringify(cached));

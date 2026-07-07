@@ -43,7 +43,7 @@ create table if not exists kakely_transactions (
   category_id uuid references kakely_categories(id) on delete set null,
   payment_method_id uuid references kakely_payment_methods(id) on delete set null,
   memo text,
-  group_id text,
+  group_id uuid,  -- 注意: 実DBはuuid型。JS側はgenerateUUID()で生成すること
   created_at timestamptz default now()
 );
 alter table kakely_transactions enable row level security;
