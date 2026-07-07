@@ -327,6 +327,9 @@
         <input type="date" id="fExpiry">
       </div>
     </div>
+    <label style="display:flex;align-items:center;gap:.45rem;font-size:.8rem;color:var(--muted);margin:-.25rem 0 .9rem;cursor:pointer;">
+      <input type="checkbox" id="fNoExpiry" onchange="toggleNoExpiry()"> ♾️ 更新なし（期限のない資格など）
+    </label>
     <div class="form-group">
       <label>警告（日前）</label>
       <select id="fReminder">
@@ -364,13 +367,22 @@ var PRESETS = [
   {name:'車検',               icon:'🔧', cat:'vehicle'},
   {name:'パスポート',         icon:'🛂', cat:'passport'},
   // ここから「もっと見る」で展開。資格はあいうえお順（英字は末尾）
+  {name:'衛生管理者',     icon:'🧹', cat:'cert'},
+  {name:'介護福祉士',     icon:'🦽', cat:'cert'},
   {name:'危険物取扱者',   icon:'🧪', cat:'cert'},
+  {name:'基本情報技術者', icon:'🖥️', cat:'cert'},
   {name:'救命講習',       icon:'🚑', cat:'cert'},
+  {name:'行政書士',       icon:'📜', cat:'cert'},
   {name:'ケアマネージャー', icon:'🤝', cat:'cert'},
   {name:'小型船舶免許',   icon:'⛵', cat:'cert'},
+  {name:'社会保険労務士', icon:'🗂️', cat:'cert'},
   {name:'宅建士',         icon:'🏢', cat:'cert'},
   {name:'電気工事士',     icon:'⚡', cat:'cert'},
+  {name:'登録販売者',     icon:'💊', cat:'cert'},
+  {name:'ファイナンシャルプランナー', icon:'💰', cat:'cert'},
+  {name:'保育士',         icon:'🧸', cat:'cert'},
   {name:'AWS認定',        icon:'☁️', cat:'cert'},
+  {name:'ITパスポート',   icon:'💻', cat:'cert'},
   {name:'TOEIC',          icon:'📝', cat:'cert'},
 ];
 var PRESET_VISIBLE = 10; // 初期表示数（それ以降は「もっと見る」）
@@ -393,10 +405,18 @@ function statusOf(item) {
   return 'ok';
 }
 function statusBadge(item) {
+  if (item.noExpiry) return '<span class="status-badge ok">更新なし</span>';
   var d = daysLeft(item); var s = statusOf(item);
   if (s === 'expired') return '<span class="status-badge expired">期限切れ</span>';
   if (s === 'warning') return '<span class="status-badge warning">まもなく</span>';
   return '<span class="status-badge ok">OK</span>';
+}
+
+function toggleNoExpiry() {
+  var no = document.getElementById('fNoExpiry').checked;
+  document.getElementById('fExpiry').disabled = no;
+  document.getElementById('fReminder').disabled = no;
+  if (no) document.getElementById('fExpiry').value = '';
 }
 
 function init() { buildPresets(); renderList(); renderSoon(); updateSummary(); updateProUI(); }
@@ -529,6 +549,8 @@ function openModal() {
   document.getElementById('fCategory').value = 'insurance';
   document.getElementById('fAcquired').value = '';
   document.getElementById('fExpiry').value = '';
+  document.getElementById('fNoExpiry').checked = false;
+  toggleNoExpiry();
   document.getElementById('fReminder').value = '30';
   document.getElementById('fMemo').value = '';
   document.querySelectorAll('.preset-btn').forEach(function(b){ b.classList.remove('selected'); });
@@ -548,6 +570,8 @@ function editItem(id) {
   document.getElementById('fCategory').value = item.category||'other';
   document.getElementById('fAcquired').value = item.acquired||'';
   document.getElementById('fExpiry').value = item.expiry||'';
+  document.getElementById('fNoExpiry').checked = !!item.noExpiry;
+  toggleNoExpiry();
   document.getElementById('fReminder').value = item.reminder||30;
   document.getElementById('fMemo').value = item.memo||'';
   document.getElementById('modalOverlay').classList.add('show');
@@ -558,12 +582,13 @@ function saveItem() {
   var icon = document.getElementById('fIcon').value.trim();
   var cat  = document.getElementById('fCategory').value;
   var acq  = document.getElementById('fAcquired').value;
-  var exp  = document.getElementById('fExpiry').value;
+  var noEx = document.getElementById('fNoExpiry').checked;
+  var exp  = noEx ? '' : document.getElementById('fExpiry').value;
   var rem  = parseInt(document.getElementById('fReminder').value)||30;
   var memo = document.getElementById('fMemo').value.trim();
   if (!name) { showToast('名前を入力してください'); return; }
   if (!editId && items.length >= FREE_LIMIT && !isPro) { showToast('無料プランは'+FREE_LIMIT+'件まで'); return; }
-  var entry = { id: editId||Date.now().toString(), name:name, icon:icon||CAT_ICONS[cat], category:cat, acquired:acq, expiry:exp, reminder:rem, memo:memo };
+  var entry = { id: editId||Date.now().toString(), name:name, icon:icon||CAT_ICONS[cat], category:cat, acquired:acq, expiry:exp, noExpiry:noEx, reminder:rem, memo:memo };
   if (editId) { var i=items.findIndex(function(x){ return x.id===editId; }); items[i]=entry; }
   else items.push(entry);
   persist(); closeModal(); renderList(); renderSoon(); updateSummary();
