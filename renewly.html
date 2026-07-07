@@ -317,19 +317,23 @@
     </div>
     <div class="form-row">
       <div class="form-group">
+        <label>取得日（任意）</label>
+        <input type="date" id="fAcquired">
+      </div>
+      <div class="form-group">
         <label>期限日</label>
         <input type="date" id="fExpiry">
       </div>
-      <div class="form-group">
-        <label>警告（日前）</label>
-        <select id="fReminder">
-          <option value="7">7日前</option>
-          <option value="14">14日前</option>
-          <option value="30" selected>30日前</option>
-          <option value="60">60日前</option>
-          <option value="90">90日前</option>
-        </select>
-      </div>
+    </div>
+    <div class="form-group">
+      <label>警告（日前）</label>
+      <select id="fReminder">
+        <option value="7">7日前</option>
+        <option value="14">14日前</option>
+        <option value="30" selected>30日前</option>
+        <option value="60">60日前</option>
+        <option value="90">90日前</option>
+      </select>
     </div>
     <div class="form-group">
       <label>メモ（任意）</label>
@@ -350,6 +354,7 @@ var PRESETS = [
   {name:'火災保険',   icon:'🏠', cat:'insurance'},   {name:'運転免許',  icon:'🪪', cat:'license'},
   {name:'パスポート', icon:'🛂', cat:'passport'},     {name:'車検',      icon:'🔧', cat:'vehicle'},
   {name:'クレカ',     icon:'💳', cat:'card'},         {name:'スマホ契約',icon:'📱', cat:'subscription'},
+  {name:'マイナンバーカード', icon:'🆔', cat:'license'}, {name:'マイナ電子証明書', icon:'🔐', cat:'license'},
 ];
 var items = JSON.parse(localStorage.getItem('renewly_items') || '[]');
 var editId = null;
@@ -393,7 +398,9 @@ function renderCard(item) {
     + '<div class="item-card-top">'
       + '<div class="item-icon">' + (item.icon || CAT_ICONS[item.category] || '📦') + '</div>'
       + '<div class="item-info"><p class="item-name">' + item.name + '</p>'
-        + '<div class="item-meta">' + CAT_LABELS[item.category] + ' ' + statusBadge(item) + (item.memo ? ' · ' + item.memo : '') + '</div>'
+        + '<div class="item-meta">' + CAT_LABELS[item.category] + ' ' + statusBadge(item)
+          + (item.acquired ? ' · 取得: ' + new Date(item.acquired).toLocaleDateString('ja-JP',{year:'numeric',month:'numeric',day:'numeric'}) : '')
+          + (item.memo ? ' · ' + item.memo : '') + '</div>'
       + '</div>'
       + '<div class="item-right">'
         + '<span class="days-left ' + daysClass + '">' + daysStr + '</span>'
@@ -490,6 +497,7 @@ function openModal() {
   document.getElementById('fName').value = '';
   document.getElementById('fIcon').value = '';
   document.getElementById('fCategory').value = 'insurance';
+  document.getElementById('fAcquired').value = '';
   document.getElementById('fExpiry').value = '';
   document.getElementById('fReminder').value = '30';
   document.getElementById('fMemo').value = '';
@@ -508,6 +516,7 @@ function editItem(id) {
   document.getElementById('fName').value = item.name;
   document.getElementById('fIcon').value = item.icon||'';
   document.getElementById('fCategory').value = item.category||'other';
+  document.getElementById('fAcquired').value = item.acquired||'';
   document.getElementById('fExpiry').value = item.expiry||'';
   document.getElementById('fReminder').value = item.reminder||30;
   document.getElementById('fMemo').value = item.memo||'';
@@ -518,12 +527,13 @@ function saveItem() {
   var name = document.getElementById('fName').value.trim();
   var icon = document.getElementById('fIcon').value.trim();
   var cat  = document.getElementById('fCategory').value;
+  var acq  = document.getElementById('fAcquired').value;
   var exp  = document.getElementById('fExpiry').value;
   var rem  = parseInt(document.getElementById('fReminder').value)||30;
   var memo = document.getElementById('fMemo').value.trim();
   if (!name) { showToast('名前を入力してください'); return; }
   if (!editId && items.length >= FREE_LIMIT && !isPro) { showToast('無料プランは'+FREE_LIMIT+'件まで'); return; }
-  var entry = { id: editId||Date.now().toString(), name:name, icon:icon||CAT_ICONS[cat], category:cat, expiry:exp, reminder:rem, memo:memo };
+  var entry = { id: editId||Date.now().toString(), name:name, icon:icon||CAT_ICONS[cat], category:cat, acquired:acq, expiry:exp, reminder:rem, memo:memo };
   if (editId) { var i=items.findIndex(function(x){ return x.id===editId; }); items[i]=entry; }
   else items.push(entry);
   persist(); closeModal(); renderList(); renderSoon(); updateSummary();
