@@ -735,7 +735,8 @@
       <div id="rcItemRows"></div>
       <button class="btn-add-row" onclick="rcAddRow()">＋ 行を追加</button>
       <div class="group-remaining"><span class="group-remaining-label">合計</span><span class="group-remaining-amt" id="rcTotalAmt">¥0</span></div>
-      <p id="rcTotalWarn" style="display:none;color:var(--red);font-size:.72rem;margin:0 0 .5rem">⚠️ AIが読み取った合計と一致しません。明細を確認してください。</p>
+      <p id="rcTotalWarn" style="display:none;color:var(--red);font-size:.72rem;margin:0 0 .35rem"></p>
+      <button class="btn-add-row" id="rcAdjustBtn" style="display:none;margin:0 0 .5rem" onclick="rcAddAdjustment()">± 差額を「調整」行として追加</button>
       <p class="rc-guide" style="margin-bottom:.6rem">🧾 レシートの印字合計と照合してから登録してください。</p>
       <div style="display:flex;gap:.9rem;margin-bottom:.75rem;font-size:.8rem">
         <label style="display:flex;align-items:center;gap:.3rem;cursor:pointer"><input type="radio" name="rcGroupBy" value="item" checked> 品目ごとに登録</label>
@@ -1049,7 +1050,9 @@ function renderList() {
             : isGroup
               ? 'deleteGroupTxns(\'' + t.group_id + '\',event)'
               : 'quickDeleteTxn(\'' + t.id + '\',event)';
-          var amtPrefix = isTransfer ? (t.is_income ? '↙' : '↗') : (t.is_income ? '+' : '−');
+          // マイナス金額（値引き調整等）は符号を反転して表示
+          var amtPlus = t.is_income ? t.amount >= 0 : t.amount < 0;
+          var amtPrefix = isTransfer ? (t.is_income ? '↙' : '↗') : (amtPlus ? '+' : '−');
           var isPending = /^(pending_|temp_|tmp_)/.test(String(t.id));
           return '<div class="txn-row' + (isPending ? ' txn-pending' : '') + '">'
             + '<div class="txn-icon" onclick="openTxnModal(\'' + t.id + '\')" style="cursor:pointer">' + (isTransfer ? '💸' : (cat ? cat.icon : '❓')) + '</div>'
@@ -1057,8 +1060,8 @@ function renderList() {
             + '<p class="txn-name">' + nameLine + (isPending ? '<span class="txn-pending-badge">🔄 同期待ち</span>' : '') + '</p>'
             + (memoTxt ? '<p class="txn-memo">' + memoTxt + '</p>' : '') + '</div>'
             + '<div class="txn-right">'
-            + '<span class="txn-amount' + (t.is_income ? ' income' : '') + '" style="' + (isTransfer ? 'color:#6c8eff' : '') + '">'
-            + amtPrefix + '¥' + t.amount.toLocaleString() + '</span>'
+            + '<span class="txn-amount' + (amtPlus && !isTransfer ? ' income' : '') + '" style="' + (isTransfer ? 'color:#6c8eff' : '') + '">'
+            + amtPrefix + '¥' + Math.abs(t.amount).toLocaleString() + '</span>'
             + '<div class="txn-btns">'
             + '<button class="txn-btn" onclick="openTxnModal(\'' + t.id + '\')">✏️</button>'
             + (isTransfer
@@ -2859,23 +2862,32 @@ var BASIC_RECEIPT_PROMPT = [
 '各カテゴリの小計と、全体の合計金額も出してください。',
 '金額の読み取りに自信がないものには (要確認) と付けてください。',
 '',
-'値引き・ポイント利用・クーポン等の行は品目の実質購入額として',
-'処理し、内訳リストとは別に注記してください。',
+'# 金額のルール（重要）',
+'・金額はすべて実際に支払った税込金額に換算してください',
+'　（品目が税抜表示のレシートでは 8%/10% の税率に注意して税込に直す）',
+'・値引き・クーポンは該当品目の金額に反映してください',
+'・ポイント利用や端数値引きで品目の合計が支払総額と合わない場合は、',
+'　「調整 - 差額円」という品目を追加して必ず一致させてください',
+'・最後に品目の合計がレシートの支払総額と一致するか検算してください',
+'',
+'# 品名とカテゴリのルール',
+'・レシートの省略された品名（例: ｷｬﾍﾞﾂ）は一般的な品名に直してください',
+'・カテゴリは上記リストにあるものだけを使ってください',
 '',
 '# 出力例',
 '【店舗】〇〇スーパー',
 '【日付】2026/07/07',
 '',
 '■ 食料品',
-'・キャベツ - 128円',
-'・卵1パック - 258円',
-'小計: 386円',
+'・キャベツ - 138円',
+'・卵1パック - 278円',
+'小計: 416円',
 '',
 '■ 日用品',
-'・ティッシュ - 198円',
-'小計: 198円',
+'・ティッシュ - 217円',
+'小計: 217円',
 '',
-'合計: 584円'
+'合計: 633円'
 ].join('\n');
 
 var LONG_RECEIPT_PROMPT = [
@@ -2897,18 +2909,27 @@ var LONG_RECEIPT_PROMPT = [
 '各カテゴリの小計と、全体の合計金額も出してください。',
 '金額の読み取りに自信がないものには (要確認) と付けてください。',
 '',
-'値引き・ポイント利用・クーポン等の行は品目の実質購入額として',
-'処理し、内訳リストとは別に注記してください。',
+'# 金額のルール（重要）',
+'・金額はすべて実際に支払った税込金額に換算してください',
+'　（品目が税抜表示のレシートでは 8%/10% の税率に注意して税込に直す）',
+'・値引き・クーポンは該当品目の金額に反映してください',
+'・ポイント利用や端数値引きで品目の合計が支払総額と合わない場合は、',
+'　「調整 - 差額円」という品目を追加して必ず一致させてください',
+'・最後に品目の合計がレシートの支払総額と一致するか検算してください',
+'',
+'# 品名とカテゴリのルール',
+'・レシートの省略された品名（例: ｷｬﾍﾞﾂ）は一般的な品名に直してください',
+'・カテゴリは上記リストにあるものだけを使ってください',
 '',
 '# 出力例',
 '【店舗】〇〇スーパー',
 '【日付】2026/07/07',
 '',
 '■ 食料品',
-'・キャベツ - 128円',
-'小計: 128円',
+'・キャベツ - 138円',
+'小計: 138円',
 '',
-'合計: 128円'
+'合計: 138円'
 ].join('\n');
 
 var _rcParsed = null;
@@ -3047,11 +3068,27 @@ function rcUpdateTotal() {
   var t = _rcItems.reduce(function(a, it){ return a + (it.amount || 0); }, 0);
   document.getElementById('rcTotalAmt').textContent = '¥' + t.toLocaleString();
   var warn = document.getElementById('rcTotalWarn');
-  warn.style.display = (_rcParsed && _rcParsed.total && _rcParsed.total !== t) ? 'block' : 'none';
+  var adjBtn = document.getElementById('rcAdjustBtn');
+  var mismatch = !!(_rcParsed && _rcParsed.total && _rcParsed.total !== t);
+  if (mismatch) {
+    var diff = _rcParsed.total - t;
+    warn.textContent = '⚠️ AIの合計 ¥' + _rcParsed.total.toLocaleString() + ' と現在の合計が一致しません（差 ' + (diff > 0 ? '+' : '') + diff.toLocaleString() + '円）';
+  }
+  warn.style.display = mismatch ? 'block' : 'none';
+  adjBtn.style.display = mismatch ? 'block' : 'none';
+}
+
+function rcAddAdjustment() {
+  if (!_rcParsed || !_rcParsed.total) return;
+  var t = _rcItems.reduce(function(a, it){ return a + (it.amount || 0); }, 0);
+  var diff = _rcParsed.total - t;
+  if (!diff) return;
+  _rcItems.push({ name: '調整（値引き・ポイント等）', amount: diff, catId: '', review: false });
+  rcRenderRows();
 }
 
 async function saveReceiptTxns() {
-  var valid = _rcItems.filter(function(it){ return it.amount > 0; });
+  var valid = _rcItems.filter(function(it){ return it.amount && !isNaN(it.amount); });
   if (!valid.length) { showToast('明細がありません'); return; }
   var date  = document.getElementById('rcDate').value || localDateStr(new Date());
   var store = document.getElementById('rcStore').value.trim();
