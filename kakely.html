@@ -40,6 +40,8 @@
     .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
     .auth-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: .3rem .85rem; font-size: .72rem; color: var(--muted); cursor: pointer; font-family: var(--font); transition: all .2s; white-space: nowrap; }
     .auth-chip.logged-in { border-color: var(--accent); color: var(--accent); }
+    .txn-pending { opacity: .6; }
+    .txn-pending-badge { font-size: .6rem; color: var(--muted); margin-left: .25rem; }
     .sync-btn { background: none; border: 1px solid var(--border); border-radius: 20px; padding: .3rem .7rem; font-size: .72rem; color: var(--muted); cursor: pointer; font-family: var(--font); transition: all .2s; display: none; align-items: center; gap: .3rem; }
     .sync-btn:hover { border-color: var(--accent); color: var(--accent); }
     .sync-btn.spinning .sync-icon { display: inline-block; animation: spin .7s linear infinite; }
@@ -983,10 +985,11 @@ function renderList() {
               ? 'deleteGroupTxns(\'' + t.group_id + '\',event)'
               : 'quickDeleteTxn(\'' + t.id + '\',event)';
           var amtPrefix = isTransfer ? (t.is_income ? '↙' : '↗') : (t.is_income ? '+' : '−');
-          return '<div class="txn-row">'
+          var isPending = /^(pending_|temp_|tmp_)/.test(String(t.id));
+          return '<div class="txn-row' + (isPending ? ' txn-pending' : '') + '">'
             + '<div class="txn-icon" onclick="openTxnModal(\'' + t.id + '\')" style="cursor:pointer">' + (isTransfer ? '💸' : (cat ? cat.icon : '❓')) + '</div>'
             + '<div class="txn-info" onclick="openTxnModal(\'' + t.id + '\')" style="cursor:pointer">'
-            + '<p class="txn-name">' + nameLine + '</p>'
+            + '<p class="txn-name">' + nameLine + (isPending ? '<span class="txn-pending-badge">🔄 同期待ち</span>' : '') + '</p>'
             + (memoTxt ? '<p class="txn-memo">' + memoTxt + '</p>' : '') + '</div>'
             + '<div class="txn-right">'
             + '<span class="txn-amount' + (t.is_income ? ' income' : '') + '" style="' + (isTransfer ? 'color:#6c8eff' : '') + '">'
@@ -1834,7 +1837,12 @@ async function saveTxn() {
     transactions.unshift(newTxn);
     if (currentUser) {
       var res = await _sb.from('kakely_transactions').insert(Object.assign({ user_id: currentUser.id }, payload)).select().single();
-      if (res.data) newTxn.id = res.data.id;
+      if (res.error) {
+        newTxn.id = 'pending_' + Date.now();
+        showToast('⚠️ クラウド保存に失敗しました。次回同期時に再試行します');
+      } else if (res.data) {
+        newTxn.id = res.data.id;
+      }
     }
   }
 
@@ -2220,6 +2228,7 @@ async function syncFromCloud() {
   if (!currentUser || _syncing) return;
   logAction('open');
   _syncing = true; updateSyncBadges();
+  await retryPendingTransactions();
 
   // Categories
   var catRes = await _sb.from('kakely_categories').select('*').eq('user_id', currentUser.id).order('sort_order');
@@ -2318,6 +2327,41 @@ async function syncFromCloud() {
   prefetchRecentMonths();
 }
 
+async function retryPendingTransactions() {
+  if (!currentUser) return;
+  var now = new Date();
+  for (var i = 0; i <= 6; i++) {
+    var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    var y = d.getFullYear(), m = d.getMonth();
+    var key = 'kakely_txn_' + y + '_' + (m + 1);
+    var cached = JSON.parse(localStorage.getItem(key) || '[]');
+    var pendingItems = cached.filter(function(t) {
+      return /^(pending_|temp_|tmp_)/.test(String(t.id));
+    });
+    if (!pendingItems.length) continue;
+    for (var j = 0; j < pendingItems.length; j++) {
+      var item = pendingItems[j];
+      var payload = {
+        user_id: currentUser.id,
+        amount: item.amount, date: item.date, is_income: item.is_income,
+        category_id: item.category_id || null,
+        payment_method_id: item.payment_method_id || null,
+        memo: item.memo || null
+      };
+      var res = await _sb.from('kakely_transactions').insert(payload).select().single();
+      if (res.data) {
+        var idx = cached.findIndex(function(t) { return t.id === item.id; });
+        if (idx !== -1) cached[idx].id = res.data.id;
+        if (y === viewYear && m === viewMonth) {
+          var ti = transactions.findIndex(function(t) { return t.id === item.id; });
+          if (ti !== -1) transactions[ti].id = res.data.id;
+        }
+      }
+    }
+    localStorage.setItem(key, JSON.stringify(cached));
+  }
+}
+
 async function prefetchRecentMonths() {
   if (!currentUser) return;
   for (var i = 1; i <= 3; i++) {
@@ -2371,7 +2415,16 @@ async function fetchMonthTransactions() {
   var res = await _sb.from('kakely_transactions').select('*')
     .eq('user_id', currentUser.id).gte('date', from).lte('date', to)
     .order('date', {ascending: false}).order('created_at', {ascending: false});
-  if (res.data) { transactions = res.data; saveMonthCache(); renderAll(); updateSyncBadges(); }
+  if (res.data) {
+    var pending = transactions.filter(function(t) {
+      return /^(pending_|temp_|tmp_)/.test(String(t.id));
+    });
+    transactions = res.data;
+    pending.forEach(function(p) {
+      if (!transactions.some(function(t) { return t.id === p.id; })) transactions.unshift(p);
+    });
+    saveMonthCache(); renderAll(); updateSyncBadges();
+  }
 }
 
 async function handleGoogleAuth() {
