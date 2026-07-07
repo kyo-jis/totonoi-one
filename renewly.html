@@ -224,7 +224,8 @@
   <div class="cat-filter">
     <button class="cat-chip active" onclick="filterCat('all',this)">すべて</button>
     <button class="cat-chip" onclick="filterCat('insurance',this)">🛡 保険</button>
-    <button class="cat-chip" onclick="filterCat('license',this)">🪪 免許・資格</button>
+    <button class="cat-chip" onclick="filterCat('license',this)">🪪 免許・証明書</button>
+    <button class="cat-chip" onclick="filterCat('cert',this)">🎓 資格</button>
     <button class="cat-chip" onclick="filterCat('subscription',this)">📱 契約</button>
     <button class="cat-chip" onclick="filterCat('card',this)">💳 カード</button>
     <button class="cat-chip" onclick="filterCat('vehicle',this)">🚗 車</button>
@@ -306,7 +307,8 @@
         <label>カテゴリ</label>
         <select id="fCategory">
           <option value="insurance">🛡 保険</option>
-          <option value="license">🪪 免許・資格</option>
+          <option value="license">🪪 免許・証明書</option>
+          <option value="cert">🎓 資格</option>
           <option value="subscription">📱 契約</option>
           <option value="card">💳 カード</option>
           <option value="vehicle">🚗 車</option>
@@ -347,14 +349,15 @@
 <script>
 var FREE_LIMIT = 10;
 var isPro = localStorage.getItem('isPro') === 'true';
-var CAT_LABELS = { all:'すべて', insurance:'🛡 保険', license:'🪪 免許・資格', subscription:'📱 契約', card:'💳 カード', vehicle:'🚗 車', passport:'🛂 パスポート', other:'📦 その他' };
-var CAT_ICONS  = { insurance:'🛡', license:'🪪', subscription:'📱', card:'💳', vehicle:'🚗', passport:'🛂', other:'📦' };
+var CAT_LABELS = { all:'すべて', insurance:'🛡 保険', license:'🪪 免許・証明書', cert:'🎓 資格', subscription:'📱 契約', card:'💳 カード', vehicle:'🚗 車', passport:'🛂 パスポート', other:'📦 その他' };
+var CAT_ICONS  = { insurance:'🛡', license:'🪪', cert:'🎓', subscription:'📱', card:'💳', vehicle:'🚗', passport:'🛂', other:'📦' };
 var PRESETS = [
   {name:'自動車保険', icon:'🚗', cat:'insurance'},   {name:'生命保険', icon:'🛡', cat:'insurance'},
   {name:'火災保険',   icon:'🏠', cat:'insurance'},   {name:'運転免許',  icon:'🪪', cat:'license'},
   {name:'パスポート', icon:'🛂', cat:'passport'},     {name:'車検',      icon:'🔧', cat:'vehicle'},
   {name:'クレカ',     icon:'💳', cat:'card'},         {name:'スマホ契約',icon:'📱', cat:'subscription'},
   {name:'マイナンバーカード', icon:'🆔', cat:'license'}, {name:'マイナ電子証明書', icon:'🔐', cat:'license'},
+  {name:'資格の更新', icon:'🎓', cat:'cert'},
 ];
 var items = JSON.parse(localStorage.getItem('renewly_items') || '[]');
 var editId = null;
