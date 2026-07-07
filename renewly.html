@@ -430,9 +430,9 @@ function filterCat(cat, btn) {
 
 function renderCard(item) {
   var d = daysLeft(item); var s = statusOf(item);
-  var daysStr = d === null ? '—' : d < 0 ? Math.abs(d)+'日超過' : d+'日';
+  var daysStr = item.noExpiry ? '♾️' : d === null ? '—' : d < 0 ? Math.abs(d)+'日超過' : d+'日';
   var daysClass = s === 'expired' ? 'expired' : s === 'warning' ? 'warning' : 'ok';
-  var dateStr = item.expiry ? new Date(item.expiry).toLocaleDateString('ja-JP',{year:'numeric',month:'short',day:'numeric'}) : '未設定';
+  var dateStr = item.noExpiry ? '更新なし' : item.expiry ? new Date(item.expiry).toLocaleDateString('ja-JP',{year:'numeric',month:'short',day:'numeric'}) : '未設定';
   return '<div class="item-card ' + s + '">'
     + '<div class="item-card-top">'
       + '<div class="item-icon">' + (item.icon || CAT_ICONS[item.category] || '📦') + '</div>'
