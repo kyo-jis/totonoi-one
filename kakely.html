@@ -2304,6 +2304,26 @@ async function syncFromCloud() {
   autoAddSublyTransactions();
   // 固定費: 今日が引き落とし日のものを自動追加
   autoAddFixedCosts();
+  // バックグラウンドで直近3か月分を先読み（月ナビを押さなくても表示できるように）
+  prefetchRecentMonths();
+}
+
+async function prefetchRecentMonths() {
+  if (!currentUser) return;
+  for (var i = 1; i <= 3; i++) {
+    var d = new Date(viewYear, viewMonth - i, 1);
+    var y = d.getFullYear(), m = d.getMonth();
+    var cacheKey = 'kakely_txn_' + y + '_' + (m + 1);
+    // ローカルキャッシュが空の月だけ取得
+    if (localStorage.getItem(cacheKey)) continue;
+    var from = y + '-' + String(m + 1).padStart(2, '0') + '-01';
+    var lastDay = new Date(y, m + 1, 0).getDate();
+    var to   = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(lastDay).padStart(2, '0');
+    var res = await _sb.from('kakely_transactions').select('*')
+      .eq('user_id', currentUser.id).gte('date', from).lte('date', to)
+      .order('date', { ascending: false });
+    if (res.data) localStorage.setItem(cacheKey, JSON.stringify(res.data));
+  }
 }
 
 async function fetchMonthTransactions() {
