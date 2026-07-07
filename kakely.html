@@ -2424,11 +2424,14 @@ async function fetchMonthTransactions() {
     .eq('user_id', currentUser.id).gte('date', from).lte('date', to)
     .order('date', {ascending: false}).order('created_at', {ascending: false});
   if (res.data) {
-    var pending = transactions.filter(function(t) {
-      return /^(pending_|temp_|tmp_)/.test(String(t.id));
+    // temp_/pending_/tmp_ は未送信。実UUIDでもSELECTに含まれない場合（レース）は保護する
+    var toPreserve = transactions.filter(function(t) {
+      var id = String(t.id);
+      if (/^(pending_|temp_|tmp_)/.test(id)) return true;
+      return !res.data.some(function(d) { return d.id === id; });
     });
     transactions = res.data;
-    pending.forEach(function(p) {
+    toPreserve.forEach(function(p) {
       if (!transactions.some(function(t) { return t.id === p.id; })) transactions.unshift(p);
     });
     saveMonthCache(); renderAll(); updateSyncBadges();
