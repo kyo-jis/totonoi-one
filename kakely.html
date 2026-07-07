@@ -1764,6 +1764,15 @@ async function saveTransfer() {
   if (!fromId || !toId || !amount || !date) { showToast('すべての項目を入力してください'); return; }
   if (fromId === toId) { showToast('移動元と移動先が同じです'); return; }
 
+  // 入力日付が表示月と異なる場合は自動で対象月へ移動
+  var txnD = parseLocalDate(date);
+  var txnY = txnD.getFullYear(), txnM = txnD.getMonth();
+  if (txnY !== viewYear || txnM !== viewMonth) {
+    viewYear = txnY; viewMonth = txnM;
+    updateMonthNav();
+    loadFromStorage();
+  }
+
   // 編集の場合: 既存ペアを残高ロールバックして削除してから再作成
   if (editTxnId) {
     var existing = transactions.find(function(t){ return t.id === editTxnId; });
@@ -1824,6 +1833,15 @@ async function saveTxn() {
   var amount = parseInt(document.getElementById('fAmount').value);
   var date   = document.getElementById('fDate').value;
   if (!amount || !date) { showToast('金額と日付を入力してください'); return; }
+
+  // 入力日付が表示月と異なる場合は自動で対象月へ移動
+  var txnD = parseLocalDate(date);
+  var txnY = txnD.getFullYear(), txnM = txnD.getMonth();
+  if (txnY !== viewYear || txnM !== viewMonth) {
+    viewYear = txnY; viewMonth = txnM;
+    updateMonthNav();
+    loadFromStorage();
+  }
 
   var payload = {
     amount: amount, date: date, is_income: txnIsIncome,
