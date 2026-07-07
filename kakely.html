@@ -1549,8 +1549,10 @@ function drUp(e) {
     categories.forEach(function(c, i){ c.sort_order = i; });
     localStorage.setItem('kakely_cats', JSON.stringify(categories));
     if (currentUser) {
+      // ローカルID（default_等）が混ざるとバッチ全体が拒否されるためUUIDのみ送る
       _sb.from('kakely_categories').upsert(
         categories.map(function(c, i){ return { id: c.id, user_id: currentUser.id, sort_order: i }; })
+          .filter(function(row){ return isUuid(row.id); })
       );
     }
   } else if (_dr.type === 'fixed') {
@@ -1756,10 +1758,36 @@ function handleSaveTxn() {
   else saveTxn();
 }
 
+function isUuid(v) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v));
+}
+
+// ローカルID（default_等）のカテゴリをSupabaseに登録して実UUIDを返す。
+// 登録できない場合はnull（クラウドには未分類として保存し、22P02を防ぐ）
+async function ensureCatId(catId, isIncome) {
+  if (!catId || !currentUser) return catId || null;
+  if (isUuid(catId)) return catId;
+  // 収入カテゴリ（inc_N）はuser_data管理でkakely_categoriesに入れられないため
+  // クラウドにはnullで保存する（ローカル表示は維持される）
+  if (isIncome) return null;
+  var c = categories.find(function(x){ return x.id === catId; });
+  if (!c) return null;
+  var payload = { user_id: currentUser.id, icon: c.icon, name: c.name };
+  if (c.budget) payload.budget = c.budget;
+  payload.sort_order = c.sort_order || 0;
+  var res = await _sb.from('kakely_categories').insert(payload).select().single();
+  if (res.error) { console.error('ensureCatId error', res.error); return null; }
+  var oldId = c.id;
+  c.id = res.data.id;
+  localStorage.setItem('kakely_cats', JSON.stringify(categories));
+  transactions.forEach(function(t){ if (t.category_id === oldId) t.category_id = res.data.id; });
+  return res.data.id;
+}
+
 // ローカルID（defpay_等）の支払い方法をSupabaseに登録して実UUIDを返す
 async function ensurePayId(payId) {
   if (!payId || !currentUser) return payId;
-  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(payId)) return payId;
+  if (isUuid(payId)) return payId;
   var p = paymentMethods.find(function(x){ return x.id === payId; });
   if (!p) return payId;
   var payload = { user_id: currentUser.id, icon: p.icon, name: p.name, type: p.type,
@@ -1801,7 +1829,7 @@ async function saveTransfer() {
       var grp = transactions.filter(function(t){ return t.group_id === oldGid; });
       grp.forEach(function(t){ updateCashBalance(t.payment_method_id, t.is_income ? -t.amount : t.amount); });
       transactions = transactions.filter(function(t){ return t.group_id !== oldGid; });
-      if (currentUser) await _sb.from('kakely_transactions').delete().eq('group_id', oldGid);
+      if (currentUser && isUuid(oldGid)) await _sb.from('kakely_transactions').delete().eq('group_id', oldGid);
     }
     editTxnId = null;
   }
@@ -1887,7 +1915,17 @@ async function saveTxn() {
     // 新しい値で更新
     var idx = transactions.findIndex(function(t){ return t.id === editTxnId; });
     if (idx !== -1) transactions[idx] = Object.assign(transactions[idx], payload);
-    if (currentUser) await _sb.from('kakely_transactions').update(payload).eq('id', editTxnId);
+    // クラウド未同期（temp_/pending_等）の項目はローカル更新のみ。次回同期のretryでinsertされる
+    if (currentUser && isUuid(editTxnId)) {
+      var upPayload = Object.assign({}, payload);
+      if (upPayload.payment_method_id) upPayload.payment_method_id = await ensurePayId(upPayload.payment_method_id);
+      if (upPayload.category_id) upPayload.category_id = await ensureCatId(upPayload.category_id, txnIsIncome);
+      var upRes = await _sb.from('kakely_transactions').update(upPayload).eq('id', editTxnId);
+      if (upRes.error) {
+        console.error('txn update error', upRes.error);
+        showToast('⚠️ クラウド更新エラー: ' + (upRes.error.message || '不明'));
+      }
+    }
   } else {
     var newTxn = Object.assign({ id: 'temp_' + Date.now() }, payload);
     transactions.unshift(newTxn);
@@ -1896,6 +1934,12 @@ async function saveTxn() {
         var cloudPayId = await ensurePayId(payload.payment_method_id);
         payload.payment_method_id = cloudPayId;
         newTxn.payment_method_id = cloudPayId;
+      }
+      if (payload.category_id) {
+        var cloudCatId = await ensureCatId(payload.category_id, txnIsIncome);
+        payload.category_id = cloudCatId;
+        // クラウドがnull（収入カテゴリ等）でもローカル表示用にはIDを維持
+        if (cloudCatId) newTxn.category_id = cloudCatId;
       }
       var res = await _sb.from('kakely_transactions').insert(Object.assign({ user_id: currentUser.id }, payload)).select().single();
       if (res.error) {
@@ -1945,7 +1989,7 @@ async function deleteTxn() {
     });
     var gid = del.group_id;
     transactions = transactions.filter(function(t){ return t.group_id !== gid; });
-    if (currentUser) await _sb.from('kakely_transactions').delete().eq('group_id', gid);
+    if (currentUser && isUuid(gid)) await _sb.from('kakely_transactions').delete().eq('group_id', gid);
     saveMonthCache(); closeModal('txnModal'); renderAll(); showToast('資金移動を削除しました');
     return;
   }
@@ -1960,7 +2004,7 @@ async function deleteTxn() {
   closeModal('txnModal');
   renderAll();
   showToast('削除しました');
-  if (currentUser && !String(delId).startsWith('tmp_') && !String(delId).startsWith('temp_')) {
+  if (currentUser && isUuid(delId)) {
     await _sb.from('kakely_transactions').delete().eq('id', delId);
   }
 }
@@ -1994,7 +2038,14 @@ async function saveCat() {
   if (editCatId) {
     var idx = categories.findIndex(function(c){ return c.id === editCatId; });
     if (idx !== -1) categories[idx] = Object.assign(categories[idx], payload);
-    if (currentUser) await _sb.from('kakely_categories').update(payload).eq('id', editCatId);
+    if (currentUser) {
+      if (isUuid(editCatId)) {
+        await _sb.from('kakely_categories').update(payload).eq('id', editCatId);
+      } else {
+        // ローカルIDのカテゴリはensureCatIdでクラウド登録（編集後の内容で）
+        await ensureCatId(editCatId, false);
+      }
+    }
   } else {
     payload.sort_order = categories.length;
     var newCat = Object.assign({ id: 'tmp_' + Date.now() }, payload);
@@ -2013,7 +2064,7 @@ async function saveCat() {
 async function deleteCat() {
   if (!editCatId || !confirm('このカテゴリを削除しますか？')) return;
   categories = categories.filter(function(c){ return c.id !== editCatId; });
-  if (currentUser) await _sb.from('kakely_categories').delete().eq('id', editCatId);
+  if (currentUser && isUuid(editCatId)) await _sb.from('kakely_categories').delete().eq('id', editCatId);
   localStorage.setItem('kakely_cats', JSON.stringify(categories));
   closeModal('catModal');
   renderSettings();
@@ -2110,8 +2161,13 @@ async function savePay() {
     // ローカルを先に確定
     localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
     if (currentUser) {
-      var upRes = await _sb.from('kakely_payment_methods').update(dbPayload).eq('id', editPayId);
-      if (upRes.error) console.warn('kakely_payment_methods update:', upRes.error.message);
+      if (isUuid(editPayId)) {
+        var upRes = await _sb.from('kakely_payment_methods').update(dbPayload).eq('id', editPayId);
+        if (upRes.error) console.warn('kakely_payment_methods update:', upRes.error.message);
+      } else {
+        // ローカルIDの支払い方法はensurePayIdでクラウド登録（編集後の内容で）
+        await ensurePayId(editPayId);
+      }
     }
   } else {
     var newPay = Object.assign({ id: 'tmp_' + Date.now() }, localPayload);
@@ -2141,7 +2197,7 @@ async function savePay() {
 async function deletePay() {
   if (!editPayId || !confirm('この支払い方法を削除しますか？')) return;
   paymentMethods = paymentMethods.filter(function(p){ return p.id !== editPayId; });
-  if (currentUser) await _sb.from('kakely_payment_methods').delete().eq('id', editPayId);
+  if (currentUser && isUuid(editPayId)) await _sb.from('kakely_payment_methods').delete().eq('id', editPayId);
   localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
   closeModal('payModal');
   renderSettings();
@@ -2179,11 +2235,19 @@ async function handleCharge() {
   updateCashBalance(chargePayId,  amount);
   saveMonthCache();
   if (currentUser) {
+    // ローカルIDの支払い方法をUUIDに変換
+    var cloudOutPay = await ensurePayId(outTxn.payment_method_id);
+    var cloudInPay  = await ensurePayId(inTxn.payment_method_id);
+    outTxn.payment_method_id = cloudOutPay;
+    inTxn.payment_method_id  = cloudInPay;
     var rows = [outTxn, inTxn].map(function(t) {
       return { user_id: currentUser.id, amount: t.amount, date: t.date, is_income: t.is_income, is_transfer: t.is_transfer, group_id: t.group_id, payment_method_id: t.payment_method_id, memo: t.memo };
     });
     var sbRes = await _sb.from('kakely_transactions').insert(rows).select();
-    if (sbRes.data) {
+    if (sbRes.error) {
+      console.error('charge insert error', sbRes.error);
+      showToast('⚠️ クラウド保存エラー: ' + (sbRes.error.message || '不明'));
+    } else if (sbRes.data) {
       var tmpIds = [outTxn.id, inTxn.id];
       sbRes.data.forEach(function(row, i) {
         transactions = transactions.map(function(t){ return t.id === tmpIds[i] ? row : t; });
@@ -2217,7 +2281,7 @@ async function quickDeleteTxn(id, event) {
   if (del && del.payment_method_id) updateCashBalance(del.payment_method_id, del.is_income ? -del.amount : del.amount);
   transactions = transactions.filter(function(t){ return t.id!==id; });
   saveMonthCache(); renderAll(); showToast('削除しました');
-  if (currentUser && !String(id).startsWith('tmp_') && !String(id).startsWith('temp_')) {
+  if (currentUser && isUuid(id)) {
     await _sb.from('kakely_transactions').delete().eq('id', id);
   }
 }
@@ -2228,7 +2292,7 @@ async function deleteGroupTxns(groupId, event) {
   if (!grp.length || !confirm('グループ全体（' + grp.length + '件）を削除しますか？')) return;
   transactions = transactions.filter(function(t){ return t.group_id!==groupId; });
   saveMonthCache(); renderAll(); showToast(grp.length + '件を削除しました');
-  if (currentUser) await _sb.from('kakely_transactions').delete().eq('group_id', groupId);
+  if (currentUser && isUuid(groupId)) await _sb.from('kakely_transactions').delete().eq('group_id', groupId);
 }
 
 // ── 残高管理 ──
@@ -2238,7 +2302,7 @@ function updateCashBalance(payId, delta) {
   if (!p || (p.type !== 'cash' && p.type !== 'emoney') || p.balance == null) return;
   p.balance = p.balance + delta;
   localStorage.setItem('kakely_pays', JSON.stringify(paymentMethods));
-  if (currentUser) _sb.from('kakely_payment_methods').update({ balance: p.balance }).eq('id', payId);
+  if (currentUser && isUuid(payId)) _sb.from('kakely_payment_methods').update({ balance: p.balance }).eq('id', payId);
   updateBalanceDisplay();
   renderSettings();
 }
@@ -2416,10 +2480,13 @@ async function retryPendingTransactions() {
       var payload = {
         user_id: currentUser.id,
         amount: item.amount, date: item.date, is_income: item.is_income,
-        category_id: item.category_id || null,
-        payment_method_id: item.payment_method_id || null,
+        category_id: item.category_id ? await ensureCatId(item.category_id, item.is_income) : null,
+        payment_method_id: item.payment_method_id ? await ensurePayId(item.payment_method_id) : null,
         memo: item.memo || null
       };
+      // 変換後も非UUIDなら null にして22P02を回避（該当マスタが削除済み等）
+      if (payload.category_id && !isUuid(payload.category_id)) payload.category_id = null;
+      if (payload.payment_method_id && !isUuid(payload.payment_method_id)) payload.payment_method_id = null;
       if (item.is_transfer) {
         payload.is_transfer = true;
         var gid = item.group_id;
@@ -2660,13 +2727,19 @@ async function saveGroupTxns() {
 
   // Supabase保存
   if (currentUser) {
-    var ins = await _sb.from('kakely_transactions').insert(
-      items.map(function(item) {
-        return { user_id: currentUser.id, amount: item.amount, date: date, is_income: false,
-          category_id: item.category_id, payment_method_id: payId, memo: null, group_id: groupId };
-      })
-    ).select();
-    if (ins.data && ins.data.length) {
+    var cloudGrpPayId = await ensurePayId(payId);
+    var grpRows = [];
+    for (var gi = 0; gi < items.length; gi++) {
+      var gItem = items[gi];
+      var gCatId = gItem.category_id ? await ensureCatId(gItem.category_id, false) : null;
+      grpRows.push({ user_id: currentUser.id, amount: gItem.amount, date: date, is_income: false,
+        category_id: gCatId, payment_method_id: cloudGrpPayId, memo: null, group_id: groupId });
+    }
+    var ins = await _sb.from('kakely_transactions').insert(grpRows).select();
+    if (ins.error) {
+      console.error('group insert error', ins.error);
+      showToast('⚠️ クラウド保存エラー: ' + (ins.error.message || '不明'));
+    } else if (ins.data && ins.data.length) {
       // tempIDをSupabaseの実UUIDに置き換え（fetchMonthTransactionsは呼ばない）
       transactions = transactions.filter(function(t){ return t.group_id !== groupId; });
       ins.data.slice().reverse().forEach(function(t){ transactions.unshift(t); });
@@ -2761,8 +2834,8 @@ async function autoAddSublyTransactions() {
       amount: amount,
       date: today,
       is_income: false,
-      category_id: subCat ? subCat.id : null,
-      payment_method_id: payId,
+      category_id: subCat ? await ensureCatId(subCat.id, false) : null,
+      payment_method_id: payId ? await ensurePayId(payId) : null,
       memo: memoKey
     };
 
@@ -2772,6 +2845,8 @@ async function autoAddSublyTransactions() {
       addedCount++;
       addedTotal += amount;
       addedNames.push(sub.name);
+    } else if (tr.error) {
+      console.error('subly auto-add error', tr.error);
     }
   }
 
@@ -2889,8 +2964,11 @@ async function autoAddFixedCosts() {
       var payload = { amount:fc.amount, date:dateStr, is_income:false, category_id:fc.category_id||null, payment_method_id:fc.payment_method_id||null, memo:memoKey };
       var newTxn = Object.assign({ id:'tmp_fix_'+Date.now()+'_'+si+'_'+i }, payload);
       if (currentUser) {
+        if (payload.category_id)       payload.category_id       = await ensureCatId(payload.category_id, false);
+        if (payload.payment_method_id) payload.payment_method_id = await ensurePayId(payload.payment_method_id);
         var res = await _sb.from('kakely_transactions').insert(Object.assign({ user_id:currentUser.id }, payload)).select().single();
         if (res.data) newTxn = res.data;
+        else if (res.error) console.error('fixed cost insert error', res.error);
       }
       arr.unshift(newTxn);
       slotAdded++;
@@ -2935,7 +3013,9 @@ async function deduplicateCategories() {
   });
   if (!toDelete.length) return;
   if (currentUser) {
-    for (var i = 0; i < toDelete.length; i++) await _sb.from('kakely_categories').delete().eq('id', toDelete[i]);
+    for (var i = 0; i < toDelete.length; i++) {
+      if (isUuid(toDelete[i])) await _sb.from('kakely_categories').delete().eq('id', toDelete[i]);
+    }
   }
   categories = deduped;
   localStorage.setItem('kakely_cats', JSON.stringify(categories));
