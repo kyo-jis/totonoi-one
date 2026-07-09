@@ -519,6 +519,16 @@
     .muscle-legend { display:flex; gap:1rem; justify-content:center; font-size:.72rem; }
     .muscle-legend-item { display:flex; align-items:center; gap:.3rem; }
     .muscle-legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+    /* 履歴可視化用スタイル */
+    .history-part-tabs { display:flex; overflow-x:auto; gap:.35rem; margin-bottom:.85rem; border-bottom:1px solid var(--border); padding-bottom:.5rem; -webkit-overflow-scrolling:touch; }
+    .history-part-tabs::-webkit-scrollbar { display:none; }
+    .history-part-tab { flex-shrink:0; padding:.45rem .85rem; border:1px solid transparent; border-radius:9px; background:var(--surface); color:var(--muted); font-size:.78rem; font-weight:600; font-family:var(--font); cursor:pointer; transition:all .15s; }
+    .history-part-tab.active { border-color:var(--accent); background:rgba(94,207,160,.12); color:var(--accent); }
+    .history-view-btn { padding:.4rem .9rem; border:none; border-radius:8px; background:none; color:var(--muted); font-size:.78rem; font-weight:600; font-family:var(--font); cursor:pointer; transition:all .15s; }
+    .history-view-btn.active { background:var(--surface2); color:var(--text); }
+    .history-metrics-row { display:flex; flex-wrap:wrap; gap:.35rem; justify-content:center; margin-top:.75rem; }
+    .btn-graph-metric { padding:.4rem .75rem; border:1px solid var(--border); border-radius:9px; background:var(--surface2); color:var(--muted); font-size:.72rem; font-family:var(--font); cursor:pointer; transition:all .15s; }
+    .btn-graph-metric.active { border-color:var(--accent2); background:rgba(232,113,138,.12); color:var(--accent2); }
   </style>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-E9Q0JQ0V92"></script>
@@ -802,12 +812,52 @@
 
 <!-- 履歴タブ -->
 <div class="view" id="view-history">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;">
-    <p class="section-label" style="margin-bottom:0;">ワークアウト履歴</p>
+  <!-- 部位フィルタータブ -->
+  <div class="history-part-tabs" id="historyPartTabs">
+    <!-- JSで動的に追加 -->
+  </div>
+
+  <!-- 表示切り替えスイッチ -->
+  <div style="display:flex;justify-content:center;margin-bottom:.85rem;">
+    <div style="display:flex;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:2px;">
+      <button class="history-view-btn active" id="btnHistCal" onclick="setHistoryView('calendar')">カレンダー</button>
+      <button class="history-view-btn" id="btnHistGraph" onclick="setHistoryView('graph')">グラフ</button>
+    </div>
+  </div>
+
+  <!-- カレンダーセクション -->
+  <div id="historyCalSection" style="display:none;margin-bottom:1rem;">
+    <div class="card" style="padding:.75rem 1rem;">
+      <div class="wd-cal" style="padding:0;box-shadow:none;background:none;border:none;">
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="histCalMove(-1)">&lsaquo;</button>
+          <p class="cal-month-label" id="histCalMonthLabel"></p>
+          <button class="cal-nav-btn" onclick="histCalMove(1)">&rsaquo;</button>
+        </div>
+        <div class="cal-days-header" style="font-size:.6rem;">
+          <div>日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div>
+        </div>
+        <div class="cal-grid" id="histCalGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- グラフセクション -->
+  <div id="historyGraphSection" style="display:none;margin-bottom:1rem;">
+    <div class="card" style="padding:1rem .75rem 0.5rem;position:relative;">
+      <div id="historyChart" style="height:190px;"></div>
+    </div>
+    <div class="history-metrics-row" id="historyMetricsRow">
+      <!-- JSで動的に追加 -->
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;margin-top:1rem;">
+    <p class="section-label" style="margin-bottom:0;" id="historyListTitle">ワークアウト履歴</p>
     <button id="btnHistorySelect" onclick="toggleHistorySelectMode()" style="background:none;border:1px solid var(--border);border-radius:10px;padding:.35rem .75rem;font-size:.72rem;color:var(--muted);cursor:pointer;font-family:var(--font);">選択</button>
   </div>
   <!-- 複数選択時のアクションバー -->
-  <div id="historySelectBar" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.6rem .85rem;margin-bottom:.75rem;display:none;align-items:center;justify-content:space-between;">
+  <div id="historySelectBar" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.6rem .85rem;margin-bottom:.75rem;align-items:center;justify-content:space-between;">
     <label style="display:flex;align-items:center;gap:.5rem;font-size:.8rem;color:var(--muted);cursor:pointer;">
       <input type="checkbox" id="checkAll" onchange="toggleSelectAll(this.checked)" style="width:16px;height:16px;accent-color:var(--accent);">すべて選択
     </label>
@@ -1634,7 +1684,7 @@ function switchTab(name, btn) {
       renderWorkoutDashboard();
     }
   }
-  if (name==='history') renderHistory();
+  if (name==='history') renderHistoryTab();
   if (name==='body') renderBodyWeightTab();
   if (name==='analysis') renderAnalysis();
 }
@@ -3523,10 +3573,335 @@ function deleteMenu(i) {
   renderMenuList();
 }
 
+// ── History Tab Visualization ──
+var activeHistoryPart   = 'all';
+var activeHistoryView   = 'calendar';
+var activeHistoryMetric = 'volume';
+var histCalYear         = new Date().getFullYear();
+var histCalMonth        = new Date().getMonth();
+
+var HIST_PART_LABELS = {
+  all: 'ALL',
+  chest: '胸',
+  back: '背中',
+  leg: '脚',
+  shoulder: '肩',
+  arm: '腕'
+};
+
+var HIST_METRICS = [
+  { id: 'volume', label: '総負荷量' },
+  { id: 'rm', label: '最大RM' },
+  { id: 'weight', label: '最大重量' },
+  { id: 'sets', label: 'セット数' }
+];
+
+function renderHistoryTab() {
+  renderHistoryPartTabs();
+  renderHistoryViewToggle();
+  renderHistoryMetrics();
+  renderHistoryContent();
+}
+
+function renderHistoryPartTabs() {
+  var container = document.getElementById('historyPartTabs');
+  if (!container) return;
+  var parts = ['all', 'chest', 'back', 'leg', 'shoulder', 'arm'];
+  container.innerHTML = parts.map(function(p) {
+    var activeClass = p === activeHistoryPart ? ' active' : '';
+    return '<button class="history-part-tab' + activeClass + '" onclick="setHistoryPart(\'' + p + '\')">' + HIST_PART_LABELS[p] + '</button>';
+  }).join('');
+}
+
+function renderHistoryViewToggle() {
+  var calBtn = document.getElementById('btnHistCal');
+  var graphBtn = document.getElementById('btnHistGraph');
+  if (calBtn) calBtn.classList.toggle('active', activeHistoryView === 'calendar');
+  if (graphBtn) graphBtn.classList.toggle('active', activeHistoryView === 'graph');
+  
+  var calSec = document.getElementById('historyCalSection');
+  var graphSec = document.getElementById('historyGraphSection');
+  if (calSec) calSec.style.display = activeHistoryView === 'calendar' ? 'block' : 'none';
+  if (graphSec) graphSec.style.display = activeHistoryView === 'graph' ? 'block' : 'none';
+}
+
+function renderHistoryMetrics() {
+  var container = document.getElementById('historyMetricsRow');
+  if (!container) return;
+  container.innerHTML = HIST_METRICS.map(function(m) {
+    var activeClass = m.id === activeHistoryMetric ? ' active' : '';
+    return '<button class="btn-graph-metric' + activeClass + '" onclick="setHistoryMetric(\'' + m.id + '\')">' + m.label + '</button>';
+  }).join('');
+}
+
+function setHistoryPart(part) {
+  activeHistoryPart = part;
+  renderHistoryTab();
+}
+
+function setHistoryView(view) {
+  activeHistoryView = view;
+  renderHistoryViewToggle();
+  renderHistoryContent();
+}
+
+function setHistoryMetric(metric) {
+  activeHistoryMetric = metric;
+  renderHistoryMetrics();
+  renderHistoryContent();
+}
+
+function histCalMove(dir) {
+  histCalMonth += dir;
+  if (histCalMonth < 0) { histCalMonth = 11; histCalYear--; }
+  else if (histCalMonth > 11) { histCalMonth = 0; histCalYear++; }
+  renderHistoryContent();
+}
+
+function showChartTooltip(event, date, val, label) {
+  event.stopPropagation();
+  showToast('📅 ' + date + ' · ' + label + ': ' + val.toLocaleString());
+}
+
+function renderHistoryContent() {
+  if (activeHistoryView === 'calendar') {
+    renderHistoryCalendar();
+  } else if (activeHistoryView === 'graph') {
+    renderHistoryGraph();
+  }
+  renderHistoryList();
+}
+
+function renderHistoryCalendar() {
+  var todayStr = localDateStr();
+  var workoutByDate = {};
+  
+  workoutHistory.forEach(function(w) {
+    var ds = wDateStr(w);
+    if (!ds) return;
+    if (!workoutByDate[ds]) workoutByDate[ds] = [];
+    
+    if (activeHistoryPart !== 'all') {
+      var hasPartEx = (w.exercises || []).some(function(ex) {
+        return ex.part === activeHistoryPart;
+      });
+      if (hasPartEx) {
+        workoutByDate[ds].push(w);
+      }
+    } else {
+      workoutByDate[ds].push(w);
+    }
+  });
+
+  var labelEl = document.getElementById('histCalMonthLabel');
+  if (labelEl) labelEl.textContent = histCalYear + '年' + (histCalMonth+1) + '月';
+
+  var firstDay = new Date(histCalYear, histCalMonth, 1);
+  var lastDay  = new Date(histCalYear, histCalMonth+1, 0);
+  var startDow = firstDay.getDay();
+  var totalDays = lastDay.getDate();
+
+  var html = '';
+  for (var i = 0; i < startDow; i++) {
+    var prevDate = new Date(histCalYear, histCalMonth, -(startDow-1-i));
+    html += '<button class="cal-day other-month" disabled>' + prevDate.getDate() + '</button>';
+  }
+  for (var d = 1; d <= totalDays; d++) {
+    var ds = histCalYear + '-'
+      + String(histCalMonth+1).padStart(2,'0') + '-'
+      + String(d).padStart(2,'0');
+    var workouts = workoutByDate[ds] || [];
+    var hasWorkout = workouts.length > 0;
+    var isToday = ds === todayStr;
+
+    var dotKeys = {};
+    workouts.forEach(function(w) {
+      (w.exercises || []).forEach(function(ex) {
+        if (activeHistoryPart === 'all' || ex.part === activeHistoryPart) {
+          var key = (ex.cat==='cardio'||ex.cat==='stretch'||ex.cat==='mindfulness') ? ex.cat : (ex.part||ex.cat);
+          if (key && !dotKeys[key]) { dotKeys[key] = dotColorForEx(ex); }
+        }
+      });
+    });
+    var dotEntries = Object.keys(dotKeys).slice(0, 3);
+    var dotsHTML = dotEntries.length
+      ? '<div class="cal-day-dots">' + dotEntries.map(function(k){
+          return '<div class="cal-day-dot" style="background:' + dotKeys[k] + ';"></div>';
+        }).join('') + '</div>'
+      : '';
+
+    var cls = 'cal-day'
+      + (hasWorkout ? ' has-workout' : '')
+      + (isToday    ? ' today'       : '');
+    
+    var onclick = (hasWorkout || isToday) ? ' onclick="openDayDetail(\'' + ds + '\')"' : '';
+
+    html += '<button class="' + cls + '"' + onclick + '>'
+      + d
+      + dotsHTML
+      + '</button>';
+  }
+  var total = startDow + totalDays;
+  var trailing = (7 - (total % 7)) % 7;
+  for (var j = 1; j <= trailing; j++) {
+    html += '<button class="cal-day other-month" disabled>' + j + '</button>';
+  }
+
+  var gridEl = document.getElementById('histCalGrid');
+  if (gridEl) gridEl.innerHTML = html;
+}
+
+function renderHistoryGraph() {
+  var dataMap = {};
+  
+  workoutHistory.forEach(function(w) {
+    var ds = wDateStr(w);
+    if (!ds) return;
+    
+    (w.exercises || []).forEach(function(ex) {
+      if (activeHistoryPart !== 'all' && ex.part !== activeHistoryPart) return;
+      
+      if (!dataMap[ds]) {
+        dataMap[ds] = { volume: 0, maxWeight: 0, totalSets: 0, maxRM: 0 };
+      }
+      
+      (ex.sets || []).forEach(function(s) {
+        if (!s.done) return;
+        var wgt = parseFloat(s.weight) || 0;
+        var reps = parseInt(s.reps) || 0;
+        
+        dataMap[ds].totalSets++;
+        if (wgt > dataMap[ds].maxWeight) {
+          dataMap[ds].maxWeight = wgt;
+        }
+        
+        if (wgt > 0 && reps > 0) {
+          dataMap[ds].volume += wgt * reps;
+          var rm = wgt * (1 + reps / 30);
+          if (rm > dataMap[ds].maxRM) {
+            dataMap[ds].maxRM = Math.round(rm * 10) / 10;
+          }
+        }
+      });
+    });
+  });
+
+  var dates = Object.keys(dataMap).sort();
+  var limit = 14;
+  if (dates.length > limit) {
+    dates = dates.slice(dates.length - limit);
+  }
+  
+  var dataPoints = dates.map(function(d) {
+    var val = 0;
+    if (activeHistoryMetric === 'volume') val = dataMap[d].volume;
+    else if (activeHistoryMetric === 'rm') val = dataMap[d].maxRM;
+    else if (activeHistoryMetric === 'weight') val = dataMap[d].maxWeight;
+    else if (activeHistoryMetric === 'sets') val = dataMap[d].totalSets;
+    
+    return { date: d, val: val };
+  });
+
+  var metricLabel = '';
+  if (activeHistoryMetric === 'volume') metricLabel = '総負荷量 (kg)';
+  else if (activeHistoryMetric === 'rm') metricLabel = '最大RM (kg)';
+  else if (activeHistoryMetric === 'weight') metricLabel = '最大重量 (kg)';
+  else if (activeHistoryMetric === 'sets') metricLabel = 'セット数';
+
+  drawHistoryChart(dataPoints, metricLabel);
+}
+
+function drawHistoryChart(dataPoints, metricLabel) {
+  var container = document.getElementById('historyChart');
+  if (!container) return;
+  if (dataPoints.length < 2) {
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:.78rem;color:var(--muted);">記録が2件以上になるとグラフが表示されます</div>';
+    return;
+  }
+
+  var values = dataPoints.map(function(dp){ return dp.val; });
+  var maxVal = Math.max.apply(null, values);
+  var yMax = Math.ceil(maxVal * 1.15) || 10;
+  if (yMax < 5) yMax = 5;
+  var yMin = 0;
+  
+  var w = container.clientWidth - 10;
+  var h = 190;
+  var paddingLeft = 45;
+  var paddingTop = 15;
+  var paddingBottom = 25;
+  var paddingRight = 10;
+  
+  var chartWidth = w - paddingLeft - paddingRight;
+  var chartHeight = h - paddingTop - paddingBottom;
+  
+  var gridLines = '';
+  var ySteps = 4;
+  for (var i = 0; i <= ySteps; i++) {
+    var yVal = Math.round(yMin + (yMax - yMin) * (i / ySteps));
+    var yPos = paddingTop + chartHeight * (1 - (i / ySteps));
+    gridLines += '<line x1="'+paddingLeft+'" y1="'+yPos+'" x2="'+(w - paddingRight)+'" y2="'+yPos+'" stroke="var(--border)" stroke-width="1" stroke-dasharray="3,3" />'
+              + '<text x="'+(paddingLeft - 8)+'" y="'+(yPos + 3)+'" font-size="9" fill="var(--muted)" text-anchor="end">'+yVal.toLocaleString()+'</text>';
+  }
+  
+  var points = [];
+  var n = dataPoints.length;
+  for (var i = 0; i < n; i++) {
+    var xPos = paddingLeft + (n > 1 ? chartWidth * (i / (n - 1)) : chartWidth / 2);
+    var yPos = paddingTop + chartHeight * (1 - ((values[i] - yMin) / (yMax - yMin)));
+    points.push({ x: xPos, y: yPos, date: dataPoints[i].date, val: values[i] });
+  }
+  
+  var polylinePoints = points.map(function(p){ return p.x + ',' + p.y; }).join(' ');
+  var linePath = '<polyline points="'+polylinePoints+'" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />';
+  
+  var areaPoints = paddingLeft + ',' + (paddingTop + chartHeight) + ' ' 
+                 + polylinePoints + ' ' 
+                 + (paddingLeft + chartWidth) + ',' + (paddingTop + chartHeight);
+  var areaPath = '<polygon points="'+areaPoints+'" fill="url(#histGrad)" opacity="0.12" />';
+  
+  var dots = '';
+  var xLabels = '';
+  var labelStep = Math.max(1, Math.ceil(n / 4));
+  for (var i = 0; i < n; i++) {
+    var p = points[i];
+    dots += '<circle cx="'+p.x+'" cy="'+p.y+'" r="3.5" fill="var(--accent)" stroke="var(--surface)" stroke-width="1.5" />'
+          + '<circle cx="'+p.x+'" cy="'+p.y+'" r="10" fill="var(--accent)" opacity="0" style="cursor:pointer;" onclick="showChartTooltip(event, \''+p.date+'\', '+p.val+', \''+metricLabel+'\')" />';
+    
+    if (i % labelStep === 0 || i === n - 1) {
+      xLabels += '<text x="'+p.x+'" y="'+(h - 5)+'" font-size="8.5" fill="var(--muted)" text-anchor="middle">'+p.date+'</text>';
+    }
+  }
+  
+  var svg = '<svg width="100%" height="'+h+'" style="overflow:visible;">'
+          + '<defs><linearGradient id="histGrad" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="var(--accent)" /><stop offset="100%" stop-color="var(--accent)" stop-opacity="0" /></linearGradient></defs>'
+          + gridLines
+          + areaPath
+          + linePath
+          + dots
+          + xLabels
+          + '</svg>';
+          
+  container.innerHTML = svg;
+}
+
 // ── History ──
 function renderHistory() {
+  renderHistoryTab();
+}
+
+function renderHistoryList() {
   var el=document.getElementById('historyList');
   var filtered = workoutHistory;
+  
+  if (activeHistoryPart !== 'all') {
+    filtered = workoutHistory.filter(function(w) {
+      return (w.exercises || []).some(function(ex) {
+        return ex.part === activeHistoryPart;
+      });
+    });
+  }
+
   if (!filtered.length) {
     el.innerHTML='<div class="empty-state"><div class="empty-icon">📅</div><p>まだ記録がありません</p></div>';
     return;
@@ -3536,7 +3911,13 @@ function renderHistory() {
     var d=new Date(w.date);
     var dateStr=(d.getMonth()+1)+'月'+d.getDate()+'日';
     var dur=w.duration?Math.floor(w.duration/60)+'分':'—';
-    var tags=(w.exercises||[]).map(function(e){ return '<span class="history-ex-tag">'+e.name+'</span>'; }).join('');
+    
+    var displayExes = w.exercises || [];
+    if (activeHistoryPart !== 'all') {
+      displayExes = displayExes.filter(function(e){ return e.part === activeHistoryPart; });
+    }
+    var tags=displayExes.map(function(e){ return '<span class="history-ex-tag">'+e.name+'</span>'; }).join('');
+    
     var leftCol = historySelectMode
       ? '<input type="checkbox" class="history-check" data-idx="'+realIdx+'" style="width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;cursor:pointer;">'
       : '';
