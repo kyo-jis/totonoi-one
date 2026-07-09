@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -535,6 +535,7 @@
   <div class="header-top">
     <a class="back-link" href="index.html"> Totonoi One</a>
     <div style="display:flex;gap:.45rem;align-items:center;">
+      <button class="theme-btn" onclick="clearAppCache()" title="アプリを更新（キャッシュクリア）">🔄</button>
       <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌙</button>
       <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
     </div>
@@ -1022,6 +1023,37 @@
 </div>
 
 <script>
+// ── App Cache Clear ──
+function clearAppCache() {
+  if (confirm('アプリのキャッシュをクリアして再読み込みしますか？\n（過去の記録データは消去されません）')) {
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        return Promise.all(
+          names.map(function(name) {
+            return caches.delete(name);
+          })
+        );
+      }).then(function() {
+        if (navigator.serviceWorker) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            return Promise.all(
+              registrations.map(function(reg) {
+                return reg.unregister();
+              })
+            );
+          }).then(function() {
+            window.location.reload(true);
+          });
+        } else {
+          window.location.reload(true);
+        }
+      });
+    } else {
+      window.location.reload(true);
+    }
+  }
+}
+
 // ── Theme ──
 function toggleTheme() {
   var isLight = document.documentElement.getAttribute('data-theme') === 'light';
@@ -1077,9 +1109,9 @@ function wDateStr(w) {
 
 var PART_LABELS  = {chest:'💪 胸',back:'🦅 背中',shoulder:'🏋️ 肩',arm:'💪 腕',leg:'🦵 脚',core:'🧘 体幹',full:'🌟 全身',other:'その他'};
 var PART_ORDER   = ['chest','back','shoulder','arm','leg','core','full','other'];
-var CAT_LABELS   = {strength:'フリーウェイト',machine:'マシン',bodyweight:'自重',cardio:'有酸素',stretch:'ストレッチ',mindfulness:'マインドフル'};
-var CAT_BADGES   = {strength:'badge-strength',machine:'badge-strength',bodyweight:'badge-bodyweight',cardio:'badge-cardio',stretch:'badge-stretch',mindfulness:'badge-mindfulness'};
-var DEFAULT_REST = {strength:'pref', machine:'pref', bodyweight:60, cardio:0, stretch:0, mindfulness:0};
+var CAT_LABELS   = {strength:'フリーウェイト',machine:'マシン',bodyweight:'自重',cardio:'有酸素',stretch:'ストレッチ'};
+var CAT_BADGES   = {strength:'badge-strength',machine:'badge-strength',bodyweight:'badge-bodyweight',cardio:'badge-cardio',stretch:'badge-stretch'};
+var DEFAULT_REST = {strength:'pref', machine:'pref', bodyweight:60, cardio:0, stretch:0};
 function resolveRestTime(val) { return val === 'pref' ? defaultRestTime : (val || 0); }
 
 var EXERCISE_DB = [
@@ -1208,61 +1240,15 @@ var EXERCISE_DB = [
   {id:'stair_stepper',name:'ステッパー・階段',cat:'cardio',part:'leg',keyword:'stair stepper exercise'},
   {id:'hiit',name:'HIIT',cat:'cardio',part:'full',keyword:'HIIT workout'},
   {id:'sprint',name:'スプリント・ダッシュ',cat:'cardio',part:'full',keyword:'sprint interval training'},
-  // ── ストレッチ（胸） ──
-  {id:'chest_str',name:'胸のストレッチ（ドア枠）',cat:'stretch',part:'chest',keyword:'doorway chest stretch'},
-  {id:'chest_str2',name:'大胸筋ストレッチ',cat:'stretch',part:'chest',keyword:'pec major stretch'},
-  {id:'cross_arm_str',name:'クロスアームストレッチ',cat:'stretch',part:'chest',keyword:'cross arm shoulder stretch'},
-  // ── ストレッチ（背中） ──
-  {id:'spine_str',name:'脊椎ストレッチ（ツイスト）',cat:'stretch',part:'back',keyword:'spine rotation stretch'},
-  {id:'child_pose',name:'チャイルドポーズ',cat:'stretch',part:'back',keyword:'child pose yoga stretch'},
-  {id:'cat_cow',name:'キャットカウ',cat:'stretch',part:'back',keyword:'cat cow yoga stretch'},
-  {id:'lat_str',name:'広背筋ストレッチ',cat:'stretch',part:'back',keyword:'lat stretch side'},
-  {id:'lumbar_str',name:'腰のストレッチ（仰向け膝倒し）',cat:'stretch',part:'back',keyword:'lumbar rotation stretch'},
-  {id:'knee_chest',name:'ニートゥーチェスト',cat:'stretch',part:'back',keyword:'knee to chest lower back stretch'},
-  // ── ストレッチ（肩） ──
-  {id:'shoulder_str',name:'肩甲骨ストレッチ',cat:'stretch',part:'shoulder',keyword:'shoulder blade stretch'},
-  {id:'deltoid_str',name:'三角筋ストレッチ',cat:'stretch',part:'shoulder',keyword:'deltoid stretch across body'},
-  {id:'tricep_str',name:'上腕三頭筋ストレッチ',cat:'stretch',part:'shoulder',keyword:'overhead tricep stretch'},
-  {id:'neck_str',name:'首ストレッチ',cat:'stretch',part:'shoulder',keyword:'neck stretch cervical'},
-  {id:'shoulder_roll',name:'肩甲骨回し',cat:'stretch',part:'shoulder',keyword:'shoulder blade rolls exercise'},
-  // ── ストレッチ（腕） ──
-  {id:'forearm_str',name:'前腕ストレッチ',cat:'stretch',part:'arm',keyword:'forearm flexor stretch'},
-  {id:'wrist_str',name:'手首ストレッチ',cat:'stretch',part:'arm',keyword:'wrist stretch flexibility'},
-  // ── ストレッチ（脚） ──
-  {id:'hamstring_str',name:'ハムストリングストレッチ',cat:'stretch',part:'leg',keyword:'hamstring stretch standing'},
-  {id:'quad_str',name:'大腿四頭筋ストレッチ',cat:'stretch',part:'leg',keyword:'quad stretch standing'},
-  {id:'hip_str',name:'股関節・腸腰筋ストレッチ',cat:'stretch',part:'leg',keyword:'hip flexor stretch lunge'},
-  {id:'pigeon_pose',name:'ピジョンポーズ（梨状筋）',cat:'stretch',part:'leg',keyword:'pigeon pose piriformis stretch'},
-  {id:'it_band_str',name:'腸脛靭帯ストレッチ',cat:'stretch',part:'leg',keyword:'IT band stretch side lying'},
-  {id:'adductor_str',name:'内転筋ストレッチ（開脚）',cat:'stretch',part:'leg',keyword:'adductor stretch groin'},
-  {id:'calf_str',name:'ふくらはぎストレッチ',cat:'stretch',part:'leg',keyword:'calf stretch wall'},
-  {id:'achilles_str',name:'アキレス腱ストレッチ',cat:'stretch',part:'leg',keyword:'achilles tendon stretch'},
-  {id:'glute_str',name:'臀部ストレッチ',cat:'stretch',part:'leg',keyword:'glute stretch seated figure four'},
-  // ── ストレッチ（体幹） ──
-  {id:'side_str',name:'体側ストレッチ',cat:'stretch',part:'core',keyword:'side stretch standing'},
-  {id:'thoracic_rot',name:'胸椎回旋ストレッチ',cat:'stretch',part:'core',keyword:'thoracic rotation stretch'},
-  {id:'bridge_str',name:'ブリッジ（脊椎伸展）',cat:'stretch',part:'core',keyword:'bridge exercise stretch back'},
-  {id:'cobra_pose',name:'コブラポーズ',cat:'stretch',part:'core',keyword:'cobra pose yoga stretch'},
-  // ── ストレッチ（全身） ──
-  {id:'full_body_str',name:'全身伸び',cat:'stretch',part:'full',keyword:'full body stretch morning'},
-  {id:'down_dog',name:'ダウンドッグ',cat:'stretch',part:'full',keyword:'downward dog yoga stretch'},
-  {id:'hip_circle',name:'ヒップサークル',cat:'stretch',part:'leg',keyword:'hip circle mobility exercise'},
-  {id:'scorpion_str',name:'スコーピオンストレッチ',cat:'stretch',part:'back',keyword:'scorpion stretch thoracic'},
-  {id:'ankle_circle',name:'アンクルサークル',cat:'stretch',part:'leg',keyword:'ankle circles mobility'},
-  {id:'shoulder_blade_mob',name:'肩甲骨はがし',cat:'stretch',part:'shoulder',keyword:'shoulder blade mobilization stretch'},
-  {id:'runners_lunge',name:'ランナーズランジ',cat:'stretch',part:'leg',keyword:'runners lunge hip flexor stretch'},
-  {id:'seated_forward',name:'長座体前屈',cat:'stretch',part:'leg',keyword:'seated forward fold hamstring stretch'},
-  {id:'foam_roll_back',name:'フォームローリング（背中）',cat:'stretch',part:'back',keyword:'foam rolling upper back'},
-  {id:'foam_roll_leg',name:'フォームローリング（脚）',cat:'stretch',part:'leg',keyword:'foam rolling legs'},
-  // ── マインドフルネス ──
-  {id:'yoga',name:'ヨガ',cat:'mindfulness',part:'full',keyword:'yoga beginner flow'},
-  {id:'meditation',name:'瞑想',cat:'mindfulness',part:'full',keyword:'meditation technique mindfulness'},
-  {id:'breathing',name:'呼吸法（腹式）',cat:'mindfulness',part:'full',keyword:'diaphragmatic breathing exercise'},
-  {id:'box_breathing',name:'ボックスブリージング',cat:'mindfulness',part:'full',keyword:'box breathing 4x4'},
-  {id:'body_scan',name:'ボディスキャン',cat:'mindfulness',part:'full',keyword:'body scan meditation'},
-  {id:'pmr',name:'漸進的筋弛緩法',cat:'mindfulness',part:'full',keyword:'progressive muscle relaxation'},
-  {id:'visualization',name:'イメージトレーニング',cat:'mindfulness',part:'full',keyword:'visualization sport performance'},
-  {id:'journaling',name:'振り返り・日記',cat:'mindfulness',part:'full',keyword:'journaling workout reflection'},
+  // ── ストレッチ ──
+  {id:'full_body_str',name:'全身ストレッチ',cat:'stretch',part:'full',keyword:'full body stretch'},
+  {id:'upper_back_str',name:'首・肩・背中のストレッチ',cat:'stretch',part:'shoulder',keyword:'neck shoulder back stretch'},
+  {id:'chest_arm_str',name:'胸・腕・手首のストレッチ',cat:'stretch',part:'chest',keyword:'chest arm wrist stretch'},
+  {id:'core_waist_str',name:'お腹・腰・体幹のストレッチ',cat:'stretch',part:'core',keyword:'core waist lower back stretch'},
+  {id:'hip_glute_str',name:'股関節・お尻のストレッチ',cat:'stretch',part:'leg',keyword:'hip flexor glute stretch'},
+  {id:'thigh_str',name:'太もものストレッチ',cat:'stretch',part:'leg',keyword:'quad hamstring stretch'},
+  {id:'calf_ankle_str',name:'ふくらはぎ・足首のストレッチ',cat:'stretch',part:'leg',keyword:'calf ankle stretch'},
+  {id:'foam_rolling',name:'フォームローリング（全身・部位）',cat:'stretch',part:'full',keyword:'foam rolling'},
   // ── マシン（胸） ──
   {id:'m_chest_press',name:'チェストプレスマシン',cat:'machine',part:'chest',keyword:'chest press machine'},
   {id:'m_incline_press',name:'インクラインチェストプレス',cat:'machine',part:'chest',keyword:'incline chest press machine'},
@@ -1764,8 +1750,8 @@ function renderCalendar() {
   var usedLegend = {};
   workoutHistory.forEach(function(w){
     (w.exercises||[]).forEach(function(ex){
-      if (ex.cat==='cardio'||ex.cat==='stretch'||ex.cat==='mindfulness') {
-        usedLegend[ex.cat] = { color: CAT_COLORS_CAL[ex.cat], label: {cardio:'有酸素',stretch:'ストレッチ',mindfulness:'マインドフル'}[ex.cat] };
+      if (ex.cat==='cardio'||ex.cat==='stretch') {
+        usedLegend[ex.cat] = { color: CAT_COLORS_CAL[ex.cat], label: {cardio:'有酸素',stretch:'ストレッチ'}[ex.cat] };
       } else if (ex.part && PART_COLORS_CAL[ex.part]) {
         usedLegend[ex.part] = { color: PART_COLORS_CAL[ex.part], label: PART_NAMES_CAL[ex.part] };
       }
@@ -2058,8 +2044,8 @@ function renderWorkoutDashboard() {
 function openDayDetail(ds) {
   var PART_LABELS_D = { chest:'胸', back:'背中', shoulder:'肩', arm:'腕', leg:'脚', core:'体幹', full:'全身', other:'その他' };
   var PART_COLORS_D = { chest:'#ff7c6e', back:'#6c8eff', shoulder:'#b388ff', arm:'#f5c842', leg:'#5ecfa0', core:'#8888a0', full:'#aaaacc', other:'#666' };
-  var CAT_COLORS_D  = { cardio:'#ff9f43', stretch:'#a29bfe', mindfulness:'#feca57' };
-  var CAT_LABELS_D  = { strength:'フリー', machine:'マシン', bodyweight:'自重', cardio:'有酸素', stretch:'ストレッチ', mindfulness:'マインドフル' };
+  var CAT_COLORS_D  = { cardio:'#ff9f43', stretch:'#a29bfe' };
+  var CAT_LABELS_D  = { strength:'フリー', machine:'マシン', bodyweight:'自重', cardio:'有酸素', stretch:'ストレッチ' };
 
   var workouts = workoutHistory.filter(function(w){ return wDateStr(w) === ds; });
   if (!workouts.length) {
@@ -2451,7 +2437,7 @@ function getLastRecord(exId) {
 function addExerciseToWorkout(ex) {
   var settings = getLastRecord(ex.id);
   var layout = setLayout(ex.cat);
-  var defaultSets = settings.lastSets || (ex.cat === 'cardio' ? 1 : ex.cat === 'stretch' || ex.cat === 'mindfulness' ? 1 : 3);
+  var defaultSets = settings.lastSets || (ex.cat === 'cardio' ? 1 : ex.cat === 'stretch' ? 1 : 3);
   var sets = [];
   for (var i = 0; i < defaultSets; i++) {
     var s = {done: false};
@@ -3057,8 +3043,7 @@ function buildCatFilter() {
     {id:'machine',label:'⚙️ マシン'},
     {id:'bodyweight',label:'🤸 自重'},
     {id:'cardio',label:'🏃 有酸素'},
-    {id:'stretch',label:'🧘 ストレッチ'},
-    {id:'mindfulness',label:'🌸 マインドフル'}
+    {id:'stretch',label:'🧘 ストレッチ'}
   ];
   document.getElementById('catFilter').innerHTML = cats.map(function(c){
     return '<button class="cat-btn'+(c.id==='all'?' active':'')+'" onclick="selectCat(\''+c.id+'\',this)">'+c.label+'</button>';
@@ -3067,7 +3052,7 @@ function buildCatFilter() {
 }
 
 function buildPartFilter() {
-  var noPart = ['cardio','stretch','mindfulness','favorites'];
+  var noPart = ['cardio','stretch','favorites'];
   var show = noPart.indexOf(selectedCat) < 0;
   var pf = document.getElementById('partFilter');
   if (!show) { pf.innerHTML = ''; return; }
@@ -3329,7 +3314,7 @@ var MB_PART_LIST = [
 ];
 
 function buildMbCatFilter() {
-  var cats = [{id:'all',label:'すべて'},{id:'strength',label:'🏋️ フリー'},{id:'machine',label:'⚙️ マシン'},{id:'bodyweight',label:'🤸 自重'},{id:'cardio',label:'🏃 有酸素'},{id:'stretch',label:'🧘 ストレッチ'},{id:'mindfulness',label:'🌸 マインドフル'}];
+  var cats = [{id:'all',label:'すべて'},{id:'strength',label:'🏋️ フリー'},{id:'machine',label:'⚙️ マシン'},{id:'bodyweight',label:'🤸 自重'},{id:'cardio',label:'🏃 有酸素'},{id:'stretch',label:'🧘 ストレッチ'}];
   document.getElementById('mbCatFilter').innerHTML = cats.map(function(c){
     return '<button class="cat-btn'+(c.id===mbSelectedCat?' active':'')+'" onclick="mbSetCat(\''+c.id+'\')">'+c.label+'</button>';
   }).join('');
@@ -3337,7 +3322,7 @@ function buildMbCatFilter() {
 }
 
 function buildMbPartFilter() {
-  var noPart = ['cardio','stretch','mindfulness'];
+  var noPart = ['cardio','stretch'];
   var pf = document.getElementById('mbPartFilter');
   if (noPart.indexOf(mbSelectedCat) >= 0) { pf.innerHTML = ''; return; }
   pf.innerHTML = MB_PART_LIST.map(function(p){
