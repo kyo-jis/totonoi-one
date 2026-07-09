@@ -1623,6 +1623,17 @@ function switchTab(name, btn) {
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.getElementById('view-'+name).classList.add('active');
   btn.classList.add('active');
+  if (name==='record') {
+    if (currentWorkout && currentWorkout.running && !currentWorkout.startTime && (!currentWorkout.exercises || currentWorkout.exercises.length === 0)) {
+      currentWorkout.running = false;
+      localStorage.removeItem('fitlyCurrentWorkout');
+      document.getElementById('workoutDashboard').style.display = 'block';
+      document.getElementById('workoutActiveHeader').style.display = 'none';
+      document.getElementById('btnAddExercise').style.display = 'none';
+      document.getElementById('exerciseList').innerHTML = '';
+      renderWorkoutDashboard();
+    }
+  }
   if (name==='history') renderHistory();
   if (name==='body') renderBodyWeightTab();
   if (name==='analysis') renderAnalysis();
