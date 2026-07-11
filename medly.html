@@ -108,6 +108,20 @@
     .btn-undo:active { background:var(--surface2); color:var(--text); }
     .btn-restock { background:var(--green); color:#1a1a24; border:none; border-radius:8px; padding:.4rem .85rem; font-size:.78rem; font-weight:600; font-family:var(--font); cursor:pointer; }
 
+    /* Per-timing dose checks */
+    .dose-section { margin-top:.6rem; padding-top:.6rem; border-top:1px solid var(--border); }
+    .dose-progress { font-size:.72rem; color:var(--muted); margin-bottom:.45rem; display:flex; align-items:center; gap:.4rem; }
+    .dose-progress .dose-done { color:var(--green); font-weight:600; }
+    .dose-chips { display:flex; gap:.4rem; flex-wrap:wrap; }
+    .dose-chip { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:.4rem .65rem; font-size:.75rem; color:var(--text); font-family:var(--font); cursor:pointer; transition:all .15s; }
+    .dose-chip:active { transform:scale(.93); }
+    .dose-chip.taken { background:rgba(94,207,160,.15); border-color:rgba(94,207,160,.4); color:var(--green); }
+    .today-progress-card { background:linear-gradient(160deg, var(--surface) 0%, var(--surface2) 100%); border:1px solid var(--border); border-radius:14px; padding:.85rem 1rem; margin-bottom:1rem; box-shadow:var(--shadow-sm); }
+    .today-progress-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:.5rem; }
+    .today-progress-label { font-size:.8rem; font-weight:500; }
+    .today-progress-count { font-size:.8rem; font-weight:600; color:var(--accent); }
+    .today-progress-count.complete { color:var(--green); }
+
     /* Timing badges */
     .timing-wrap { display:flex; gap:.4rem; flex-wrap:wrap; margin-top:.5rem; }
     .timing-badge { font-size:.65rem; padding:.2rem .5rem; border-radius:6px; background:var(--surface2); color:var(--muted); border:1px solid var(--border); }
@@ -771,6 +785,27 @@ if (dailyTaken.date !== todayStr) {
   dailyTaken = { date: todayStr, taken: {} };
   localStorage.setItem('medlyDailyTaken', JSON.stringify(dailyTaken));
 }
+// 旧形式（true フラグのみ）→ 新形式（{time, logId, amount}）への移行。
+// amount:null は旧仕様の減算量（item.daily まるごと）を意味し、取り消し時にその量を戻す
+Object.keys(dailyTaken.taken).forEach(function(k){
+  if (dailyTaken.taken[k] === true) dailyTaken.taken[k] = { time:'', logId:null, amount:null };
+});
+
+// ── タイミング別服用ヘルパー ──
+function regularTimings(item) {
+  return (item.timing||[]).filter(function(t){ return t !== 'prn'; });
+}
+// 1回分の量 = 1日の摂取量 ÷ タイミング数（タイミング未設定・頓服のみは1日量をそのまま）
+function doseAmount(item) {
+  var n = regularTimings(item).length;
+  return n > 0 ? item.daily / n : item.daily;
+}
+function fmtAmount(n) { return Math.round(n*100)/100; }
+function todayProgress(item) {
+  var reg = regularTimings(item);
+  var taken = reg.filter(function(t){ return !!dailyTaken.taken[item.id+'_'+t]; }).length;
+  return { taken: taken, total: reg.length };
+}
 
 function init() {
   buildCatFilter();
@@ -961,11 +996,33 @@ function renderList() {
     var badgeText = days===null?'':'残り約'+days+'日';
     var expiryText = item.expiry ? '期限: '+formatDate(item.expiry) : '';
     var isPrn = (item.timing||[]).indexOf('prn') !== -1;
-    var regularTimings = (item.timing||[]).filter(function(t){ return t !== 'prn'; });
+    var reg = regularTimings(item);
     var timingHTML = '';
-    if (isPrn) timingHTML += '<span class="timing-badge" style="background:rgba(232,113,138,.15);color:var(--yellow);border-color:rgba(232,113,138,.35);">🆘 頓服</span>';
-    if (regularTimings.length) timingHTML += regularTimings.map(function(t){ return '<span class="timing-badge">'+(TIMING_LABELS[t]||t)+'</span>'; }).join('');
-    timingHTML = timingHTML ? '<div class="timing-wrap">'+timingHTML+'</div>' : '';
+    if (isPrn) timingHTML += '<div class="timing-wrap"><span class="timing-badge" style="background:rgba(232,113,138,.15);color:var(--yellow);border-color:rgba(232,113,138,.35);">🆘 頓服</span></div>';
+    // タイミングごとの服用チェックセクション
+    var doseHTML = '';
+    if (reg.length) {
+      var prog = todayProgress(item);
+      var done = prog.taken === prog.total;
+      doseHTML = '<div class="dose-section">'
+        +'<div class="dose-progress">今日：'+prog.taken+'/'+prog.total+'回服用済み'
+        +(done ? '<span class="dose-done">✅ 完了</span>' : '')
+        +'<span style="margin-left:auto;">1回 '+fmtAmount(doseAmount(item))+item.unit+'</span>'
+        +'</div>'
+        +'<div class="dose-chips">'
+        +reg.map(function(t){
+          var rec = dailyTaken.taken[item.id+'_'+t];
+          var takenT = !!rec;
+          var time = (rec && rec.time) ? ' '+rec.time : '';
+          return '<button class="dose-chip'+(takenT?' taken':'')+'" onclick="'+(takenT?'undoTake':'takeFromSchedule')+'(\''+item.id+'\',\''+t+'\')">'
+            +(takenT?'☑':'⬜')+' '+(TIMING_LABELS[t]||t)+time+'</button>';
+        }).join('')
+        +'</div></div>';
+    }
+    // 服用ボタン: タイミング設定済みはチップで管理、頓服・未設定のみボタン表示
+    var takeBtnHTML = '';
+    if (isPrn) takeBtnHTML = '<button class="btn-take" onclick="takeItem(\''+item.id+'\')">🆘 頓服 −'+fmtAmount(reg.length?doseAmount(item):item.daily)+item.unit+'</button>';
+    else if (!reg.length) takeBtnHTML = '<button class="btn-take" onclick="takeItem(\''+item.id+'\')">服用 −'+item.daily+item.unit+'</button>';
     return '<div class="'+cardCls+'">'
       +'<div class="item-header">'
       +'<div class="item-icon" style="background:rgba(179,136,255,.12)">'+(item.icon||TYPE_ICONS[item.type]||'💊')+'</div>'
@@ -986,9 +1043,10 @@ function renderList() {
       +'<div class="days-row">'
       +(days!==null?'<span class="days-badge '+cls+'">'+badgeText+'</span>':'<span></span>')
       +'<div style="display:flex;gap:.5rem;">'
-      +'<button class="btn-take" onclick="takeItem(\''+item.id+'\')">服用 −'+item.daily+item.unit+'</button>'
+      +takeBtnHTML
       +'<button class="btn-restock" onclick="openRestock(\''+item.id+'\')">補充</button>'
       +'</div></div>'
+      +doseHTML
       +costFooter(item)
       +(item.expiry?'<div style="margin-top:.5rem;">'+expiryBadge(item)+'</div>':'')
       +timingHTML
@@ -1012,6 +1070,24 @@ function renderSchedule() {
     {id:'meal',       label:'🍽️ 食後'},
   ]; // ※ 'prn'（頓服）は別セクションで表示
   var html = '';
+  // 今日の服用状況サマリー
+  var totalDoses = 0, takenDoses = 0;
+  items.forEach(function(item){
+    var prog = todayProgress(item);
+    totalDoses += prog.total;
+    takenDoses += prog.taken;
+  });
+  if (totalDoses > 0) {
+    var allDone = takenDoses === totalDoses;
+    var progPct = Math.round(takenDoses / totalDoses * 100);
+    html += '<div class="today-progress-card">'
+      +'<div class="today-progress-head">'
+      +'<span class="today-progress-label">'+(allDone ? '✅ 今日の服用完了！' : '💊 今日の服用状況')+'</span>'
+      +'<span class="today-progress-count'+(allDone?' complete':'')+'">'+takenDoses+'/'+totalDoses+'回服用済み</span>'
+      +'</div>'
+      +'<div class="progress-bar"><div class="progress-fill '+(allDone?'good':'warning')+'" style="width:'+progPct+'%"></div></div>'
+      +'</div>';
+  }
   timings.forEach(function(t) {
     var matched = items.filter(function(item){ return (item.timing||[]).indexOf(t.id)!==-1; });
     if (!matched.length) return;
@@ -1019,16 +1095,18 @@ function renderSchedule() {
       +'<p style="font-size:.85rem;font-weight:500;margin-bottom:.5rem;">'+t.label+'</p>'
       +matched.map(function(item){
         var key = item.id + '_' + t.id;
-        var taken = !!dailyTaken.taken[key];
+        var rec = dailyTaken.taken[key];
+        var taken = !!rec;
+        var takenTime = (rec && rec.time) ? rec.time : '';
         return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.75rem 1rem;margin-bottom:.4rem;display:flex;align-items:center;justify-content:space-between;'+(taken?'opacity:.6;':'') +'">'
           +'<div style="display:flex;align-items:center;gap:.75rem;">'
           +'<span style="font-size:1.2rem;">'+(item.icon||'💊')+'</span>'
           +'<div><p style="font-size:.88rem;font-weight:400;">'+item.name+'</p>'
-          +'<p style="font-size:.7rem;color:var(--muted);">'+item.daily+item.unit+'</p></div>'
+          +'<p style="font-size:.7rem;color:var(--muted);">'+fmtAmount(doseAmount(item))+item.unit+'</p></div>'
           +'</div>'
           +(taken
             ? '<div style="display:flex;align-items:center;gap:.4rem;">'
-              +'<span style="font-size:.8rem;color:var(--green);font-weight:500;">✓ 服用済み</span>'
+              +'<span style="font-size:.8rem;color:var(--green);font-weight:500;">✓ 服用済み'+(takenTime?' '+takenTime:'')+'</span>'
               +'<button class="btn-undo" onclick="undoTake(\''+item.id+'\',\''+t.id+'\')">取り消し</button>'
               +'</div>'
             : '<button class="btn-take" onclick="takeFromSchedule(\''+item.id+'\',\''+t.id+'\')">服用</button>')
@@ -1046,7 +1124,7 @@ function renderSchedule() {
           +'<div style="display:flex;align-items:center;gap:.75rem;">'
           +'<span style="font-size:1.2rem;">'+(item.icon||'💊')+'</span>'
           +'<div><p style="font-size:.88rem;font-weight:400;">'+item.name+'</p>'
-          +'<p style="font-size:.7rem;color:var(--muted);">'+item.daily+item.unit+' / 残'+item.current+item.unit+'</p></div>'
+          +'<p style="font-size:.7rem;color:var(--muted);">'+fmtAmount(doseAmount(item))+item.unit+' / 残'+item.current+item.unit+'</p></div>'
           +'</div>'
           +'<button class="btn-take" onclick="takeItem(\''+item.id+'\')">服用</button>'
           +'</div>';
@@ -1203,17 +1281,33 @@ function filterEncyc() {
 }
 
 // ── Actions ──
+// 服用ログに1件追加して保存する（服用記録の共通処理）
+function logDose(item, timingLabel, amount) {
+  var now = new Date();
+  var entry = {
+    id: Date.now().toString() + Math.random().toString(36).slice(2,6),
+    date: localDateStr(now),
+    time: now.toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'}),
+    itemId: item.id, itemName: item.name, icon: item.icon,
+    timing: timingLabel, daily: amount, unit: item.unit
+  };
+  dosageLog.unshift(entry);
+  if (dosageLog.length > 500) dosageLog = dosageLog.slice(0, 500);
+  localStorage.setItem('medlyDosageLog', JSON.stringify(dosageLog));
+  dbSave('dosageLog', dosageLog);
+  return entry;
+}
+
+// 頓服・タイミング未設定アイテムの服用（タイミング設定済みはチップ／スケジュールから）
 function takeItem(id) {
   var item = items.find(function(x){ return x.id===id; });
   if (!item) return;
-  if (item.current < item.daily) { showToast('残量が不足しています'); return; }
-  item.current = Math.max(0, item.current - item.daily);
+  var isPrn = (item.timing||[]).indexOf('prn') !== -1;
+  var amount = isPrn && regularTimings(item).length ? doseAmount(item) : item.daily;
+  if (item.current < amount) { showToast('残量が不足しています'); return; }
+  item.current = Math.max(0, item.current - amount);
   save();
-  // 全タイミングを服用済みにマーク（スケジュールと同期）
-  (item.timing || []).forEach(function(t){
-    dailyTaken.taken[id + '_' + t] = true;
-  });
-  saveDailyTaken();
+  logDose(item, isPrn ? '頓服' : '服用', amount);
   renderList();
   renderSchedule();
   updateSummary();
@@ -1635,44 +1729,47 @@ function saveDailyTaken() { localStorage.setItem('medlyDailyTaken', JSON.stringi
 
 function takeFromSchedule(id, timing) {
   var key = id + '_' + timing;
-  if (dailyTaken.taken[key]) { showToast('今日はすでに服用済みです'); return; }
+  if (dailyTaken.taken[key]) { showToast('このタイミングは服用済みです'); return; }
   var item = items.find(function(x){ return x.id===id; });
   if (!item) return;
-  if (item.current < item.daily) { showToast('残量が不足しています'); return; }
-  item.current = Math.max(0, item.current - item.daily);
+  var amount = doseAmount(item);
+  if (item.current < amount) { showToast('残量が不足しています'); return; }
+  item.current = Math.max(0, item.current - amount);
   save();
-  dailyTaken.taken[key] = true;
+  var entry = logDose(item, TIMING_LABELS[timing] || timing, amount);
+  dailyTaken.taken[key] = { time: entry.time, logId: entry.id, amount: amount };
   saveDailyTaken();
-  var now = new Date();
-  dosageLog.unshift({
-    id: Date.now().toString(), date: localDateStr(now),
-    time: now.toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'}),
-    itemId: item.id, itemName: item.name, icon: item.icon,
-    timing: TIMING_LABELS[timing] || timing, daily: item.daily, unit: item.unit
-  });
-  if (dosageLog.length > 500) dosageLog = dosageLog.slice(0, 500);
-  localStorage.setItem('medlyDosageLog', JSON.stringify(dosageLog));
-  dbSave('dosageLog', dosageLog);
   renderSchedule();
   renderList();
   updateSummary();
-  showToast(item.icon+' '+item.name+' 服用しました');
+  var prog = todayProgress(item);
+  var doneMsg = prog.total > 1 ? '（今日 '+prog.taken+'/'+prog.total+'回）' : '';
+  showToast(item.icon+' '+item.name+'・'+(TIMING_LABELS[timing]||timing)+' 服用しました'+doneMsg);
   if (daysRemaining(item) <= item.alert) showToast('⚠️ 残り少なくなっています！購入をご検討ください');
 }
 
 function undoTake(id, timing) {
   var key = id + '_' + timing;
-  if (!dailyTaken.taken[key]) return;
+  var rec = dailyTaken.taken[key];
+  if (!rec) return;
   var item = items.find(function(x){ return x.id===id; });
   if (!item) return;
+  // amount:null は旧形式の記録（当時は1日量まるごと減算していた）
+  var amount = (typeof rec === 'object' && rec.amount) ? rec.amount : item.daily;
+  item.current = item.current + amount;
+  // 対応する服用ログも削除
+  if (typeof rec === 'object' && rec.logId) {
+    dosageLog = dosageLog.filter(function(x){ return x.id !== rec.logId; });
+    localStorage.setItem('medlyDosageLog', JSON.stringify(dosageLog));
+    dbSave('dosageLog', dosageLog);
+  }
   delete dailyTaken.taken[key];
-  item.current = item.current + item.daily;
   save();
   saveDailyTaken();
   renderSchedule();
   renderList();
   updateSummary();
-  showToast('↩️ '+item.name+' の服用を取り消しました');
+  showToast('↩️ '+item.name+'・'+(TIMING_LABELS[timing]||timing)+' の服用を取り消しました');
 }
 
 function formatDate(str) {
