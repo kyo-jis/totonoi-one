@@ -112,6 +112,16 @@
     .balance-hint { font-size: .75rem; padding: .45rem .8rem; border-radius: 8px; margin-top: .4rem; }
     .balance-hint.ok  { background: rgba(94,207,160,.08);  color: var(--green); border: 1px solid rgba(94,207,160,.2); }
     .balance-hint.low { background: rgba(255,107,107,.08); color: var(--red);   border: 1px solid rgba(255,107,107,.25); }
+    .pending-banner { margin: 0 0 .75rem; background: rgba(245,166,35,.1); border: 1px solid rgba(245,166,35,.3); border-radius: 12px; padding: .7rem .85rem; }
+    .pending-banner-head { font-size: .8rem; font-weight: 600; color: var(--accent); margin-bottom: .55rem; display: flex; align-items: center; gap: .35rem; }
+    .pending-row { display: flex; align-items: center; gap: .5rem; padding: .45rem 0; border-top: 1px solid rgba(245,166,35,.18); }
+    .pending-info { flex: 1; min-width: 0; }
+    .pending-name { font-size: .82rem; font-weight: 500; }
+    .pending-name .pending-inc { color: var(--green); font-size: .64rem; margin-left: .3rem; }
+    .pending-sub { font-size: .7rem; color: var(--muted); margin-top: .1rem; }
+    .pending-amt-input { width: 92px; padding: .35rem .5rem; border-radius: 8px; font-size: .82rem; text-align: right; }
+    .pending-btn-ok { font-size: .72rem; padding: .35rem .6rem; border-radius: 8px; background: var(--accent); color: #1a1500; border: none; cursor: pointer; font-family: inherit; font-weight: 600; }
+    .pending-btn-skip { font-size: .68rem; padding: .35rem .4rem; border-radius: 8px; background: transparent; color: var(--muted); border: none; cursor: pointer; font-family: inherit; }
     .empty-state { text-align: center; padding: 3rem 2rem; color: var(--muted); }
     .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: .75rem; }
     .empty-state p { font-size: .88rem; line-height: 1.6; }
@@ -360,6 +370,9 @@
   <button class="month-nav-btn" onclick="changeMonth(1)">›</button>
 </div>
 
+<!-- 確認待ちドラフト（固定収入・変動固定費） -->
+<div id="pendingBanner"></div>
+
 <!-- Tabs -->
 <div class="tabs">
   <button class="tab active" onclick="switchTab('list',this)">一覧</button>
@@ -436,9 +449,14 @@
       <button class="btn-add-row" onclick="resetCategoriesToDefault()" style="margin-top:.25rem;color:var(--muted);border-color:rgba(148,148,184,.3)">↺ デフォルトに戻す</button>
     </div>
     <div class="settings-section">
-      <p class="settings-title">固定費</p>
+      <p class="settings-title">固定費・固定収入</p>
       <div id="fixedList"></div>
-      <button class="btn-add-row" onclick="openFixedModal()">＋ 固定費を追加</button>
+      <button class="btn-add-row" onclick="openFixedModal()">＋ 固定費・固定収入を追加</button>
+    </div>
+    <div class="settings-section">
+      <p class="settings-title">分割払い</p>
+      <div id="installmentList"></div>
+      <button class="btn-add-row" onclick="openInstallmentModal()">＋ 分割払いを追加</button>
     </div>
     <div class="settings-section">
       <p class="settings-title">支払い方法</p>
@@ -627,12 +645,32 @@
   </div>
 </div>
 
+<!-- Balance Adjust Modal -->
+<div class="modal-overlay" id="adjustModal" onclick="if(event.target===this)closeModal('adjustModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <p class="modal-title" id="adjustTitle">残高を合わせる</p>
+    <p class="rc-guide" id="adjustCurrent" style="margin-bottom:.75rem"></p>
+    <div class="form-group">
+      <label class="form-label">実際の残高（円）</label>
+      <input type="number" id="adjustActual" placeholder="例: 5230" min="0" inputmode="numeric" oninput="updateAdjustDiff()">
+    </div>
+    <p class="rc-guide" id="adjustDiff" style="margin-bottom:.75rem;min-height:1.2em"></p>
+    <button class="btn-primary" onclick="handleAdjust()">残高を調整する</button>
+    <button class="btn-cancel" onclick="closeModal('adjustModal')">キャンセル</button>
+  </div>
+</div>
+
 <!-- Fixed Cost Modal -->
 <div class="modal-overlay" id="fixedModal" onclick="if(event.target===this)closeModal('fixedModal')">
   <div class="modal">
     <div class="modal-handle"></div>
     <p class="modal-title" id="fixedModalTitle">固定費を登録</p>
-    <div class="form-group">
+    <div class="type-selector" style="margin-bottom:.75rem">
+      <button class="type-btn active" id="fixedTypeExpense" onclick="setFixedType(false)">📤 固定費（支出）</button>
+      <button class="type-btn" id="fixedTypeIncome" onclick="setFixedType(true)">📥 固定収入</button>
+    </div>
+    <div class="form-group" id="fixedPresetWrap">
       <label class="form-label">プリセットから選ぶ</label>
       <div class="preset-chips" id="fixedPresetChips"></div>
     </div>
@@ -642,14 +680,18 @@
         <input type="text" id="fFixedName" placeholder="家賃">
       </div>
       <div class="form-group">
-        <label class="form-label">金額（円）</label>
+        <label class="form-label" id="fFixedAmountLabel">金額（円）</label>
         <input type="number" id="fFixedAmount" placeholder="80000" min="1" inputmode="numeric">
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">毎月の引き落とし日</label>
+      <label class="form-label" id="fFixedDayLabel">毎月の引き落とし日</label>
       <input type="number" id="fFixedDay" placeholder="例: 27" min="1" max="31" inputmode="numeric">
     </div>
+    <label class="form-group" style="display:flex;align-items:flex-start;gap:.5rem;cursor:pointer">
+      <input type="checkbox" id="fFixedConfirm" style="width:auto;margin-top:.15rem">
+      <span class="form-label" style="margin:0">毎回、金額を確認してから記録する<br><span style="color:var(--muted);font-weight:400">（電気代・給料など毎月上下する項目向け。予定日に「確認待ち」で下書きされます）</span></span>
+    </label>
     <div class="form-group">
       <label class="form-label">カテゴリ</label>
       <select id="fFixedCat"></select>
@@ -661,6 +703,50 @@
     <button class="btn-primary" onclick="saveFixedCost()">保存する</button>
     <button class="btn-danger" id="deleteFixedBtn" onclick="deleteFixedCost()" style="display:none">削除する</button>
     <button class="btn-cancel" onclick="closeModal('fixedModal')">キャンセル</button>
+  </div>
+</div>
+
+<!-- Installment Modal（分割払い） -->
+<div class="modal-overlay" id="installmentModal" onclick="if(event.target===this)closeModal('installmentModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <p class="modal-title" id="installmentModalTitle">分割払いを登録</p>
+    <div class="form-group">
+      <label class="form-label">名前</label>
+      <input type="text" id="fInsName" placeholder="例: 冷蔵庫">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">総額（円）</label>
+        <input type="number" id="fInsTotal" placeholder="120000" min="1" inputmode="numeric" oninput="updateInsPreview()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">支払い回数</label>
+        <input type="number" id="fInsCount" placeholder="6" min="1" max="120" inputmode="numeric" oninput="updateInsPreview()">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">開始月</label>
+        <input type="month" id="fInsStart">
+      </div>
+      <div class="form-group">
+        <label class="form-label">毎月の支払日</label>
+        <input type="number" id="fInsDay" placeholder="例: 27" min="1" max="31" inputmode="numeric">
+      </div>
+    </div>
+    <p class="rc-guide" id="insPreview" style="margin-bottom:.75rem;min-height:1.2em"></p>
+    <div class="form-group">
+      <label class="form-label">カテゴリ</label>
+      <select id="fInsCat"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">支払い方法</label>
+      <select id="fInsPay"></select>
+    </div>
+    <button class="btn-primary" onclick="saveInstallment()">保存する</button>
+    <button class="btn-danger" id="deleteInsBtn" onclick="deleteInstallment()" style="display:none">削除する</button>
+    <button class="btn-cancel" onclick="closeModal('installmentModal')">キャンセル</button>
   </div>
 </div>
 
@@ -817,6 +903,11 @@ var catLastPay   = JSON.parse(localStorage.getItem('kakely_cat_pay')      || '{}
 var isPro = localStorage.getItem('isPro') === 'true';
 var fixedCosts = JSON.parse(localStorage.getItem('kakely_fixed') || '[]');
 var editFixedId = null;
+var installments = JSON.parse(localStorage.getItem('kakely_installments') || '[]');
+var editInstallmentId = null;
+var pendingDrafts = JSON.parse(localStorage.getItem('kakely_pending') || '[]');
+var adjustPayId = null;
+var fixedIsIncome = false;
 var _pieChart = null, _barChart = null, _trendChart = null;
 
 var FIXED_PRESETS = [
@@ -890,7 +981,7 @@ function init() {
   updateMonthNav();
   loadFromStorage();
   renderAll();
-  setTimeout(autoAddFixedCosts, 100);
+  setTimeout(function(){ autoAddFixedCosts(); autoAddInstallments(); }, 100);
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw-kakely.js');
 }
 
@@ -944,6 +1035,7 @@ function renderAll() {
   updateSummary();
   renderList();
   updateBalanceDisplay();
+  renderPendingBanner();
   // 非表示タブはタブ切り替え時に遅延レンダリング
   if (document.getElementById('view-calendar').classList.contains('active')) renderCalendar();
   if (document.getElementById('view-settings').classList.contains('active')) renderSettings();
@@ -969,8 +1061,8 @@ function changeMonth(dir) {
 
 // ── Summary ──
 function updateSummary() {
-  var expenses = transactions.filter(function(t){ return !t.is_income && !t.is_transfer; });
-  var incomes  = transactions.filter(function(t){ return t.is_income  && !t.is_transfer; });
+  var expenses = transactions.filter(function(t){ return !t.is_income && !t.is_transfer && !t.is_adjustment; });
+  var incomes  = transactions.filter(function(t){ return t.is_income  && !t.is_transfer && !t.is_adjustment; });
   var totalExp = expenses.reduce(function(s,t){ return s+t.amount; }, 0);
   var totalInc = incomes.reduce(function(s,t){ return s+t.amount; }, 0);
 
@@ -1017,7 +1109,7 @@ function renderList() {
   var dates = Object.keys(grouped).sort(function(a,b){ return b.localeCompare(a); });
   el.innerHTML = dates.map(function(date) {
     var txns = grouped[date];
-    var dayTotal = txns.reduce(function(s,t){ return s + (!t.is_income && !t.is_transfer ? t.amount : 0); }, 0);
+    var dayTotal = txns.reduce(function(s,t){ return s + (!t.is_income && !t.is_transfer && !t.is_adjustment ? t.amount : 0); }, 0);
     var todayStr = localDateStr(new Date());
     var label = date === todayStr ? '今日 ' + fmtDate(date) : fmtDate(date);
     return '<div class="day-group">'
@@ -1028,20 +1120,28 @@ function renderList() {
           var pay = paymentMethods.find(function(p){ return p.id===t.payment_method_id; });
           var isGroup    = !!t.group_id && !t.is_transfer;
           var isFixed    = !!(t.memo && t.memo.indexOf('固定費:') === 0);
+          var isInstall  = !!(t.memo && t.memo.indexOf('分割:') === 0);
           var isTransfer = !!t.is_transfer;
+          var isAdjust   = !!t.is_adjustment;
           var nameLine;
-          if (isTransfer) {
+          if (isAdjust) {
+            nameLine = '残高調整' + (pay ? ' · ' + pay.icon + esc(pay.name) : '') + ' <span class="transfer-badge">調整</span>';
+          } else if (isTransfer) {
             nameLine = '資金移動' + (pay ? ' · ' + pay.icon + esc(pay.name) : '') + ' <span class="transfer-badge">移動</span>';
           } else {
             nameLine = esc(cat ? cat.name : '未分類') + (pay ? ' · ' + pay.icon + esc(pay.name) : '');
             if (isGroup) nameLine += ' <span class="group-badge">まとめ</span>';
             if (isFixed) nameLine += ' <span class="fixed-badge">固定費</span>';
+            if (isInstall) {
+              var im = t.memo.match(/（(.+)）/);
+              nameLine += ' <span class="fixed-badge">分割' + (im ? ' ' + esc(im[1].replace(/^.*?\s/, '')) : '') + '</span>';
+            }
             if (!t.is_income && pay && pay.type === 'card' && pay.closing_day && pay.withdrawal_date) {
               var wstr = calcWithdrawalDate(t.date, pay.closing_day, pay.withdrawal_date);
               if (wstr) { var wd2 = parseLocalDate(wstr); nameLine += ' <span class="withdraw-badge">' + (wd2.getMonth()+1) + '/' + wd2.getDate() + ' 引落</span>'; }
             }
           }
-          var memoTxt = (!isFixed && !isTransfer && t.memo) ? esc(t.memo) : '';
+          var memoTxt = (!isFixed && !isInstall && !isTransfer && t.memo) ? esc(t.memo) : '';
           var delFn = isTransfer
             ? 'openTxnModal(\'' + t.id + '\')'
             : isGroup
@@ -1052,7 +1152,7 @@ function renderList() {
           var amtPrefix = isTransfer ? (t.is_income ? '↙' : '↗') : (amtPlus ? '+' : '−');
           var isPending = /^(pending_|temp_|tmp_)/.test(String(t.id));
           return '<div class="txn-row' + (isPending ? ' txn-pending' : '') + '">'
-            + '<div class="txn-icon" onclick="openTxnModal(\'' + t.id + '\')" style="cursor:pointer">' + (isTransfer ? '💸' : (cat ? cat.icon : '❓')) + '</div>'
+            + '<div class="txn-icon" onclick="openTxnModal(\'' + t.id + '\')" style="cursor:pointer">' + (isAdjust ? '⚖️' : isTransfer ? '💸' : (cat ? cat.icon : '❓')) + '</div>'
             + '<div class="txn-info" onclick="openTxnModal(\'' + t.id + '\')" style="cursor:pointer">'
             + '<p class="txn-name">' + nameLine + (isPending ? '<span class="txn-pending-badge">🔄 同期待ち</span>' : '') + '</p>'
             + (memoTxt ? '<p class="txn-memo">' + memoTxt + '</p>' : '') + '</div>'
@@ -1082,7 +1182,7 @@ function renderCalendar() {
   // Build date totals
   var dateTotals = {};
   transactions.forEach(function(t) {
-    if (!t.is_income && !t.is_transfer) dateTotals[t.date] = (dateTotals[t.date] || 0) + t.amount;
+    if (!t.is_income && !t.is_transfer && !t.is_adjustment) dateTotals[t.date] = (dateTotals[t.date] || 0) + t.amount;
   });
 
   for (var i = 0; i < firstDay; i++) html += '<div class="cal-day empty"></div>';
@@ -1134,7 +1234,7 @@ function renderBudgetSection() {
   if (!section || !list) return;
 
   var catTotals = {};
-  transactions.filter(function(t){ return !t.is_income && !t.is_transfer; }).forEach(function(t) {
+  transactions.filter(function(t){ return !t.is_income && !t.is_transfer && !t.is_adjustment; }).forEach(function(t) {
     catTotals[t.category_id || 'none'] = (catTotals[t.category_id || 'none'] || 0) + t.amount;
   });
 
@@ -1203,7 +1303,7 @@ function renderBudgetSection() {
 function renderPayBreakdown() {
   var el = document.getElementById('payBreakdownList');
   var sec = document.getElementById('payBreakdownSection');
-  var expenses = transactions.filter(function(t){ return !t.is_income && !t.is_transfer; });
+  var expenses = transactions.filter(function(t){ return !t.is_income && !t.is_transfer && !t.is_adjustment; });
   if (!expenses.length) { sec.style.display = 'none'; return; }
   sec.style.display = '';
 
@@ -1236,7 +1336,7 @@ function renderWithdrawSchedule() {
   if (!el || !sec) return;
   // 今月利用したクレカ支出のみ対象
   var cardTxns = transactions.filter(function(t) {
-    if (t.is_income || t.is_transfer) return false;
+    if (t.is_income || t.is_transfer || t.is_adjustment) return false;
     var p = paymentMethods.find(function(x){ return x.id === t.payment_method_id; });
     return p && p.type === 'card' && p.closing_day && p.withdrawal_date;
   });
@@ -1268,7 +1368,7 @@ function renderWithdrawSchedule() {
 }
 
 function renderPieChart(isPC) {
-  var expenses = transactions.filter(function(t){ return !t.is_income && !t.is_transfer; });
+  var expenses = transactions.filter(function(t){ return !t.is_income && !t.is_transfer && !t.is_adjustment; });
   var catTotals = {};
   expenses.forEach(function(t) {
     var key = t.category_id || 'none';
@@ -1315,8 +1415,8 @@ function renderBarChart(isPC) {
     var d = new Date(viewYear, viewMonth - i, 1);
     var y = d.getFullYear(), m = d.getMonth();
     var cached = JSON.parse(localStorage.getItem('kakely_txn_' + y + '_' + (m+1)) || '[]');
-    var exp = cached.filter(function(t){ return !t.is_income && !t.is_transfer; }).reduce(function(s,t){ return s+t.amount; }, 0);
-    var inc = cached.filter(function(t){ return !!t.is_income && !t.is_transfer; }).reduce(function(s,t){ return s+t.amount; }, 0);
+    var exp = cached.filter(function(t){ return !t.is_income && !t.is_transfer && !t.is_adjustment; }).reduce(function(s,t){ return s+t.amount; }, 0);
+    var inc = cached.filter(function(t){ return !!t.is_income && !t.is_transfer && !t.is_adjustment; }).reduce(function(s,t){ return s+t.amount; }, 0);
     months.push({ label: mn[m], exp: exp, inc: inc, isCur: (y===viewYear && m===viewMonth) });
   }
   if (_barChart) _barChart.destroy();
@@ -1377,7 +1477,7 @@ function renderTrendChart() {
   var daysInPrev = new Date(prevY, prevM + 1, 0).getDate();
   function buildCumulative(cached, days) {
     var daily = new Array(days).fill(0);
-    cached.filter(function(t){ return !t.is_income && !t.is_transfer; }).forEach(function(t) {
+    cached.filter(function(t){ return !t.is_income && !t.is_transfer && !t.is_adjustment; }).forEach(function(t) {
       var day = parseInt((t.date || '').split('-')[2] || '0', 10) - 1;
       if (day >= 0 && day < days) daily[day] += t.amount;
     });
@@ -1430,7 +1530,7 @@ function renderHeatmap() {
     var d = new Date(today.getFullYear(), today.getMonth() - mi, 1);
     var y = d.getFullYear(), mo = d.getMonth();
     var cached = JSON.parse(localStorage.getItem('kakely_txn_' + y + '_' + (mo + 1)) || '[]');
-    cached.filter(function(t){ return !t.is_income && !t.is_transfer; }).forEach(function(t) {
+    cached.filter(function(t){ return !t.is_income && !t.is_transfer && !t.is_adjustment; }).forEach(function(t) {
       if (t.date) spendMap[t.date] = (spendMap[t.date] || 0) + t.amount;
     });
   }
@@ -1490,15 +1590,41 @@ function renderSettings() {
   var fixedEl = document.getElementById('fixedList');
   if (fixedEl) {
     fixedEl.innerHTML = fixedCosts.length ? fixedCosts.map(function(fc) {
-      var cat = categories.find(function(c){ return c.id===fc.category_id; });
+      var catPool = fc.is_income ? incomeCategories : categories;
+      var cat = catPool.find(function(c){ return c.id===fc.category_id; });
+      var typeBadge = fc.is_income ? '<span class="fixed-day-badge" style="background:rgba(94,207,160,.15);color:var(--green)">収入</span>' : '';
+      var confirmBadge = fc.confirm ? '<span class="fixed-day-badge" style="background:rgba(245,166,35,.15);color:var(--accent)">要確認</span>' : '';
       return '<div class="settings-row" data-fixed-id="' + fc.id + '">'
         + '<span class="drag-handle" onpointerdown="drDown(event,\'fixed\',\'' + fc.id + '\')" onpointermove="drMove(event)" onpointerup="drUp(event)" onpointercancel="drUp(event)"></span>'
         + '<span class="settings-icon">' + (fc.icon||'💴') + '</span>'
         + '<div style="flex:1"><p class="settings-name">' + esc(fc.name)
-        + '<span class="fixed-day-badge">毎月' + fc.day + '日</span></p>'
-        + '<p class="settings-sub">¥' + fc.amount.toLocaleString()
+        + '<span class="fixed-day-badge">毎月' + fc.day + '日</span>' + typeBadge + confirmBadge + '</p>'
+        + '<p class="settings-sub">' + (fc.confirm ? '目安 ' : '') + '¥' + fc.amount.toLocaleString()
         + (cat ? ' · ' + cat.icon + esc(cat.name) : '') + '</p></div>'
         + '<button class="btn-sm-icon" onclick="openFixedModal(\'' + fc.id + '\')">✏️</button></div>';
+    }).join('') : '<p style="font-size:.82rem;color:var(--muted);padding:.5rem .75rem">登録なし</p>';
+  }
+  // Installments（分割払い）— 満了(archived)は非表示
+  var insEl = document.getElementById('installmentList');
+  if (insEl) {
+    var activeIns = installments.filter(function(x){ return !x.archived; });
+    insEl.innerHTML = activeIns.length ? activeIns.map(function(ins) {
+      var em = insMonthOf(ins.startYM, ins.count - 1);
+      // 残り回数 = 総回数 − 記録済み回数（当月時点で経過した回数）
+      var now = new Date();
+      var elapsed = 0;
+      for (var n = 1; n <= ins.count; n++) {
+        var tm = insMonthOf(ins.startYM, n - 1);
+        if (tm.y < now.getFullYear() || (tm.y === now.getFullYear() && tm.m <= now.getMonth())) elapsed = n;
+      }
+      var remain = Math.max(0, ins.count - elapsed);
+      return '<div class="settings-row" data-ins-id="' + ins.id + '">'
+        + '<span class="settings-icon">' + (ins.icon||'🧾') + '</span>'
+        + '<div style="flex:1"><p class="settings-name">' + esc(ins.name)
+        + '<span class="fixed-day-badge">残り' + remain + '/' + ins.count + '回</span></p>'
+        + '<p class="settings-sub">総額¥' + ins.total.toLocaleString() + ' · 月¥' + insAmount(ins,1).toLocaleString()
+        + ' · 満了 ' + em.y + '/' + (em.m+1) + '</p></div>'
+        + '<button class="btn-sm-icon" onclick="openInstallmentModal(\'' + ins.id + '\')">✏️</button></div>';
     }).join('') : '<p style="font-size:.82rem;color:var(--muted);padding:.5rem .75rem">登録なし</p>';
   }
   // Categories
@@ -1527,6 +1653,9 @@ function renderSettings() {
     var chargeBtn = isEmoney && hasBalance
       ? '<button class="btn-charge" onclick="openChargeModal(\'' + p.id + '\')">チャージ</button>'
       : '';
+    var adjustBtn = hasBalance
+      ? '<button class="btn-charge" style="background:rgba(148,148,184,.15);color:var(--muted)" onclick="openAdjustModal(\'' + p.id + '\')">残高調整</button>'
+      : '';
     var subParts = [PAY_TYPE[p.type]||p.type];
     if (p.type === 'card' && p.brand) subParts.push(p.brand);
     if (p.type === 'card' && p.expiry) subParts.push(p.expiry);
@@ -1538,6 +1667,7 @@ function renderSettings() {
       + '<span class="settings-icon">' + p.icon + '</span>'
       + '<div style="flex:1"><p class="settings-name">' + esc(p.name) + badge + '</p>'
       + '<p class="settings-sub">' + subParts.join(' · ') + '</p></div>'
+      + adjustBtn
       + chargeBtn
       + '<button class="btn-sm-icon" onclick="openPayModal(\'' + p.id + '\')">✏️</button></div>';
   }).join('');
@@ -1727,6 +1857,12 @@ function openTxnModal(id) {
   if (id) {
     var t = transactions.find(function(x){ return x.id === id; });
     if (!t) return;
+    if (t.is_adjustment) {
+      // 残高調整は編集不可（削除して再調整する運用）
+      showToast('残高調整は編集できません。削除して再度調整してください');
+      editTxnId = null;
+      return;
+    }
     if (t.is_transfer) {
       setTxnType('transfer');
       var partner = transactions.find(function(x){ return x.group_id === t.group_id && x.id !== t.id; });
@@ -2328,6 +2464,72 @@ async function handleCharge() {
   showToast(to.icon + ' ' + to.name + ' ¥' + amount.toLocaleString() + ' チャージしました ✓');
 }
 
+// ── 残高調整（実残高との差額を「調整」取引として記録・収支統計からは除外） ──
+function openAdjustModal(payId) {
+  adjustPayId = payId;
+  var p = paymentMethods.find(function(x){ return x.id === payId; });
+  if (!p) return;
+  document.getElementById('adjustTitle').textContent = p.icon + ' ' + p.name + ' の残高を合わせる';
+  document.getElementById('adjustCurrent').textContent = 'アプリ上の残高：¥' + (p.balance || 0).toLocaleString();
+  document.getElementById('adjustActual').value = '';
+  document.getElementById('adjustDiff').textContent = '';
+  document.getElementById('adjustModal').classList.add('show');
+}
+
+function updateAdjustDiff() {
+  var p = paymentMethods.find(function(x){ return x.id === adjustPayId; });
+  if (!p) return;
+  var actual = parseInt(document.getElementById('adjustActual').value);
+  var el = document.getElementById('adjustDiff');
+  if (isNaN(actual)) { el.textContent = ''; return; }
+  var diff = actual - (p.balance || 0);
+  if (diff === 0) { el.textContent = '差額なし（調整は不要です）'; el.style.color = 'var(--muted)'; }
+  else {
+    el.textContent = '差額：' + (diff > 0 ? '+' : '−') + '¥' + Math.abs(diff).toLocaleString()
+      + '（' + (diff > 0 ? '調整で加算' : '調整で減算') + '）';
+    el.style.color = diff > 0 ? 'var(--green)' : 'var(--red)';
+  }
+}
+
+async function handleAdjust() {
+  var p = paymentMethods.find(function(x){ return x.id === adjustPayId; });
+  if (!p) return;
+  var actual = parseInt(document.getElementById('adjustActual').value);
+  if (isNaN(actual) || actual < 0) { showToast('実際の残高を入力してください'); return; }
+  var diff = actual - (p.balance || 0);
+  if (diff === 0) { showToast('差額はありません'); closeModal('adjustModal'); return; }
+
+  // 入力月ではなく当日の日付で記録
+  var today = localDateStr(new Date());
+  var td = parseLocalDate(today);
+  if (td.getFullYear() !== viewYear || td.getMonth() !== viewMonth) {
+    viewYear = td.getFullYear(); viewMonth = td.getMonth();
+    updateMonthNav(); loadFromStorage();
+  }
+  var payload = {
+    amount: Math.abs(diff), date: today,
+    is_income: diff > 0, is_adjustment: true,
+    category_id: null, payment_method_id: adjustPayId,
+    memo: '残高調整'
+  };
+  var newTxn = Object.assign({ id: 'temp_' + Date.now() }, payload);
+  transactions.unshift(newTxn);
+  // 残高を実際値に一致させる
+  updateCashBalance(adjustPayId, diff);
+  if (currentUser) {
+    var cloudPay = await ensurePayId(payload.payment_method_id);
+    payload.payment_method_id = cloudPay;
+    newTxn.payment_method_id = cloudPay;
+    var res = await _sb.from('kakely_transactions').insert(Object.assign({ user_id: currentUser.id }, payload)).select().single();
+    if (res.error) { console.error('adjust insert error', res.error); newTxn.id = 'pending_' + Date.now(); }
+    else if (res.data) { newTxn.id = res.data.id; }
+  }
+  saveMonthCache();
+  closeModal('adjustModal');
+  renderAll();
+  showToast('⚖️ 残高を¥' + actual.toLocaleString() + 'に調整しました');
+}
+
 function updatePayBalanceHint() {
   var hint = document.getElementById('payBalanceHint');
   if (!hint) return;
@@ -2525,6 +2727,20 @@ async function syncFromCloud() {
     localStorage.setItem('kakely_fixed', JSON.stringify(fixedCosts));
   }
 
+  // Installments（分割払い）
+  var insRes = await _sb.from('user_data').select('data').eq('user_id', currentUser.id).eq('app', 'kakely').eq('key', 'installments').maybeSingle();
+  if (insRes.data && insRes.data.data) {
+    installments = insRes.data.data;
+    localStorage.setItem('kakely_installments', JSON.stringify(installments));
+  }
+
+  // Pending drafts（確認待ちの固定収支）
+  var pdRes = await _sb.from('user_data').select('data').eq('user_id', currentUser.id).eq('app', 'kakely').eq('key', 'pending_drafts').maybeSingle();
+  if (pdRes.data && pdRes.data.data) {
+    pendingDrafts = pdRes.data.data;
+    localStorage.setItem('kakely_pending', JSON.stringify(pendingDrafts));
+  }
+
   // Income categories
   var icRes = await _sb.from('user_data').select('data').eq('user_id', currentUser.id).eq('app', 'kakely').eq('key', 'income_cats').maybeSingle();
   if (icRes.data && icRes.data.data) {
@@ -2549,6 +2765,8 @@ async function syncFromCloud() {
   autoAddSublyTransactions();
   // 固定費: 今日が引き落とし日のものを自動追加
   autoAddFixedCosts();
+  // 分割払い: 今月ぶんを自動追加
+  autoAddInstallments();
   // バックグラウンドで直近3か月分を先読み（月ナビを押さなくても表示できるように）
   prefetchRecentMonths();
   } catch(e) { console.error('syncFromCloud error', e); }
@@ -3304,14 +3522,30 @@ async function autoAddSublyTransactions() {
   }
 }
 
-// ── 固定費 ──
+// ── 固定費 / 固定収入（繰り返しルール） ──
+// 収入/支出トグル。カテゴリの選択肢とラベルを切り替える
+function setFixedType(isIncome) {
+  fixedIsIncome = !!isIncome;
+  document.getElementById('fixedTypeExpense').classList.toggle('active', !isIncome);
+  document.getElementById('fixedTypeIncome').classList.toggle('active', isIncome);
+  document.getElementById('fFixedDayLabel').textContent = isIncome ? '毎月の入金日' : '毎月の引き落とし日';
+  document.getElementById('fixedPresetWrap').style.display = isIncome ? 'none' : '';
+  var cats = isIncome ? incomeCategories : categories;
+  var catSel = document.getElementById('fFixedCat');
+  var cur = catSel.value;
+  catSel.innerHTML = '<option value="">カテゴリなし</option>'
+    + cats.map(function(c){ return '<option value="'+c.id+'">'+c.icon+' '+esc(c.name)+'</option>'; }).join('');
+  catSel.value = cur;
+}
+
 function openFixedModal(id) {
   editFixedId = id || null;
-  document.getElementById('fixedModalTitle').textContent = id ? '固定費を編集' : '固定費を登録';
+  var fc = id ? fixedCosts.find(function(x){ return x.id===id; }) : null;
+  fixedIsIncome = fc ? !!fc.is_income : false;
+  document.getElementById('fixedModalTitle').textContent = id ? '登録を編集' : '固定費・固定収入を登録';
   document.getElementById('deleteFixedBtn').style.display = id ? '' : 'none';
+  setFixedType(fixedIsIncome);
   var catSel = document.getElementById('fFixedCat');
-  catSel.innerHTML = '<option value="">カテゴリなし</option>'
-    + categories.map(function(c){ return '<option value="'+c.id+'">'+c.icon+' '+esc(c.name)+'</option>'; }).join('');
   var paySel = document.getElementById('fFixedPay');
   paySel.innerHTML = '<option value="">未設定</option>'
     + paymentMethods.map(function(p){ return '<option value="'+p.id+'">'+p.icon+' '+esc(p.name)+'</option>'; }).join('');
@@ -3319,18 +3553,18 @@ function openFixedModal(id) {
   if (presetEl) presetEl.innerHTML = FIXED_PRESETS.map(function(p, i) {
     return '<button class="preset-chip" onclick="applyFixedPreset('+i+')">'+p.icon+' '+p.name+'</button>';
   }).join('');
-  if (id) {
-    var fc = fixedCosts.find(function(x){ return x.id===id; });
-    if (!fc) return;
+  if (fc) {
     document.getElementById('fFixedName').value = fc.name;
     document.getElementById('fFixedAmount').value = fc.amount;
     document.getElementById('fFixedDay').value = fc.day;
+    document.getElementById('fFixedConfirm').checked = !!fc.confirm;
     catSel.value = fc.category_id || '';
     paySel.value = fc.payment_method_id || '';
   } else {
     document.getElementById('fFixedName').value = '';
     document.getElementById('fFixedAmount').value = '';
     document.getElementById('fFixedDay').value = '';
+    document.getElementById('fFixedConfirm').checked = false;
     catSel.value = ''; paySel.value = '';
   }
   document.getElementById('fixedModal').classList.add('show');
@@ -3340,6 +3574,8 @@ function applyFixedPreset(idx) {
   var p = FIXED_PRESETS[idx];
   document.getElementById('fFixedName').value = p.name;
   document.getElementById('fFixedDay').value = p.day;
+  // 電気代・ガス代・水道代は変動しやすいので確認待ちを既定ON
+  if (['電気代','ガス代','水道代'].indexOf(p.name) !== -1) document.getElementById('fFixedConfirm').checked = true;
   var catMap = { '家賃':'住居', 'ネット代':'通信', '電気代':'光熱', 'ガス代':'光熱', '水道代':'光熱', '携帯代':'通信', '保険料':'保険' };
   var kw = catMap[p.name];
   if (kw) {
@@ -3348,23 +3584,33 @@ function applyFixedPreset(idx) {
   }
 }
 
+async function persistFixedCosts() {
+  localStorage.setItem('kakely_fixed', JSON.stringify(fixedCosts));
+  if (currentUser) await _sb.from('user_data').upsert({ user_id:currentUser.id, app:'kakely', key:'fixed_costs', data:fixedCosts }, { onConflict:'user_id,app,key' });
+}
+
 async function saveFixedCost() {
   var name = document.getElementById('fFixedName').value.trim();
   var amount = parseInt(document.getElementById('fFixedAmount').value);
   var day = parseInt(document.getElementById('fFixedDay').value);
   if (!name || !amount || !day || day < 1 || day > 31) { showToast('名前・金額・日付を正しく入力してください'); return; }
   var catId = document.getElementById('fFixedCat').value || null;
-  var catObj = categories.find(function(c){ return c.id===catId; });
-  var payload = { name:name, amount:amount, day:day, category_id:catId, payment_method_id:document.getElementById('fFixedPay').value||null, icon:catObj?catObj.icon:'💴' };
+  var cats = fixedIsIncome ? incomeCategories : categories;
+  var catObj = cats.find(function(c){ return c.id===catId; });
+  var confirmFlag = document.getElementById('fFixedConfirm').checked;
+  var payload = { name:name, amount:amount, day:day, category_id:catId,
+    payment_method_id:document.getElementById('fFixedPay').value||null,
+    icon:catObj?catObj.icon:(fixedIsIncome?'💰':'💴'),
+    is_income: fixedIsIncome, confirm: confirmFlag };
   if (editFixedId) {
     var idx = fixedCosts.findIndex(function(fc){ return fc.id===editFixedId; });
     if (idx !== -1) fixedCosts[idx] = Object.assign(fixedCosts[idx], payload);
   } else {
     fixedCosts.push(Object.assign({ id:'fix_'+Date.now() }, payload));
   }
-  localStorage.setItem('kakely_fixed', JSON.stringify(fixedCosts));
-  if (currentUser) await _sb.from('user_data').upsert({ user_id:currentUser.id, app:'kakely', key:'fixed_costs', data:fixedCosts }, { onConflict:'user_id,app,key' });
-  closeModal('fixedModal'); renderSettings(); showToast('固定費を保存しました');
+  await persistFixedCosts();
+  closeModal('fixedModal'); renderSettings();
+  showToast((fixedIsIncome ? '固定収入' : '固定費') + 'を保存しました');
 }
 
 async function deleteFixedCost() {
@@ -3376,7 +3622,7 @@ async function deleteFixedCost() {
 }
 
 async function autoAddFixedCosts() {
-  if (!fixedCosts.length) return;
+  if (!fixedCosts.length) { renderPendingBanner(); return; }
   var today = new Date();
   var todayDay = today.getDate();
   var todayY = today.getFullYear();
@@ -3389,10 +3635,12 @@ async function autoAddFixedCosts() {
     { y: prevY,  m: prevM,  isCurrent: false }
   ];
   var totalAdded = 0;
+  var draftAdded = 0;
   var viewDirty = false;
 
   for (var si = 0; si < slots.length; si++) {
     var s = slots[si];
+    var ym = s.y + '-' + String(s.m + 1).padStart(2,'0');
     var cacheKey = 'kakely_txn_' + s.y + '_' + (s.m + 1);
     var isView = (s.y === viewYear && s.m === viewMonth);
     var arr = isView ? transactions : JSON.parse(localStorage.getItem(cacheKey) || '[]');
@@ -3402,21 +3650,43 @@ async function autoAddFixedCosts() {
     for (var i = 0; i < fixedCosts.length; i++) {
       var fc = fixedCosts[i];
       var d = Math.min(fc.day, lastDay);
-      // 当月はまだ引き落とし日が来ていないものはスキップ
+      // 当月はまだ引き落とし/入金日が来ていないものはスキップ
       if (s.isCurrent && d > todayDay) continue;
       var memoKey = '固定費:' + fc.id;
+      // すでに確定済み取引がある月はスキップ（確認待ちから確定した分も含む）
       if (arr.some(function(t){ return t.memo && t.memo.indexOf(memoKey) !== -1; })) continue;
       var dateStr = s.y + '-' + String(s.m + 1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-      var payload = { amount:fc.amount, date:dateStr, is_income:false, category_id:fc.category_id||null, payment_method_id:fc.payment_method_id||null, memo:memoKey };
+
+      // 「毎回確認」項目は確定せず確認待ちキューへ（下書き）
+      if (fc.confirm) {
+        var ruleId = fc.id;
+        var dupe = pendingDrafts.some(function(pd){ return pd.ruleId === ruleId && pd.ym === ym; });
+        if (!dupe) {
+          pendingDrafts.push({
+            id: 'pd_' + Date.now() + '_' + si + '_' + i,
+            ruleId: ruleId, ym: ym, date: dateStr, name: fc.name,
+            amount: fc.amount, is_income: !!fc.is_income,
+            category_id: fc.category_id || null,
+            payment_method_id: fc.payment_method_id || null,
+            icon: fc.icon || (fc.is_income ? '💰' : '💴'), memoKey: memoKey
+          });
+          draftAdded++;
+        }
+        continue;
+      }
+
+      // 通常の固定費/固定収入は即確定
+      var payload = { amount:fc.amount, date:dateStr, is_income:!!fc.is_income, category_id:fc.category_id||null, payment_method_id:fc.payment_method_id||null, memo:memoKey };
       var newTxn = Object.assign({ id:'tmp_fix_'+Date.now()+'_'+si+'_'+i }, payload);
       if (currentUser) {
-        if (payload.category_id)       payload.category_id       = await ensureCatId(payload.category_id, false);
+        if (payload.category_id)       payload.category_id       = await ensureCatId(payload.category_id, !!fc.is_income);
         if (payload.payment_method_id) payload.payment_method_id = await ensurePayId(payload.payment_method_id);
         var res = await _sb.from('kakely_transactions').insert(Object.assign({ user_id:currentUser.id }, payload)).select().single();
         if (res.data) newTxn = res.data;
         else if (res.error) console.error('fixed cost insert error', res.error);
       }
       arr.unshift(newTxn);
+      if (newTxn.payment_method_id) updateCashBalance(newTxn.payment_method_id, newTxn.is_income ? newTxn.amount : -newTxn.amount);
       slotAdded++;
     }
 
@@ -3427,9 +3697,238 @@ async function autoAddFixedCosts() {
     }
   }
 
+  if (draftAdded > 0) await persistPendingDrafts();
+  renderPendingBanner();
   if (totalAdded > 0) {
     if (viewDirty) renderAll();
-    showToast('🏠 固定費 ' + totalAdded + '件を自動追加しました');
+    showToast('🏠 固定費/固定収入 ' + totalAdded + '件を自動追加しました');
+  } else if (draftAdded > 0) {
+    showToast('📝 確認待ち ' + draftAdded + '件が届いています');
+  }
+}
+
+async function persistPendingDrafts() {
+  localStorage.setItem('kakely_pending', JSON.stringify(pendingDrafts));
+  if (currentUser) await _sb.from('user_data').upsert({ user_id:currentUser.id, app:'kakely', key:'pending_drafts', data:pendingDrafts }, { onConflict:'user_id,app,key' });
+}
+
+// ── 確認待ちドラフト（固定収入・変動固定費） ──
+function renderPendingBanner() {
+  var el = document.getElementById('pendingBanner');
+  if (!el) return;
+  if (!pendingDrafts.length) { el.innerHTML = ''; return; }
+  var rows = pendingDrafts.map(function(pd) {
+    var pay = paymentMethods.find(function(p){ return p.id === pd.payment_method_id; });
+    var sub = fmtDate(pd.date) + (pay ? ' · ' + pay.icon + esc(pay.name) : '');
+    return '<div class="pending-row">'
+      + '<span style="font-size:1.1rem">' + (pd.icon || '💴') + '</span>'
+      + '<div class="pending-info"><p class="pending-name">' + esc(pd.name)
+      + (pd.is_income ? '<span class="pending-inc">収入</span>' : '') + '</p>'
+      + '<p class="pending-sub">' + sub + '</p></div>'
+      + '<input type="number" class="pending-amt-input" id="pdamt_' + pd.id + '" value="' + pd.amount + '" inputmode="numeric">'
+      + '<button class="pending-btn-ok" onclick="confirmDraft(\'' + pd.id + '\')">確定</button>'
+      + '<button class="pending-btn-skip" onclick="skipDraft(\'' + pd.id + '\')">見送り</button>'
+      + '</div>';
+  }).join('');
+  el.innerHTML = '<div class="pending-banner">'
+    + '<p class="pending-banner-head">📝 確認待ち ' + pendingDrafts.length + '件（金額を確認して確定）</p>'
+    + rows + '</div>';
+}
+
+async function confirmDraft(id) {
+  var pd = pendingDrafts.find(function(x){ return x.id === id; });
+  if (!pd) return;
+  var inp = document.getElementById('pdamt_' + id);
+  var amount = parseInt(inp ? inp.value : pd.amount);
+  if (!amount || amount <= 0) { showToast('金額を入力してください'); return; }
+
+  // 対象月へ移動して取引を確定
+  var dd = parseLocalDate(pd.date);
+  if (dd.getFullYear() !== viewYear || dd.getMonth() !== viewMonth) {
+    viewYear = dd.getFullYear(); viewMonth = dd.getMonth();
+    updateMonthNav(); loadFromStorage();
+  }
+  var payload = { amount:amount, date:pd.date, is_income:!!pd.is_income,
+    category_id:pd.category_id||null, payment_method_id:pd.payment_method_id||null, memo:pd.memoKey };
+  var newTxn = Object.assign({ id:'temp_'+Date.now() }, payload);
+  transactions.unshift(newTxn);
+  if (newTxn.payment_method_id) updateCashBalance(newTxn.payment_method_id, payload.is_income ? amount : -amount);
+  if (currentUser) {
+    if (payload.category_id)       payload.category_id       = await ensureCatId(payload.category_id, !!pd.is_income);
+    if (payload.payment_method_id) payload.payment_method_id = await ensurePayId(payload.payment_method_id);
+    var res = await _sb.from('kakely_transactions').insert(Object.assign({ user_id:currentUser.id }, payload)).select().single();
+    if (res.error) { console.error('draft confirm insert error', res.error); newTxn.id = 'pending_' + Date.now(); }
+    else if (res.data) { newTxn.id = res.data.id; }
+  }
+  pendingDrafts = pendingDrafts.filter(function(x){ return x.id !== id; });
+  await persistPendingDrafts();
+  saveMonthCache();
+  renderAll();
+  showToast('✓ ' + esc(pd.name) + ' を記録しました');
+}
+
+async function skipDraft(id) {
+  var pd = pendingDrafts.find(function(x){ return x.id === id; });
+  pendingDrafts = pendingDrafts.filter(function(x){ return x.id !== id; });
+  await persistPendingDrafts();
+  renderPendingBanner();
+  if (pd) showToast(esc(pd.name) + ' を見送りました');
+}
+
+// ── 分割払い ──
+// n回目（1始まり）の支払額。端数は最終回に寄せる
+function insAmount(ins, n) {
+  var base = Math.floor(ins.total / ins.count);
+  return n >= ins.count ? (ins.total - base * (ins.count - 1)) : base;
+}
+// 開始月(YYYY-MM)から (idx) か月後の {y,m}
+function insMonthOf(startYM, idx) {
+  var p = startYM.split('-');
+  var d = new Date(+p[0], (+p[1] - 1) + idx, 1);
+  return { y: d.getFullYear(), m: d.getMonth() };
+}
+
+async function persistInstallments() {
+  localStorage.setItem('kakely_installments', JSON.stringify(installments));
+  if (currentUser) await _sb.from('user_data').upsert({ user_id:currentUser.id, app:'kakely', key:'installments', data:installments }, { onConflict:'user_id,app,key' });
+}
+
+function openInstallmentModal(id) {
+  editInstallmentId = id || null;
+  var ins = id ? installments.find(function(x){ return x.id===id; }) : null;
+  document.getElementById('installmentModalTitle').textContent = id ? '分割払いを編集' : '分割払いを登録';
+  document.getElementById('deleteInsBtn').style.display = id ? '' : 'none';
+  var catSel = document.getElementById('fInsCat');
+  catSel.innerHTML = '<option value="">カテゴリなし</option>'
+    + categories.map(function(c){ return '<option value="'+c.id+'">'+c.icon+' '+esc(c.name)+'</option>'; }).join('');
+  var paySel = document.getElementById('fInsPay');
+  paySel.innerHTML = '<option value="">未設定</option>'
+    + paymentMethods.map(function(p){ return '<option value="'+p.id+'">'+p.icon+' '+esc(p.name)+'</option>'; }).join('');
+  if (ins) {
+    document.getElementById('fInsName').value = ins.name;
+    document.getElementById('fInsTotal').value = ins.total;
+    document.getElementById('fInsCount').value = ins.count;
+    document.getElementById('fInsStart').value = ins.startYM;
+    document.getElementById('fInsDay').value = ins.day;
+    catSel.value = ins.category_id || '';
+    paySel.value = ins.payment_method_id || '';
+  } else {
+    document.getElementById('fInsName').value = '';
+    document.getElementById('fInsTotal').value = '';
+    document.getElementById('fInsCount').value = '';
+    var n = new Date();
+    document.getElementById('fInsStart').value = n.getFullYear() + '-' + String(n.getMonth()+1).padStart(2,'0');
+    document.getElementById('fInsDay').value = '27';
+    catSel.value = ''; paySel.value = '';
+  }
+  updateInsPreview();
+  document.getElementById('installmentModal').classList.add('show');
+}
+
+function updateInsPreview() {
+  var total = parseInt(document.getElementById('fInsTotal').value);
+  var count = parseInt(document.getElementById('fInsCount').value);
+  var startYM = document.getElementById('fInsStart').value;
+  var el = document.getElementById('insPreview');
+  if (!total || !count || count < 1) { el.textContent = ''; return; }
+  var base = Math.floor(total / count);
+  var last = total - base * (count - 1);
+  var endStr = '';
+  if (startYM) {
+    var em = insMonthOf(startYM, count - 1);
+    endStr = ' · 満了 ' + em.y + '/' + (em.m + 1);
+  }
+  var amtStr = base === last ? ('月 ¥' + base.toLocaleString()) : ('月 ¥' + base.toLocaleString() + '（最終回 ¥' + last.toLocaleString() + '）');
+  el.textContent = amtStr + ' × ' + count + '回' + endStr;
+  el.style.color = 'var(--muted)';
+}
+
+async function saveInstallment() {
+  var name = document.getElementById('fInsName').value.trim();
+  var total = parseInt(document.getElementById('fInsTotal').value);
+  var count = parseInt(document.getElementById('fInsCount').value);
+  var startYM = document.getElementById('fInsStart').value;
+  var day = parseInt(document.getElementById('fInsDay').value);
+  if (!name || !total || !count || count < 1 || !startYM || !day || day < 1 || day > 31) {
+    showToast('すべての項目を正しく入力してください'); return;
+  }
+  var catId = document.getElementById('fInsCat').value || null;
+  var catObj = categories.find(function(c){ return c.id===catId; });
+  var payload = { name:name, total:total, count:count, startYM:startYM, day:day,
+    category_id:catId, payment_method_id:document.getElementById('fInsPay').value||null,
+    icon:catObj?catObj.icon:'🧾' };
+  if (editInstallmentId) {
+    var idx = installments.findIndex(function(x){ return x.id===editInstallmentId; });
+    if (idx !== -1) installments[idx] = Object.assign(installments[idx], payload);
+  } else {
+    installments.push(Object.assign({ id:'ins_'+Date.now(), archived:false }, payload));
+  }
+  await persistInstallments();
+  closeModal('installmentModal'); renderSettings();
+  showToast('分割払いを保存しました');
+  autoAddInstallments();
+}
+
+async function deleteInstallment() {
+  if (!editInstallmentId || !confirm('この分割払いを削除しますか？\n（記録済みの支払いは残ります）')) return;
+  installments = installments.filter(function(x){ return x.id!==editInstallmentId; });
+  await persistInstallments();
+  closeModal('installmentModal'); renderSettings(); showToast('削除しました');
+}
+
+async function autoAddInstallments() {
+  if (!installments.length) return;
+  var today = new Date();
+  var nowY = today.getFullYear(), nowM = today.getMonth(), nowD = today.getDate();
+  var totalAdded = 0, viewDirty = false, dataChanged = false;
+
+  for (var i = 0; i < installments.length; i++) {
+    var ins = installments[i];
+    if (ins.archived) continue;
+    var lastPaidN = 0;
+    for (var n = 1; n <= ins.count; n++) {
+      var tm = insMonthOf(ins.startYM, n - 1);
+      // 未来の支払いは生成しない
+      if (tm.y > nowY || (tm.y === nowY && tm.m > nowM)) break;
+      var lastDay = new Date(tm.y, tm.m + 1, 0).getDate();
+      var d = Math.min(ins.day, lastDay);
+      // 当月でまだ支払日が来ていない場合はスキップ
+      if (tm.y === nowY && tm.m === nowM && d > nowD) continue;
+      var memoKey = '分割:' + ins.id + ':' + n;
+      var cacheKey = 'kakely_txn_' + tm.y + '_' + (tm.m + 1);
+      var isView = (tm.y === viewYear && tm.m === viewMonth);
+      var arr = isView ? transactions : JSON.parse(localStorage.getItem(cacheKey) || '[]');
+      if (arr.some(function(t){ return t.memo && t.memo.indexOf(memoKey) !== -1; })) { lastPaidN = n; continue; }
+      var dateStr = tm.y + '-' + String(tm.m + 1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+      var amt = insAmount(ins, n);
+      var memoTxt = memoKey + '（' + ins.name + ' ' + n + '/' + ins.count + '回目）';
+      var payload = { amount:amt, date:dateStr, is_income:false, category_id:ins.category_id||null, payment_method_id:ins.payment_method_id||null, memo:memoTxt };
+      var newTxn = Object.assign({ id:'tmp_ins_'+Date.now()+'_'+i+'_'+n }, payload);
+      if (currentUser) {
+        if (payload.category_id)       payload.category_id       = await ensureCatId(payload.category_id, false);
+        if (payload.payment_method_id) payload.payment_method_id = await ensurePayId(payload.payment_method_id);
+        var res = await _sb.from('kakely_transactions').insert(Object.assign({ user_id:currentUser.id }, payload)).select().single();
+        if (res.data) newTxn = res.data;
+        else if (res.error) console.error('installment insert error', res.error);
+      }
+      arr.unshift(newTxn);
+      if (newTxn.payment_method_id) updateCashBalance(newTxn.payment_method_id, -newTxn.amount);
+      if (isView) { viewDirty = true; saveMonthCache(); }
+      else { localStorage.setItem(cacheKey, JSON.stringify(arr)); }
+      lastPaidN = n;
+      totalAdded++;
+    }
+    // 最終回まで記録済みなら満了アーカイブ
+    if (lastPaidN >= ins.count && !ins.archived) { ins.archived = true; dataChanged = true; }
+  }
+
+  if (dataChanged) await persistInstallments();
+  if (totalAdded > 0) {
+    if (viewDirty) renderAll();
+    renderSettings();
+    showToast('🧾 分割払い ' + totalAdded + '件を記録しました');
+  } else if (dataChanged) {
+    renderSettings();
   }
 }
 
