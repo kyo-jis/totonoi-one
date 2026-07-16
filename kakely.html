@@ -209,7 +209,7 @@
     .modal-title { font-size: 1.1rem; font-weight: 500; margin-bottom: 1.25rem; }
     .form-group { margin-bottom: 1rem; }
     .form-label { display: block; font-size: .75rem; color: var(--muted); letter-spacing: .05em; text-transform: uppercase; margin-bottom: .4rem; }
-    input, select, textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: .75rem 1rem; font-size: .95rem; color: var(--text); font-family: var(--font); outline: none; transition: border-color .15s; }
+    input, select, textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: .75rem 1rem; font-size: 1rem; color: var(--text); font-family: var(--font); outline: none; transition: border-color .15s; }
     input:focus, select:focus { border-color: var(--accent); }
     select option { background: var(--surface2); }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
@@ -268,6 +268,11 @@
     .rc-cat { flex:1.6; }
     .rc-del { background:none; border:none; color:var(--muted); font-size:.9rem; cursor:pointer; padding:.2rem; }
     .rc-cat-hint { font-size:.68rem; color:var(--yellow); line-height:1.5; margin:-.1rem 0 .45rem .35rem; }
+    .rc-review-icon { flex-shrink:0; font-size:.85rem; }
+    .rc-dots { display:flex; justify-content:center; align-items:center; gap:.4rem; margin:-.5rem 0 1.1rem; }
+    .rc-dot { width:8px; height:8px; border-radius:4px; background:var(--surface3); transition:all .25s var(--spring); }
+    .rc-dot.active { width:22px; background:var(--accent); }
+    .rc-dot-label { font-size:.65rem; color:var(--muted); margin-left:.35rem; }
     .group-row { display:flex; gap:.4rem; align-items:center; margin-bottom:.4rem; }
     .group-row select { flex:1; min-width:0; font-size:.82rem; }
     .group-row .g-amt { width:90px; flex-shrink:0; font-size:.88rem; text-align:right; }
@@ -790,6 +795,12 @@
   <div class="modal">
     <div class="modal-handle"></div>
     <p class="modal-title">🧾 レシートAI読込</p>
+    <div class="rc-dots" aria-hidden="true">
+      <span class="rc-dot" id="rcDot1"></span>
+      <span class="rc-dot" id="rcDot2"></span>
+      <span class="rc-dot" id="rcDot3"></span>
+      <span class="rc-dot-label" id="rcDotLabel"></span>
+    </div>
 
     <div class="rc-step" id="rcStep1">
       <p class="rc-guide" style="margin-bottom:.75rem">① プロンプトをコピー → ② Claude や ChatGPT などのAIアプリにレシート写真と一緒に貼り付け → ③ AIの返答をKakelyに貼り付けて登録できます。</p>
@@ -3128,8 +3139,15 @@ function openReceiptModal() {
   document.getElementById('receiptModal').classList.add('show');
 }
 
+var RC_STEP_LABELS = {1:'プロンプト', 2:'貼り付け', 3:'確認・登録'};
 function rcGoStep(n) {
-  [1,2,3].forEach(function(i){ document.getElementById('rcStep'+i).classList.toggle('active', i===n); });
+  [1,2,3].forEach(function(i){
+    document.getElementById('rcStep'+i).classList.toggle('active', i===n);
+    var dot = document.getElementById('rcDot'+i);
+    if (dot) dot.classList.toggle('active', i===n);
+  });
+  var label = document.getElementById('rcDotLabel');
+  if (label) label.textContent = n + '/3 ' + (RC_STEP_LABELS[n] || '');
 }
 
 function buildReceiptPrompt(type) {
@@ -3314,6 +3332,7 @@ function rcRenderRows() {
         + '</p>';
     }
     return '<div class="rc-item-row'+(it.review ? ' review' : '')+'">'
+      + (it.review ? '<span class="rc-review-icon" title="要確認">⚠️</span>' : '')
       + '<input type="text" class="rc-name" value="'+esc(it.name)+'" placeholder="メモ（任意）" oninput="rcUpd('+i+',\'name\',this.value)">'
       + '<input type="number" class="rc-amt" value="'+it.amount+'" inputmode="numeric" oninput="rcUpd('+i+',\'amount\',this.value)">'
       + '<select class="rc-cat" onchange="rcUpd('+i+',\'catId\',this.value)">'+rcCatOptions(it.catId)+'</select>'
