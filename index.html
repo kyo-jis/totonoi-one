@@ -9,7 +9,7 @@
   <link rel="manifest" href="/manifest-portal.json">
   <link rel="icon" type="image/png" href="/favicon.ico">
   <link rel="shortcut icon" href="/favicon.ico">
-  <meta name="theme-color" content="#0f0f14">
+  <meta name="theme-color" content="#0c0c18">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Totonoi One">
   <link rel="apple-touch-icon" href="/apple-touch-icon-portal.png">
@@ -156,9 +156,21 @@
       .bc:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,.35); }
     }
 
-    .bc.full  { grid-column: 1 / -1; min-height: 170px; }
-    .bc.tall  { min-height: 180px; }
-    .bc.soon  { opacity: .45 !important; pointer-events: none; }
+    .bc.featured { grid-column: 1 / -1; min-height: 170px; }
+
+    /* カード出現のstagger */
+    .bento .bc:nth-child(1)  { animation-delay: .05s; }
+    .bento .bc:nth-child(2)  { animation-delay: .1s; }
+    .bento .bc:nth-child(3)  { animation-delay: .15s; }
+    .bento .bc:nth-child(4)  { animation-delay: .2s; }
+    .bento .bc:nth-child(5)  { animation-delay: .25s; }
+    .bento .bc:nth-child(6)  { animation-delay: .3s; }
+    .bento .bc:nth-child(7)  { animation-delay: .35s; }
+    .bento .bc:nth-child(8)  { animation-delay: .4s; }
+    .bento .bc:nth-child(9)  { animation-delay: .45s; }
+    .bento .bc:nth-child(10) { animation-delay: .5s; }
+    .bento .bc:nth-child(11) { animation-delay: .55s; }
+    .bento .bc:nth-child(12) { animation-delay: .6s; }
 
     /* ── App Colors ── */
     .subly   { background: linear-gradient(140deg, #1e3a5f 0%, #3d6b8e 100%); }
@@ -168,10 +180,8 @@
     .learnly { background: linear-gradient(140deg, #1a3d4a 0%, #3c8cbf 100%); }
     .stockly { background: linear-gradient(140deg, #2d3d1a 0%, #7c9c3c 100%); }
     .renewly { background: linear-gradient(140deg, #4a3d1a 0%, #bf9c3c 100%); }
-    .mangaly { background: linear-gradient(140deg, #4a1a3a 0%, #bf3c8c 100%); }
     .bookly  { background: linear-gradient(140deg, #1e1040 0%, #6d28d9 100%); }
     .readly  { background: linear-gradient(140deg, #1a2a4a 0%, #3c5cbf 100%); }
-    .ownly   { background: linear-gradient(140deg, #3a3a1a 0%, #9c9c3c 100%); }
     .kakely  { background: linear-gradient(140deg, #4a2e00 0%, #c47d0e 100%); }
 
     /* ── Card Content ── */
@@ -220,18 +230,6 @@
       .bc:hover .bc-arrow { transform: translateX(4px); opacity: 1; }
     }
 
-    .bc-soon-badge {
-      position: absolute;
-      top: .75rem; right: .75rem;
-      font-size: .58rem;
-      font-weight: 500;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      background: rgba(255,255,255,.15);
-      border-radius: 20px;
-      padding: .2rem .55rem;
-    }
-
     /* ── Pro Card ── */
     .pro-card {
       grid-column: 1 / -1;
@@ -257,15 +255,15 @@
     .pro-link { display:block; text-align:center; font-size:.72rem; color:rgba(240,238,232,.4); margin-top:.6rem; cursor:pointer; background:none; border:none; font-family:var(--font); width:100%; }
 
     /* ── Auth chip ── */
-    .auth-chip { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); }
+    .auth-chip { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:20px; padding:.5rem 1rem; min-height:38px; font-size:.75rem; color:var(--muted); cursor:pointer; font-family:var(--font); }
     .auth-chip.logged-in { border-color:rgba(94,207,160,.4); color:#5ecfa0; }
     /* Login Notice */
     .login-notice { margin: .25rem 1.25rem .5rem; background: rgba(148,148,184,.07); border: 1px solid rgba(148,148,184,.18); border-radius: 12px; padding: .6rem 1rem; display: flex; align-items: center; gap: .65rem; cursor: pointer; font-size: .78rem; color: var(--muted); transition: opacity .2s; }
     .login-notice:active { opacity: .7; }
     .header-row { display:flex; justify-content:flex-end; align-items:center; padding:.75rem 1.25rem 0; gap:.5rem; }
-    .edit-dash-btn { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); transition:all .2s; }
+    .edit-dash-btn { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:20px; padding:.5rem 1rem; min-height:38px; font-size:.75rem; color:var(--muted); cursor:pointer; font-family:var(--font); transition:all .2s; }
     .edit-dash-btn:active { background:rgba(255,255,255,.1); color:var(--ink); }
-    .theme-btn-idx { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:20px; width:2rem; height:2rem; display:flex; align-items:center; justify-content:center; font-size:.85rem; cursor:pointer; transition:all .2s; }
+    .theme-btn-idx { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:20px; width:38px; height:38px; display:flex; align-items:center; justify-content:center; font-size:.9rem; cursor:pointer; transition:all .2s; }
     .theme-btn-idx:active { transform:scale(.88); background:rgba(255,255,255,.1); }
     /* Bento edit modal */
     .bento-edit-item { display:flex; align-items:center; gap:.6rem; padding:.65rem .75rem; background:var(--surface); border:1px solid var(--border); border-radius:12px; margin-bottom:.4rem; transition:opacity .2s; touch-action:none; user-select:none; }
@@ -287,7 +285,7 @@
     .modal-handle { width:36px; height:4px; background:#35354a; border-radius:2px; margin:0 auto 1.25rem; }
     .form-group { margin-bottom:1rem; }
     .form-group label { display:block; font-size:.75rem; color:var(--muted); letter-spacing:.05em; text-transform:uppercase; margin-bottom:.4rem; }
-    .form-group input { width:100%; background:#22222e; border:1px solid #35354a; border-radius:10px; padding:.75rem 1rem; font-size:.95rem; color:#f0eee8; font-family:var(--font); outline:none; }
+    .form-group input { width:100%; background:#22222e; border:1px solid #35354a; border-radius:10px; padding:.75rem 1rem; font-size:1rem; color:#f0eee8; font-family:var(--font); outline:none; }
     .form-group input:focus { border-color:#9b6dff; }
     .modal-title { font-size:1.1rem; font-weight:500; margin-bottom:1.25rem; }
     .btn-primary { width:100%; padding:.9rem; background:#9b6dff; color:#fff; border:none; border-radius:12px; font-size:.95rem; font-weight:500; font-family:var(--font); cursor:pointer; }
@@ -316,7 +314,7 @@
         gap: 14px;
         padding: 2rem 1.5rem 4rem;
       }
-      .bc.full { grid-column: span 1; min-height: 148px; }
+      .bc.featured { grid-column: span 2; min-height: 148px; }
       footer { max-width: 960px; margin: 0 auto; }
       .login-notice { max-width: 960px; margin-left: auto; margin-right: auto; }
     }
@@ -332,7 +330,7 @@
       color: var(--muted);
     }
     .footer-admin { font-size:.62rem; color:rgba(106,104,128,.3); background:none; border:none; font-family:var(--font); cursor:pointer; margin-top:.4rem; display:block; width:100%; }
-    .admin-dash-btn { background:rgba(155,109,255,.12); border:1px solid rgba(155,109,255,.25); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:#c89aff; cursor:pointer; font-family:var(--font); }
+    .admin-dash-btn { background:rgba(155,109,255,.12); border:1px solid rgba(155,109,255,.25); border-radius:20px; padding:.5rem 1rem; min-height:38px; font-size:.75rem; color:#c89aff; cursor:pointer; font-family:var(--font); }
     .admin-stat-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.4rem; margin-bottom:1rem; }
     .admin-stat { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:.65rem .5rem; text-align:center; }
     .admin-stat-label { font-size:.65rem; color:var(--muted); margin-bottom:.2rem; }
@@ -507,7 +505,7 @@
   </main>
 
   <footer>
-    <p style="font-size:.72rem;color:rgba(148,148,184,.5);margin-bottom:.75rem;">💻 PCでより詳しく見られます</p>
+    <p style="font-size:.72rem;color:rgba(148,148,184,.5);margin-bottom:.75rem;">💻 PC表示ならグラフ・在庫チャートなどの詳細分析が見られます</p>
     <a href="guide.html" style="display:inline-block;margin-bottom:.5rem;font-size:.78rem;color:var(--muted);text-decoration:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.45rem .9rem;">📖 使い方ガイド &amp; Pro比較</a><br>
     <button class="backup-btn" onclick="openBackupModal()">💾 バックアップ / 復元</button><br>
     © 2026 Totonoi One
@@ -580,7 +578,7 @@
         document.documentElement.removeAttribute('data-theme');
         localStorage.setItem('tototheme', 'dark');
         document.getElementById('themeBtnIdx').textContent = '🌙';
-        document.querySelector('meta[name="theme-color"]').content = '#0f0f14';
+        document.querySelector('meta[name="theme-color"]').content = '#0c0c18';
       } else {
         document.documentElement.setAttribute('data-theme', 'light');
         localStorage.setItem('tototheme', 'light');
@@ -824,6 +822,11 @@
         if (!el) return;
         el.style.display = bentoPrefs.hidden.indexOf(key) !== -1 ? 'none' : '';
       });
+      // 先頭の表示カードを大きく（Bentoの視覚階層）
+      var cards = Array.from(bento.querySelectorAll('.bc'));
+      cards.forEach(function(el){ el.classList.remove('featured'); });
+      var first = cards.find(function(el){ return el !== proCard && el.style.display !== 'none'; });
+      if (first) first.classList.add('featured');
     }
 
     var _editOrder = [], _editHidden = [];
@@ -934,6 +937,107 @@
 
     applyBentoPrefs();
 
+    // ── Live Stats（各アプリのlocalStorageからカードに実データを表示） ──
+    function _lsArr(key) { try { var d = JSON.parse(localStorage.getItem(key) || 'null'); return Array.isArray(d) ? d : null; } catch(e) { return null; } }
+    function _setLive(app, text) {
+      if (!text) return;
+      var el = document.querySelector('.bc.' + app + ' .bc-desc');
+      if (el) el.textContent = text;
+    }
+    function _todayLocalStr() {
+      var d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+    function updateLiveStats() {
+      var now = new Date();
+      // Kakely: 今月の支出
+      try {
+        var txns = _lsArr('kakely_txn_' + now.getFullYear() + '_' + (now.getMonth()+1));
+        if (txns && txns.length) {
+          var spent = txns.reduce(function(s,t){ return s + (!t.is_income && !t.is_transfer && !t.is_adjustment ? (t.amount||0) : 0); }, 0);
+          _setLive('kakely', '今月の支出 ¥' + spent.toLocaleString());
+        }
+      } catch(e) {}
+      // Medly: 今日の服用進捗と残り少ないアイテム
+      try {
+        var meds = _lsArr('medlyItems');
+        if (meds && meds.length) {
+          var dt = JSON.parse(localStorage.getItem('medlyDailyTaken') || '{"date":"","taken":{}}');
+          var isToday = dt.date === now.toDateString();
+          var total = 0, taken = 0, low = 0;
+          meds.forEach(function(m) {
+            (m.timing||[]).filter(function(t){ return t !== 'prn'; }).forEach(function(t) {
+              total++;
+              if (isToday && dt.taken[m.id + '_' + t]) taken++;
+            });
+            if (m.daily > 0 && m.current >= 0 && Math.floor(m.current / m.daily) <= 7) low++;
+          });
+          var parts = [];
+          if (total > 0) parts.push(taken >= total ? '今日の服用 ✅完了' : '今日の服用 ' + taken + '/' + total);
+          if (low > 0) parts.push('残り少 ' + low + '件');
+          _setLive('medly', parts.join(' ・ '));
+        }
+      } catch(e) {}
+      // Subly: 月額合計
+      try {
+        var subs = _lsArr('subs');
+        if (subs && subs.length) {
+          var CYC = { 'weekly': .25, 'monthly': 1, '3months': 3, '6months': 6, 'yearly': 12, '2years': 24, '3years': 36, 'once': 0 };
+          var monthly = subs.reduce(function(s, x) {
+            var m = x.cycle === 'custom' ? Number(x.customNum||1) * (x.customUnit === 'years' ? 12 : 1) : (CYC[x.cycle] || 1);
+            return m ? s + Math.round(Number(x.amount||0) / m) : s;
+          }, 0);
+          _setLive('subly', subs.length + '件 ・ 月額 ¥' + monthly.toLocaleString());
+        }
+      } catch(e) {}
+      // Renewly: 直近の期限
+      try {
+        var rns = _lsArr('renewly_items');
+        if (rns && rns.length) {
+          var today0 = new Date(); today0.setHours(0,0,0,0);
+          var nearest = null;
+          rns.forEach(function(r) {
+            if (r.noExpiry || !r.expiry) return;
+            var p = String(r.expiry).split('-');
+            if (p.length < 3) return;
+            var d = new Date(+p[0], +p[1]-1, +p[2]);
+            var days = Math.ceil((d - today0) / 86400000);
+            if (days >= 0 && (!nearest || days < nearest.days)) nearest = { name: r.name, days: days };
+          });
+          if (nearest) _setLive('renewly', (nearest.days <= 30 ? '⚠️ ' : '') + nearest.name + ' あと' + nearest.days + '日');
+        }
+      } catch(e) {}
+      // Fitly: 直近7日のトレーニング回数
+      try {
+        var wh = _lsArr('fitlyHistory');
+        if (wh && wh.length) {
+          var week0 = new Date(); week0.setDate(week0.getDate() - 6); week0.setHours(0,0,0,0);
+          var cnt = wh.filter(function(w) {
+            if (!w.date) return false;
+            var p = String(w.date).split('-');
+            return new Date(+p[0], +p[1]-1, +p[2]) >= week0;
+          }).length;
+          _setLive('fitly', cnt > 0 ? '直近7日 ' + cnt + '回トレーニング' : '記録 ' + wh.length + '件');
+        }
+      } catch(e) {}
+      // Learnly: 今日の学習時間
+      try {
+        var ss = _lsArr('learnly_sessions');
+        if (ss && ss.length) {
+          var todayStr = _todayLocalStr();
+          var mins = ss.reduce(function(s, x){ return s + (x.date === todayStr ? (x.duration||0) : 0); }, 0);
+          if (mins > 0) _setLive('learnly', '今日 ' + (mins >= 60 ? Math.floor(mins/60) + '時間' + (mins%60 ? mins%60 + '分' : '') : mins + '分') + ' 学習');
+          else _setLive('learnly', '記録 ' + ss.length + '件');
+        }
+      } catch(e) {}
+      // 件数系
+      try { var st = _lsArr('stockly_items'); if (st && st.length) _setLive('stockly', '備蓄 ' + st.length + '品目を管理中'); } catch(e) {}
+      try { var ck = _lsArr('cookly_recipes'); if (ck && ck.length) _setLive('cookly', 'レシピ ' + ck.length + '件を保存中'); } catch(e) {}
+      try { var bk = _lsArr('bookly_items'); if (bk && bk.length) _setLive('bookly', bk.length + '冊を登録中'); } catch(e) {}
+      try { var rd = _lsArr('readly_notes'); if (rd && rd.length) _setLive('readly', 'メモ ' + rd.length + '件'); } catch(e) {}
+    }
+    updateLiveStats();
+
     // ── Backup / Restore ──
     var BACKUP_KEYS = {
       subly:   { label:'Subly', icon:'💳', keys:['subs','subHistory'] },
@@ -1026,6 +1130,9 @@
       };
       reader.readAsText(file);
     }
+
+    // ── Service Worker ──
+    if ('serviceWorker' in navigator) { window.addEventListener('load', function(){ navigator.serviceWorker.register('/sw-portal.js').catch(function(){}); }); }
   </script>
 
 </body>
