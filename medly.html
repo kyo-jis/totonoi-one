@@ -34,8 +34,10 @@
 
     .app-header { padding:3rem 1.25rem 1.25rem; }
     .back-link { font-size:.75rem; color:var(--muted); text-decoration:none; letter-spacing:.1em; text-transform:uppercase; display:inline-flex; align-items:center; gap:.4rem; margin-bottom:0; }
-    .auth-chip { background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); transition:all .2s; white-space:nowrap; }
+    .auth-chip { background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:.5rem 1rem; min-height:38px; font-size:.75rem; color:var(--muted); cursor:pointer; font-family:var(--font); transition:all .2s; white-space:nowrap; }
     .auth-chip.logged-in { border-color:var(--accent); color:var(--accent); }
+    .theme-btn { background:var(--surface2); border:1px solid var(--border); border-radius:20px; width:38px; height:38px; display:flex; align-items:center; justify-content:center; font-size:.9rem; cursor:pointer; transition:all .2s; }
+    .theme-btn:active { transform:scale(.88); }
     /* Login Notice */
     .login-notice { margin: -.25rem 1.25rem .75rem; background: rgba(148,148,184,.07); border: 1px solid rgba(148,148,184,.18); border-radius: 12px; padding: .6rem 1rem; display: flex; align-items: center; gap: .65rem; cursor: pointer; font-size: .78rem; color: var(--muted); transition: opacity .2s; }
     .login-notice:active { opacity: .7; }
@@ -93,7 +95,7 @@
 
     /* Days remaining */
     .days-row { display:flex; align-items:center; justify-content:space-between; }
-    .days-badge { font-size:.72rem; font-weight:500; padding:.25rem .6rem; border-radius:20px; }
+    .days-badge { font-size:.75rem; font-weight:500; padding:.3rem .65rem; border-radius:20px; }
     .days-badge.good { background:rgba(94,207,160,.15); color:var(--green); }
     .days-badge.warning { background:rgba(232,113,138,.15); color:var(--yellow); }
     .days-badge.urgent { background:rgba(255,124,110,.18); color:var(--accent2); }
@@ -103,19 +105,24 @@
     .item-detail { font-size:.72rem; color:var(--muted); }
     .item-detail span { color:var(--text); }
 
-    .btn-take { background:var(--accent); color:#1a1a24; border:none; border-radius:8px; padding:.4rem .85rem; font-size:.78rem; font-weight:600; font-family:var(--font); cursor:pointer; }
-    .btn-undo { background:none; border:1px solid var(--border); border-radius:8px; padding:.3rem .6rem; font-size:.7rem; color:var(--muted); font-family:var(--font); cursor:pointer; transition:all .15s; }
+    .btn-take { background:var(--accent); color:#1a1a24; border:none; border-radius:10px; padding:.6rem 1rem; min-height:40px; font-size:.85rem; font-weight:600; font-family:var(--font); cursor:pointer; }
+    .btn-take:active { transform:scale(.93); }
+    .btn-undo { background:none; border:1px solid var(--border); border-radius:10px; padding:.5rem .75rem; min-height:38px; font-size:.78rem; color:var(--muted); font-family:var(--font); cursor:pointer; transition:all .15s; }
     .btn-undo:active { background:var(--surface2); color:var(--text); }
-    .btn-restock { background:var(--green); color:#1a1a24; border:none; border-radius:8px; padding:.4rem .85rem; font-size:.78rem; font-weight:600; font-family:var(--font); cursor:pointer; }
+    .btn-restock { background:var(--green); color:#1a1a24; border:none; border-radius:10px; padding:.6rem 1rem; min-height:40px; font-size:.85rem; font-weight:600; font-family:var(--font); cursor:pointer; }
+    .btn-restock:active { transform:scale(.93); }
 
     /* Per-timing dose checks */
     .dose-section { margin-top:.6rem; padding-top:.6rem; border-top:1px solid var(--border); }
-    .dose-progress { font-size:.72rem; color:var(--muted); margin-bottom:.45rem; display:flex; align-items:center; gap:.4rem; }
+    .dose-progress { font-size:.78rem; color:var(--muted); margin-bottom:.5rem; display:flex; align-items:center; gap:.4rem; }
     .dose-progress .dose-done { color:var(--green); font-weight:600; }
-    .dose-chips { display:flex; gap:.4rem; flex-wrap:wrap; }
-    .dose-chip { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:.4rem .65rem; font-size:.75rem; color:var(--text); font-family:var(--font); cursor:pointer; transition:all .15s; }
+    .dose-chips { display:flex; gap:.5rem; flex-wrap:wrap; }
+    .dose-chip { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:.6rem .85rem; min-height:44px; display:inline-flex; align-items:center; font-size:.85rem; color:var(--text); font-family:var(--font); cursor:pointer; transition:all .15s; }
     .dose-chip:active { transform:scale(.93); }
     .dose-chip.taken { background:rgba(94,207,160,.15); border-color:rgba(94,207,160,.4); color:var(--green); }
+    /* Card details accordion */
+    .card-more { width:100%; margin-top:.6rem; padding:.5rem; min-height:36px; background:none; border:none; border-top:1px solid var(--border); color:var(--muted); font-size:.75rem; font-family:var(--font); cursor:pointer; }
+    .card-more:active { color:var(--text); }
     .today-progress-card { background:linear-gradient(160deg, var(--surface) 0%, var(--surface2) 100%); border:1px solid var(--border); border-radius:14px; padding:.85rem 1rem; margin-bottom:1rem; box-shadow:var(--shadow-sm); }
     .today-progress-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:.5rem; }
     .today-progress-label { font-size:.8rem; font-weight:500; }
@@ -144,7 +151,6 @@
     .modal { background:var(--surface); border:1px solid var(--border); border-radius:24px 24px 0 0; padding:1.5rem 1.25rem 2rem; width:100%; max-height:92vh; overflow-y:auto; animation:slideUp .3s ease; }
     @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
     .modal-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 1.25rem; }
-    <p style="text-align:center;font-size:1rem;font-weight:500;margin-bottom:1.25rem;">ログイン</p>
     .modal-title { font-size:1.1rem; font-weight:500; margin-bottom:1.25rem; }
 
     /* Preset grid */
@@ -160,7 +166,7 @@
 
     .form-group { margin-bottom:1rem; }
     .form-label { font-size:.72rem; color:var(--muted); letter-spacing:.05em; text-transform:uppercase; display:block; margin-bottom:.4rem; }
-    input, select { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:.75rem 1rem; font-size:.95rem; color:var(--text); font-family:var(--font); outline:none; transition:border-color .15s; }
+    input, select { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:.75rem 1rem; font-size:1rem; color:var(--text); font-family:var(--font); outline:none; transition:border-color .15s; }
     input:focus, select:focus { border-color:var(--accent); }
     .form-row { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; }
     .form-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.5rem; }
@@ -297,7 +303,10 @@
 <div class="app-header">
   <div class="header-top">
     <a class="back-link" href="index.html" style="display:inline-flex;align-items:center;gap:.5rem;"><img src="/logo.png" style="width:20px;height:20px;object-fit:contain;border-radius:5px;" alt=""> Totonoi One</a>
-    <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
+    <div style="display:flex;align-items:center;gap:.5rem;">
+      <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" aria-label="テーマ切替">🌙</button>
+      <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
+    </div>
   </div>
   <h1 class="app-title" onclick="goAppTop()" style="cursor:pointer;">Med<span>ly</span></h1>
   <p class="app-subtitle">サプリ・薬管理</p>
@@ -309,7 +318,8 @@
 </div>
 
 <div class="summary-card">
-  <p class="summary-label">在庫サマリー</p>
+  <p class="summary-label">サマリー</p>
+  <div id="summaryDose" style="position:relative;z-index:1;"></div>
   <div class="summary-stats">
     <div class="summary-stat">
       <p class="summary-stat-value" id="totalItems">0</p>
@@ -863,6 +873,20 @@ function updateSummary() {
     if (days !== null && days <= 3) { urgent++; urgentNames.push(item.name); }
     else if (days !== null && days <= 7) warning++;
   });
+  // 今日の服用進捗（サマリーカード先頭）
+  var totalDoses = 0, takenDoses = 0;
+  items.forEach(function(it){ var p = todayProgress(it); totalDoses += p.total; takenDoses += p.taken; });
+  var sd = document.getElementById('summaryDose');
+  if (sd) {
+    if (totalDoses > 0) {
+      var doseDone = takenDoses === totalDoses;
+      sd.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin:.25rem 0 .5rem;">'
+        +'<span style="font-size:.85rem;font-weight:500;">'+(doseDone ? '✅ 今日の服用完了' : '💊 今日の服用')+'</span>'
+        +'<span style="font-size:.95rem;font-weight:600;color:'+(doseDone ? 'var(--green)' : 'var(--accent)')+';">'+takenDoses+'/'+totalDoses+'回</span>'
+        +'</div>'
+        +'<div class="progress-bar" style="margin-bottom:.9rem;"><div class="progress-fill '+(doseDone ? 'good' : 'warning')+'" style="width:'+Math.round(takenDoses/totalDoses*100)+'%"></div></div>';
+    } else sd.innerHTML = '';
+  }
   document.getElementById('totalItems').textContent = items.length;
   var ct = document.getElementById('medlyCountText');
   if (ct) ct.textContent = items.length + (isPro ? '件' : '/'+FREE_ITEM_LIMIT);
@@ -1023,6 +1047,16 @@ function renderList() {
     var takeBtnHTML = '';
     if (isPrn) takeBtnHTML = '<button class="btn-take" onclick="takeItem(\''+item.id+'\')">🆘 頓服 −'+fmtAmount(reg.length?doseAmount(item):item.daily)+item.unit+'</button>';
     else if (!reg.length) takeBtnHTML = '<button class="btn-take" onclick="takeItem(\''+item.id+'\')">服用 −'+item.daily+item.unit+'</button>';
+    // 副次情報（コスト・期限・メモ等）は折りたたみに集約
+    var detailsHTML = costFooter(item)
+      +(item.expiry?'<div style="margin-top:.5rem;">'+expiryBadge(item)+'</div>':'')
+      +timingHTML
+      +(item.memo?'<p style="font-size:.75rem;color:var(--muted);margin-top:.4rem;">📝 '+item.memo+'</p>':'');
+    var expanded = !!_expandedCards[item.id];
+    var moreHTML = detailsHTML
+      ? (expanded ? detailsHTML : '')
+        +'<button class="card-more" onclick="toggleCardDetails(\''+item.id+'\')">'+(expanded ? '閉じる ▲' : '詳細を表示 ▼')+'</button>'
+      : '';
     return '<div class="'+cardCls+'">'
       +'<div class="item-header">'
       +'<div class="item-icon" style="background:rgba(179,136,255,.12)">'+(item.icon||TYPE_ICONS[item.type]||'💊')+'</div>'
@@ -1047,13 +1081,16 @@ function renderList() {
       +'<button class="btn-restock" onclick="openRestock(\''+item.id+'\')">補充</button>'
       +'</div></div>'
       +doseHTML
-      +costFooter(item)
-      +(item.expiry?'<div style="margin-top:.5rem;">'+expiryBadge(item)+'</div>':'')
-      +timingHTML
-      +(item.memo?'<p style="font-size:.72rem;color:var(--muted);margin-top:.4rem;">📝 '+item.memo+'</p>':'')
+      +moreHTML
       +'<div class="sync-slot"></div>'
       +'</div>';
   }).join('');
+}
+
+var _expandedCards = {};
+function toggleCardDetails(id) {
+  _expandedCards[id] = !_expandedCards[id];
+  renderList();
 }
 
 // ── Schedule ──
@@ -1101,12 +1138,12 @@ function renderSchedule() {
         return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.75rem 1rem;margin-bottom:.4rem;display:flex;align-items:center;justify-content:space-between;'+(taken?'opacity:.6;':'') +'">'
           +'<div style="display:flex;align-items:center;gap:.75rem;">'
           +'<span style="font-size:1.2rem;">'+(item.icon||'💊')+'</span>'
-          +'<div><p style="font-size:.88rem;font-weight:400;">'+item.name+'</p>'
-          +'<p style="font-size:.7rem;color:var(--muted);">'+fmtAmount(doseAmount(item))+item.unit+'</p></div>'
+          +'<div><p style="font-size:.9rem;font-weight:400;">'+item.name+'</p>'
+          +'<p style="font-size:.78rem;color:var(--muted);">'+fmtAmount(doseAmount(item))+item.unit+'</p></div>'
           +'</div>'
           +(taken
             ? '<div style="display:flex;align-items:center;gap:.4rem;">'
-              +'<span style="font-size:.8rem;color:var(--green);font-weight:500;">✓ 服用済み'+(takenTime?' '+takenTime:'')+'</span>'
+              +'<span style="font-size:.82rem;color:var(--green);font-weight:500;">✓ 服用済み'+(takenTime?' '+takenTime:'')+'</span>'
               +'<button class="btn-undo" onclick="undoTake(\''+item.id+'\',\''+t.id+'\')">取り消し</button>'
               +'</div>'
             : '<button class="btn-take" onclick="takeFromSchedule(\''+item.id+'\',\''+t.id+'\')">服用</button>')
@@ -1123,8 +1160,8 @@ function renderSchedule() {
         return '<div style="background:var(--surface);border:1px solid rgba(232,113,138,.3);border-radius:12px;padding:.75rem 1rem;margin-bottom:.4rem;display:flex;align-items:center;justify-content:space-between;">'
           +'<div style="display:flex;align-items:center;gap:.75rem;">'
           +'<span style="font-size:1.2rem;">'+(item.icon||'💊')+'</span>'
-          +'<div><p style="font-size:.88rem;font-weight:400;">'+item.name+'</p>'
-          +'<p style="font-size:.7rem;color:var(--muted);">'+fmtAmount(doseAmount(item))+item.unit+' / 残'+item.current+item.unit+'</p></div>'
+          +'<div><p style="font-size:.9rem;font-weight:400;">'+item.name+'</p>'
+          +'<p style="font-size:.78rem;color:var(--muted);">'+fmtAmount(doseAmount(item))+item.unit+' / 残'+item.current+item.unit+'</p></div>'
           +'</div>'
           +'<button class="btn-take" onclick="takeItem(\''+item.id+'\')">服用</button>'
           +'</div>';
@@ -1922,6 +1959,30 @@ _sb.auth.getSession().then(function(res) {
   document.addEventListener('touchend',function(){clearTimeout(t);},{passive:true});
   document.addEventListener('touchmove',function(){clearTimeout(t);},{passive:true});
 })();
+
+// ── Theme ──
+function toggleTheme() {
+  var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  if (isLight) {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('tototheme', 'dark');
+  } else {
+    document.documentElement.setAttribute('data-theme', 'light');
+    localStorage.setItem('tototheme', 'light');
+  }
+  updateThemeBtn();
+}
+function updateThemeBtn() {
+  var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  var btn = document.getElementById('themeBtn');
+  if (btn) btn.textContent = isLight ? '☀️' : '🌙';
+  var meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = isLight ? '#e8e7f5' : '#1a1a24';
+}
+updateThemeBtn();
+
+// ── Service Worker ──
+if ('serviceWorker' in navigator) { window.addEventListener('load', function(){ navigator.serviceWorker.register('/sw-medly.js').catch(function(){}); }); }
 
 // ── App top & back guard ──
 function goAppTop(){var t=document.querySelectorAll('.tab')[0];if(t)t.click();window.scrollTo({top:0,behavior:'smooth'});}
