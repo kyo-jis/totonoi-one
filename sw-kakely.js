@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kakely-v5';
+const CACHE_NAME = 'kakely-v30';
 // HTMLはキャッシュしない（常に最新を取得）
 const ASSETS = [
   '/manifest-kakely.json',
