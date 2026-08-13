@@ -822,11 +822,8 @@
         if (!el) return;
         el.style.display = bentoPrefs.hidden.indexOf(key) !== -1 ? 'none' : '';
       });
-      // 先頭の表示カードを大きく（Bentoの視覚階層）
-      var cards = Array.from(bento.querySelectorAll('.bc'));
-      cards.forEach(function(el){ el.classList.remove('featured'); });
-      var first = cards.find(function(el){ return el !== proCard && el.style.display !== 'none'; });
-      if (first) first.classList.add('featured');
+      // 全カードを均一表示（主役の大型カードは廃止）
+      Array.from(bento.querySelectorAll('.bc')).forEach(function(el){ el.classList.remove('featured'); });
     }
 
     var _editOrder = [], _editHidden = [];
