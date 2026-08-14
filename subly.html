@@ -57,9 +57,10 @@
     /* Header */
     .app-header { padding: 3rem 1.25rem 1.25rem; }
     .back-link { font-size:.75rem; color:var(--muted); text-decoration:none; letter-spacing:.1em; text-transform:uppercase; display:inline-flex; align-items:center; gap:.4rem; margin-bottom:0; }
-    .app-title { font-size:1.6rem; font-weight:500; letter-spacing:-.02em; }
+    .app-title { font-size:1.6rem; font-weight:600; letter-spacing:-.01em; }
     .app-title span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
-    .app-subtitle { font-size:.72rem; color:var(--muted); margin-top:.15rem; letter-spacing:.05em; }
+    .app-subtitle { font-size:.8rem; color:var(--muted); margin-top:.2rem; letter-spacing:.02em; }
+    .app-subtitle span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
     .auth-chip { background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); transition:all .2s; white-space:nowrap; }
     .auth-chip.logged-in { border-color:var(--accent); color:var(--accent); }
     /* Login Notice */
@@ -81,7 +82,7 @@
     .dot { width:8px; height:8px; border-radius:50%; }
 
     /* Free banner */
-    .free-banner { margin:0 1.25rem 1.25rem; background:rgba(232,113,138,.1); border:1px solid rgba(232,113,138,.25); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+    .free-banner { display:none !important; margin:0 1.25rem 1.25rem; background:rgba(232,113,138,.1); border:1px solid rgba(232,113,138,.25); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
     .free-banner-text { font-size:.8rem; color:var(--yellow); }
     .upgrade-btn { font-size:.72rem; font-weight:500; color:#1a1a24; background:var(--yellow); border:none; border-radius:8px; padding:.4rem .75rem; cursor:pointer; white-space:nowrap; font-family:var(--font); }
 
@@ -316,8 +317,8 @@
     <a class="back-link" href="index.html"> Totonoi One</a>
     <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
   </div>
-  <h1 class="app-title" onclick="goAppTop()" style="cursor:pointer;">Sub<span>ly</span></h1>
-  <p class="app-subtitle">サブスク管理</p>
+  <h1 class="app-title" onclick="goAppTop()" style="cursor:pointer;">サブスク管理</h1>
+  <p class="app-subtitle">Sub<span>ly</span></p>
 </div>
 <div id="loginNotice" class="login-notice" onclick="openAuthModal()" style="display:none">
   <span style="font-size:1rem">&#x2601;&#xFE0F;</span>
@@ -494,9 +495,9 @@
 </div>
 
 <button class="fab" onclick="openModal()">＋</button>
-<div class="ad-banner" id="adBanner">
-  <span class="ad-label">広告</span>
-  <p class="ad-content">Google AdSense 広告エリア</p>
+<div class="ad-banner" id="adBanner" onclick="location.href='index.html'" style="cursor:pointer;">
+  <span class="ad-label">近日</span>
+  <p class="ad-content">☁️ 自動クラウド保存は保存プランで（¥200/月〜）</p>
 </div>
 
 <!-- Modal -->
@@ -596,6 +597,7 @@
           <option value="convenience">🏪 コンビニ払い</option>
         </optgroup>
       </select>
+      <p style="font-size:.72rem;color:var(--muted);margin-top:.35rem">「家計簿の支払い方法」を選ぶと、請求日に家計簿へ支出が自動で反映されます。</p>
     </div>
     <button class="btn-primary" onclick="saveSubscription()">追加する</button>
     <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
@@ -603,7 +605,7 @@
 </div>
 
 <script>
-var FREE_LIMIT = 5;
+var FREE_LIMIT = Infinity;
 var isPro = localStorage.getItem('isPro') === 'true';
 
 
@@ -614,6 +616,51 @@ var PAYMENT_LABELS = {
   'appstore': '🍎 App Store', 'googleplay': '▶️ Google Play', 'paypal': '🅿️ PayPal',
   'bank': '🏦 銀行振込', 'convenience': '🏪 コンビニ払い'
 };
+
+// ── 家計簿(kakely)の支払い方法との連携 ──
+// 同一オリジンの localStorage 'kakely_pays' を読み、ログイン時はクラウドで補完。
+// サブスクの決済方法に「家計簿の支払い方法」を選べるようにし、値は "kakely:<id>" で保持。
+var kakelyPays = [];
+function loadKakelyPays() {
+  try { kakelyPays = JSON.parse(localStorage.getItem('kakely_pays') || '[]') || []; } catch(e) { kakelyPays = []; }
+  if (currentUser) {
+    _sb.from('kakely_payment_methods').select('*').eq('user_id', currentUser.id).order('created_at').then(function(res){
+      if (res && res.data && res.data.length) {
+        kakelyPays = res.data;
+        var ov = document.getElementById('modalOverlay');
+        if (ov && ov.classList.contains('show')) populateKakelyPayOptions();
+      }
+    });
+  }
+}
+function sublyPayLabel(code) {
+  if (code && code.indexOf('kakely:') === 0) {
+    var id = code.slice(7);
+    var p = kakelyPays.find(function(x){ return x.id === id; });
+    return p ? ((p.icon || '💳') + ' ' + p.name) : '💳 家計簿の支払い';
+  }
+  return PAYMENT_LABELS[code] || code || '';
+}
+function populateKakelyPayOptions() {
+  var sel = document.getElementById('fPayment');
+  if (!sel) return;
+  var old = document.getElementById('kakelyPayGroup');
+  if (old) old.remove();
+  if (!kakelyPays.length) return;
+  var og = document.createElement('optgroup');
+  og.id = 'kakelyPayGroup';
+  og.label = '家計簿の支払い方法';
+  kakelyPays.forEach(function(p){
+    var o = document.createElement('option');
+    o.value = 'kakely:' + p.id;
+    o.textContent = (p.icon || '💳') + ' ' + p.name;
+    og.appendChild(o);
+  });
+  var firstOpt = sel.querySelector('option');
+  if (firstOpt && firstOpt.nextSibling) sel.insertBefore(og, firstOpt.nextSibling);
+  else sel.appendChild(og);
+}
+loadKakelyPays();
 
 var CYCLE_LABELS = {
   'weekly':'毎週', 'monthly':'毎月', '3months':'3ヶ月', '6months':'6ヶ月',
@@ -976,11 +1023,11 @@ function renderList() {
         ? '<p class="sub-amount">'+amtStr+'</p><p class="sub-cycle">買い切り</p>'
         : '<p class="sub-amount">'+amtStr+'<span class="sub-cycle">/'+cycleLabel(s)+'</span></p>'
           + (cycleToMonths(s)!==1&&me>0?'<p class="sub-monthly-small">¥'+me.toLocaleString()+'/月換算</p>':'');
-      var payBadge = s.payment ? '<span class="payment-badge">' + (PAYMENT_LABELS[s.payment] || s.payment) + '</span>' : '';
+      var payBadge = s.payment ? '<span class="payment-badge">' + escapeHtml(sublyPayLabel(s.payment)) + '</span>' : '';
       return '<div class="sub-card">'
         + '<div class="sub-card-top">'
         + iconHTML(s)
-        + '<p class="sub-name">' + s.name + '</p>'
+        + '<p class="sub-name">' + escapeHtml(s.name) + '</p>'
         + '<div class="sub-actions">'
         + '<button class="btn-icon" onclick="editSub(\'' + s.id + '\')">✏️</button>'
         + '<button class="btn-icon" onclick="deleteSub(\'' + s.id + '\')">🗑</button>'
@@ -1116,7 +1163,7 @@ function showBillPopup(dateStr) {
     var ico=b.domain?'<div class="bill-popup-icon"><img src="'+faviconUrl(b.domain)+'" data-fb="'+(b.icon||'💳')+'" onerror="imgFb(this)"></div>':'<div class="bill-popup-icon">'+(b.icon||'💳')+'</div>';
     var me=monthlyEquiv(b);
     var sub=cycleToMonths(b)!==1&&me>0?'<span class="bill-popup-monthly">¥'+me.toLocaleString()+'/月換算</span>':'';
-    return '<div class="bill-popup-item">'+ico+'<span class="bill-popup-name">'+b.name+'</span>'
+    return '<div class="bill-popup-item">'+ico+'<span class="bill-popup-name">'+escapeHtml(b.name)+'</span>'
       +'<span class="bill-popup-amount-wrap"><span class="bill-popup-amount">¥'+Number(b.amount).toLocaleString()+'/'+cycleLabel(b)+'</span>'+sub+'</span></div>';
   }).join('');
   document.getElementById('billPopup').classList.add('show');
@@ -1133,7 +1180,7 @@ function changeMonth(dir) {
 function renderAnalytics() { renderBarChart(); renderAnalysisGrid(); renderRanking(); renderPaymentAnalysis(); renderSuggestions(); }
 
 function renderBarChart() {
-  var now=new Date(), monthCount=isPro?Math.max(6,getHistoryRange()):3;
+  var now=new Date(), monthCount=Math.max(6,getHistoryRange());
   var months=[];
   for (var i=monthCount-1;i>=0;i--) {
     var d=new Date(now.getFullYear(),now.getMonth()-i,1);
@@ -1151,7 +1198,7 @@ function renderBarChart() {
     return '<div style="flex:1;text-align:center;font-size:.58rem;color:'+(i===months.length-1?'var(--accent)':'var(--muted)')+'">'+ln[m.month]+'</div>';
   }).join('');
   var notice=document.getElementById('chartNotice');
-  if (notice) notice.style.display=isPro?'none':'flex';
+  if (notice) notice.style.display='none';
 }
 
 function getHistoryRange() {
@@ -1167,7 +1214,7 @@ function renderAnalysisGrid() {
     '<div class="analysis-card"><p class="analysis-card-label">月額換算合計</p><p class="analysis-card-value">¥'+avg.toLocaleString()+'</p><p class="analysis-card-sub">全サービス</p></div>'
     +'<div class="analysis-card"><p class="analysis-card-label">年間予測</p><p class="analysis-card-value">¥'+(avg*12).toLocaleString()+'</p><p class="analysis-card-sub">月換算ベース</p></div>'
     +'<div class="analysis-card"><p class="analysis-card-label">1日あたり</p><p class="analysis-card-value">¥'+Math.round(avg/30).toLocaleString()+'</p><p class="analysis-card-sub">月換算÷30日</p></div>'
-    +'<div class="analysis-card"><p class="analysis-card-label">登録数</p><p class="analysis-card-value">'+subs.length+'件</p><p class="analysis-card-sub">'+FREE_LIMIT+'件まで無料</p></div>';
+    +'<div class="analysis-card"><p class="analysis-card-label">登録数</p><p class="analysis-card-value">'+subs.length+'件</p><p class="analysis-card-sub">すべて無料</p></div>';
 }
 
 function renderRanking() {
@@ -1177,7 +1224,7 @@ function renderRanking() {
   document.getElementById('rankList').innerHTML=sorted.map(function(s,i){
     var ico=s.domain?'<div class="rank-icon"><img src="'+faviconUrl(s.domain)+'" data-fb="'+(s.icon||'💳')+'" onerror="imgFb(this)"></div>':'<div class="rank-icon">'+(s.icon||'💳')+'</div>';
     return '<div class="rank-item"><span class="rank-num'+(i<3?' gold':'')+'">'+(medals[i]||i+1)+'</span>'+ico
-      +'<div class="rank-info"><p class="rank-name">'+s.name+'</p><p class="rank-cycle">'+cycleLabel(s)+'</p></div>'
+      +'<div class="rank-info"><p class="rank-name">'+escapeHtml(s.name)+'</p><p class="rank-cycle">'+cycleLabel(s)+'</p></div>'
       +'<span class="rank-amount">¥'+monthlyEquiv(s).toLocaleString()+'/月</span></div>';
   }).join('');
 }
@@ -1192,7 +1239,7 @@ function renderPaymentAnalysis() {
   });
   var rows=Object.keys(map).sort(function(a,b){ return map[b].total-map[a].total; });
   document.getElementById('paymentAnalysis').innerHTML=rows.map(function(k){
-    var label = PAYMENT_LABELS[k] || (k || '未設定');
+    var label = escapeHtml(sublyPayLabel(k) || '未設定');
     return '<div class="payment-row"><span class="payment-name">'+label+'<span class="payment-count">'+map[k].count+'件</span></span>'
       +'<span class="payment-amount">¥'+map[k].total.toLocaleString()+'/月</span></div>';
   }).join('');
@@ -1208,7 +1255,7 @@ function renderSuggestions() {
     else if (s.cycle==='monthly'&&m>=1000) sugs.push({name:s.name,icon:s.icon,text:'年払いに切替えると年間¥'+Math.round(m*12*0.17).toLocaleString()+'程度の節約が見込めます。'});
   });
   el.innerHTML=sugs.length
-    ?sugs.slice(0,3).map(function(sg){ return '<div class="suggestion-card"><div class="suggestion-header"><span class="suggestion-badge">節約提案</span><span class="suggestion-name">'+sg.icon+' '+sg.name+'</span></div><p class="suggestion-text">'+sg.text+'</p></div>'; }).join('')
+    ?sugs.slice(0,3).map(function(sg){ return '<div class="suggestion-card"><div class="suggestion-header"><span class="suggestion-badge">節約提案</span><span class="suggestion-name">'+sg.icon+' '+escapeHtml(sg.name)+'</span></div><p class="suggestion-text">'+sg.text+'</p></div>'; }).join('')
     :'<p style="font-size:.82rem;color:var(--muted);padding:.5rem 0">現在の登録内容では削減提案はありません 👍</p>';
 }
 
@@ -1243,6 +1290,7 @@ function openModal() {
   document.getElementById('modalTitle').textContent='サービスを追加';
   ['fName','fIcon','fAmount'].forEach(function(id){ document.getElementById(id).value=''; });
   document.getElementById('fCycle').value='monthly';
+  populateKakelyPayOptions();
   document.getElementById('fPayment').value='';
   document.getElementById('fStartDate').value='';
   document.getElementById('fDate').value=new Date().toISOString().split('T')[0];
@@ -1264,6 +1312,7 @@ function editSub(id) {
   document.getElementById('fAmount').value=s.amount;
 
   document.getElementById('fCycle').value=s.cycle;
+  populateKakelyPayOptions();
   document.getElementById('fPayment').value=s.payment||'';
   document.getElementById('fStartDate').value=s.startDate||'';
   document.getElementById('fDate').value=s.nextBillingDate||'';
@@ -1291,7 +1340,7 @@ function saveSubscription() {
   var customNum=document.getElementById('fCustomNum').value;
   var customUnit=document.getElementById('fCustomUnit').value;
   if (!name||!amount){ alert('サービス名と金額を入力してください'); return; }
-  if (!editId&&subs.length>=FREE_LIMIT){ alert('無料プランは'+FREE_LIMIT+'件まで登録できます。'); return; }
+  /* 登録上限なし（全機能無料） */
   var selectedBtn=document.querySelector('.preset-btn.selected');
   var domain=selectedBtn?(selectedBtn.dataset.domain||''):(editId?(subs.find(function(x){return x.id===editId;})||{}).domain||'':'');
   var startDate=document.getElementById('fStartDate').value;
@@ -1311,14 +1360,14 @@ function deleteSub(id) {
 
 // ── Export/Import ──
 function exportData(fmt) {
-  if (!isPro){ alert('エクスポートは有料プランの機能です。'); return; }
+  /* エクスポートは全ユーザー無料 */
   if (fmt==='json') {
     var blob=new Blob([JSON.stringify({subs:subs,history:payHistory},null,2)],{type:'application/json'});
     var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
     a.download='subscriptions_'+new Date().toISOString().split('T')[0]+'.json'; a.click();
   } else {
     var rows=[['名前','金額','周期','次回請求日','決済方法'].join(',')];
-    subs.forEach(function(s){ rows.push([s.name,s.amount,cycleLabel(s),s.nextBillingDate,PAYMENT_LABELS[s.payment]||''].join(',')); });
+    subs.forEach(function(s){ rows.push([s.name,s.amount,cycleLabel(s),s.nextBillingDate,sublyPayLabel(s.payment)].join(',')); });
     var blob=new Blob(['\uFEFF'+rows.join('\n')],{type:'text/csv'});
     var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
     a.download='subscriptions_'+new Date().toISOString().split('T')[0]+'.csv'; a.click();
@@ -1326,7 +1375,7 @@ function exportData(fmt) {
 }
 
 function importData(e) {
-  if (!isPro){ alert('インポートは有料プランの機能です。'); e.target.value=''; return; }
+  /* インポートは全ユーザー無料 */
   var file=e.target.files[0]; if (!file) return;
   var reader=new FileReader();
   reader.onload=function(ev){
@@ -1374,7 +1423,7 @@ function updateProUI() {
   var freeBanner = document.getElementById('freeBanner');
   if (freeBanner) freeBanner.style.display = isPro ? 'none' : 'flex';
 
-  FREE_LIMIT = isPro ? 999 : 5;
+  FREE_LIMIT = Infinity;
 
   document.getElementById('countText').textContent = subs.length + (isPro ? '件' : '/5');
 
@@ -1382,7 +1431,7 @@ function updateProUI() {
   var planDesc  = document.getElementById('planDesc');
   var planBadge = document.getElementById('planBadge');
   if (planLabel) planLabel.textContent = isPro ? 'Proプラン' : '無料プラン';
-  if (planDesc)  planDesc.textContent  = isPro ? '全機能が利用できます' : '登録5件・3ヶ月グラフ・広告あり';
+  if (planDesc)  planDesc.textContent  = isPro ? '全機能が利用できます' : '全機能を無料で利用中';
   if (planBadge) { planBadge.textContent = isPro ? '✅ 有効中' : '現在'; planBadge.style.background = isPro ? 'rgba(94,207,160,.15)' : 'rgba(108,142,255,.15)'; planBadge.style.color = isPro ? 'var(--green)' : 'var(--accent)'; }
 }
 
@@ -1456,13 +1505,15 @@ function persist() {
   localStorage.setItem('subs', JSON.stringify(subs));
   localStorage.setItem('subHistory', JSON.stringify(payHistory));
   localStorage.setItem('subly_updated_at', Date.now().toString());
-  if(!currentUser){_syncStatus='local';updateSyncBadges();return;}
+  if(!currentUser||!isPro){_syncStatus='local';updateSyncBadges();return;}
   _syncStatus='syncing';updateSyncBadges();
   Promise.all([dbSave('subs',subs),dbSave('history',payHistory)]).then(function(rs){_syncStatus=rs.every(function(r){return r&&!r.error;})?'synced':'failed';if(_syncStatus==='failed')showAuthToast('⚠️ クラウド同期失敗');updateSyncBadges();});
 }
 
+function escapeHtml(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
 function dbSave(key, data) {
-  if (!currentUser) return Promise.resolve(null);
+  if (!currentUser || !isPro) return Promise.resolve(null);
   return _sb.from('user_data').upsert(
     { user_id: currentUser.id, app: _APP, key: key, data: data, updated_at: new Date().toISOString() },
     { onConflict: 'user_id,app,key' }
@@ -1472,6 +1523,11 @@ function logAction(action){if(!currentUser)return;_sb.from('app_logs').insert({u
 
 async function syncFromCloud() {
   logAction('open');
+  var _pp = await _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle();
+  if (_pp.data) { isPro = _pp.data.is_pro; localStorage.setItem('isPro', String(isPro)); }
+  if (currentUser.email === 'kyouji.o@gmail.com') { isPro = true; localStorage.setItem('isPro', 'true'); }
+  if (typeof updateProUI === 'function') updateProUI();
+  if (!isPro) { _syncStatus = 'local'; if (typeof updateSyncBadges === 'function') updateSyncBadges(); return; }
   var res = await _sb.from('user_data').select('key,data,updated_at').eq('user_id', currentUser.id).eq('app', _APP);
   if (res.data && res.data.length > 0) {
     var localTime = parseInt(localStorage.getItem('subly_updated_at')||'0');
@@ -1480,6 +1536,9 @@ async function syncFromCloud() {
       if (row.key === 'subs') { if(cloudTime>=localTime){subs=row.data||[];localStorage.setItem('subs',JSON.stringify(subs));}else dbSave('subs',subs); }
       if (row.key === 'history') { if(cloudTime>=localTime){payHistory=row.data||[];localStorage.setItem('subHistory',JSON.stringify(payHistory));}else dbSave('history',payHistory); }
     });
+    // クラウド側の請求日が過ぎたままの場合があるので、取り込み後にもう一度進める
+    // （init() の autoRecordHistory は同期前に走るため、ここで再実行しないと古い日付のまま表示される）
+    autoRecordHistory();
     _syncStatus = 'synced';
   } else if (res.data && res.data.length === 0) {
     if (subs.length > 0) dbSave('subs', subs);
@@ -1526,12 +1585,13 @@ _sb.auth.onAuthStateChange(function(event, session) {
   currentUser = session ? session.user : null;
   updateAuthUI();
   if (currentUser && event === 'SIGNED_IN') syncFromCloud();
+  if (currentUser) loadKakelyPays();
   if (!currentUser) updateProUI();
 });
 _sb.auth.getSession().then(function(res) {
   currentUser = res.data.session ? res.data.session.user : null;
   updateAuthUI();
-  if (currentUser) syncFromCloud();
+  if (currentUser) { syncFromCloud(); loadKakelyPays(); }
 });
 
 // ── 共通ギミック ──
