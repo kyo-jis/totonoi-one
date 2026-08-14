@@ -4205,8 +4205,14 @@ function fixedOccursIn(fc, y, m) {
   var diff = (y - (+sp[0])) * 12 + (m - (+sp[1] - 1));
   return diff >= 0 && diff % iv === 0;
 }
+var _autoFixedBusy = false;
 async function autoAddFixedCosts() {
   if (!fixedCosts.length) { renderPendingBanner(); return; }
+  if (_autoFixedBusy) return;
+  _autoFixedBusy = true;
+  try { await _autoAddFixedCostsBody(); } finally { _autoFixedBusy = false; }
+}
+async function _autoAddFixedCostsBody() {
   var today = new Date();
   var todayDay = today.getDate();
   var todayY = today.getFullYear();
@@ -4221,6 +4227,7 @@ async function autoAddFixedCosts() {
   var totalAdded = 0;
   var draftAdded = 0;
   var viewDirty = false;
+  var dedupTotal = 0;
 
   // 過去12か月の「固定費」重複取引を1回だけ掃除（同月・同memoは最古を残す）
   if (currentUser && !localStorage.getItem('kakely_fixdedup_v1')) {
@@ -4263,15 +4270,23 @@ async function autoAddFixedCosts() {
       var _from = ym + '-01', _to = ym + '-' + String(lastDay).padStart(2,'0');
       var cf = await _sb.from('kakely_transactions').select('id,memo,date')
         .eq('user_id', currentUser.id).gte('date', _from).lte('date', _to).like('memo', '固定費:%')
-        .order('date', { ascending: true });
+        .order('date', { ascending: true }).order('created_at', { ascending: true });
       var _rows = (cf && cf.data) || [];
       var _dupIds = [];
       _rows.forEach(function(t){ var _k=(t.memo||'').split('（')[0]; if (existingFixed[_k]) _dupIds.push(t.id); else existingFixed[_k] = true; });
       if (_dupIds.length) {
-        for (var _di = 0; _di < _dupIds.length; _di++) { await _sb.from('kakely_transactions').delete().eq('id', _dupIds[_di]); }
-        arr = arr.filter(function(t){ return _dupIds.indexOf(t.id) === -1; });
-        if (isView) { transactions = arr; saveMonthCache(); viewDirty = true; }
-        else localStorage.setItem(cacheKey, JSON.stringify(arr));
+        var _okIds = [];
+        for (var _di = 0; _di < _dupIds.length; _di++) {
+          var _delRes = await _sb.from('kakely_transactions').delete().eq('id', _dupIds[_di]);
+          if (!_delRes.error) _okIds.push(_dupIds[_di]);
+          else console.error('fixed dedup delete error', _delRes.error);
+        }
+        if (_okIds.length) {
+          arr = arr.filter(function(t){ return _okIds.indexOf(t.id) === -1; });
+          if (isView) { transactions = arr; saveMonthCache(); viewDirty = true; }
+          else localStorage.setItem(cacheKey, JSON.stringify(arr));
+          dedupTotal += _okIds.length;
+        }
       }
     }
 
@@ -4343,8 +4358,9 @@ async function autoAddFixedCosts() {
 
   if (draftAdded > 0) await persistPendingDrafts();
   renderPendingBanner();
+  if (viewDirty) renderAll();
+  if (dedupTotal > 0) showToast('🧹 重複していた固定費の記録を ' + dedupTotal + '件 整理しました');
   if (totalAdded > 0) {
-    if (viewDirty) renderAll();
     showToast('🏠 固定費/固定収入 ' + totalAdded + '件を自動追加しました');
   } else if (draftAdded > 0) {
     showToast('📝 確認待ち ' + draftAdded + '件が届いています');
@@ -4678,11 +4694,56 @@ async function deleteInstallment() {
   closeModal('installmentModal'); renderSettings(); showToast('削除しました');
 }
 
+var _autoInsBusy = false;
 async function autoAddInstallments() {
-  if (!installments.length) return;
+  if (!installments.length || _autoInsBusy) return;
+  _autoInsBusy = true;
+  try { await _autoAddInstallmentsBody(); } finally { _autoInsBusy = false; }
+}
+async function _autoAddInstallmentsBody() {
   var today = new Date();
   var nowY = today.getFullYear(), nowM = today.getMonth(), nowD = today.getDate();
   var totalAdded = 0, viewDirty = false, dataChanged = false;
+
+  // クラウド上の既存「分割」取引を取得（ローカルキャッシュ消失時の再追加を防止）
+  var existingIns = {};
+  if (currentUser) {
+    var exRes = await _sb.from('kakely_transactions')
+      .select('id,memo,date').eq('user_id', currentUser.id)
+      .like('memo', '分割:%').order('created_at');
+    var seenIns = {}, dupRows = [];
+    ((exRes && exRes.data) || []).forEach(function(t){
+      var k = (t.memo || '') + '|' + t.date;
+      if (seenIns[k]) { dupRows.push(t); return; }
+      seenIns[k] = true;
+      existingIns[(t.memo || '').split('（')[0]] = true;
+    });
+
+    // 二重登録の自動修復: 同じmemo×同じ日付は最古の1件だけ残し、クラウド・ローカル両方から削除
+    if (dupRows.length) {
+      var dupIds = [];
+      for (var di = 0; di < dupRows.length; di++) {
+        var delRes = await _sb.from('kakely_transactions').delete().eq('id', dupRows[di].id);
+        if (!delRes.error) dupIds.push(dupRows[di].id);
+        else console.error('installment dedup delete error', delRes.error);
+      }
+      if (dupIds.length) {
+        transactions = transactions.filter(function(t){ return dupIds.indexOf(t.id) === -1; });
+        var cleaned = {};
+        dupRows.forEach(function(r){
+          if (dupIds.indexOf(r.id) === -1) return;
+          var dd = parseLocalDate(r.date);
+          var ck = 'kakely_txn_' + dd.getFullYear() + '_' + (dd.getMonth() + 1);
+          if (!cleaned[ck]) cleaned[ck] = JSON.parse(localStorage.getItem(ck) || '[]');
+          cleaned[ck] = cleaned[ck].filter(function(t){ return t.id !== r.id; });
+        });
+        Object.keys(cleaned).forEach(function(ck){ localStorage.setItem(ck, JSON.stringify(cleaned[ck])); });
+        saveMonthCache();
+        renderAll();
+        showToast('🧹 重複していた分割払いの記録を ' + dupIds.length + '件 整理しました');
+      }
+    }
+  }
 
   for (var i = 0; i < installments.length; i++) {
     var ins = installments[i];
@@ -4700,7 +4761,7 @@ async function autoAddInstallments() {
       var cacheKey = 'kakely_txn_' + tm.y + '_' + (tm.m + 1);
       var isView = (tm.y === viewYear && tm.m === viewMonth);
       var arr = isView ? transactions : JSON.parse(localStorage.getItem(cacheKey) || '[]');
-      if (arr.some(function(t){ return t.memo && t.memo.indexOf(memoKey) !== -1; })) { lastPaidN = n; continue; }
+      if (existingIns[memoKey] || arr.some(function(t){ return t.memo && t.memo.split('（')[0] === memoKey; })) { lastPaidN = n; continue; }
       var dateStr = tm.y + '-' + String(tm.m + 1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
       var amt = insAmount(ins, n);
       var memoTxt = memoKey + '（' + ins.name + ' ' + n + '/' + ins.count + '回目）';
