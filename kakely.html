@@ -1004,7 +1004,17 @@ function txnSettleDate(t) {
 var categories = JSON.parse(localStorage.getItem('kakely_cats') || '[]');
 var incomeCategories = JSON.parse(localStorage.getItem('kakely_income_cats') || '[]');
 var paymentMethods = JSON.parse(localStorage.getItem('kakely_pays') || '[]');
-var sublyNames = JSON.parse(localStorage.getItem('kakely_subly_names') || '{}'); // subly連携: サブスクID→サービス名
+// subly連携: サブスクID→サービス名（sublyが同一オリジンに保存する 'subs' を直接読み、同期時のキャッシュで補完）
+var sublyNames = {};
+function loadSublyNames() {
+  try { sublyNames = JSON.parse(localStorage.getItem('kakely_subly_names') || '{}') || {}; } catch(e) { sublyNames = {}; }
+  try {
+    (JSON.parse(localStorage.getItem('subs') || '[]') || []).forEach(function(s){
+      if (s && s.id != null && s.name) sublyNames[s.id] = s.name;
+    });
+  } catch(e) {}
+}
+loadSublyNames();
 var transactions = [];
 var now = new Date();
 var viewYear = now.getFullYear(), viewMonth = now.getMonth();
@@ -1263,12 +1273,11 @@ function renderList() {
             nameLine = tLabel + (pay ? ' · ' + pay.icon + esc(pay.name) : '') + ' <span class="transfer-badge">' + (isCardWd ? 'カード引落' : '移動') + '</span>';
           } else {
             var baseName = cat ? cat.name : '未分類';
-            if (isSubly) {
-              var subName = sublyNames[(t.memo || '').split(':')[1]];
-              if (subName) baseName = subName;
-            }
+            var subName = isSubly ? sublyNames[(t.memo || '').split(':')[1]] : null;
+            if (subName) baseName = subName;
             nameLine = esc(baseName) + (pay ? ' · ' + pay.icon + esc(pay.name) : '');
-            if (isSubly) nameLine += ' <span class="fixed-badge">サブスク</span>';
+            // サービス名が取れた時だけバッジを付ける（「サブスク＋サブスク」の重複表示を防ぐ）
+            if (subName) nameLine += ' <span class="fixed-badge">サブスク</span>';
             if (isGroup) nameLine += ' <span class="group-badge">まとめ</span>';
             if (isFixed) {
               var fm = t.memo.match(/（(.+)）/);
@@ -1350,10 +1359,11 @@ function showCalPopup(dateStr) {
     var cat = findCat(t.category_id, t.is_income);
     var isSubly = !!(t.memo && t.memo.indexOf('サブスク自動追加:') === 0);
     var name = cat ? cat.name : '未分類';
-    if (isSubly) { var sn = sublyNames[(t.memo || '').split(':')[1]]; if (sn) name = sn; }
+    var sn = isSubly ? sublyNames[(t.memo || '').split(':')[1]] : null;
+    if (sn) name = sn;
     return '<div class="txn-row" onclick="openTxnModal(\'' + t.id + '\')">'
       + '<div class="txn-icon">' + (cat ? cat.icon : '❓') + '</div>'
-      + '<div class="txn-info"><p class="txn-name">' + escapeHtml(name) + (isSubly ? ' <span class="fixed-badge">サブスク</span>' : '') + '</p>'
+      + '<div class="txn-info"><p class="txn-name">' + escapeHtml(name) + (sn ? ' <span class="fixed-badge">サブスク</span>' : '') + '</p>'
       + (t.memo && !isSubly ? '<p class="txn-memo">' + escapeHtml(t.memo) + '</p>' : '') + '</div>'
       + '<span class="txn-amount' + (t.is_income ? ' income' : '') + '">'
       + (t.is_income ? '+' : '−') + t.amount.toLocaleString() + '</span></div>';
@@ -3878,9 +3888,13 @@ async function _autoAddSublyBody() {
   var subs = res.data.data;
 
   // 一覧表示用にサブスク名を保存（カテゴリ名「サブスク」の代わりにサービス名を出す）
-  sublyNames = {};
-  subs.forEach(function(s){ if (s && s.id != null) sublyNames[s.id] = s.name || ''; });
-  localStorage.setItem('kakely_subly_names', JSON.stringify(sublyNames));
+  var nameMap = {};
+  subs.forEach(function(s){ if (s && s.id != null && s.name) nameMap[s.id] = s.name; });
+  localStorage.setItem('kakely_subly_names', JSON.stringify(nameMap));
+  var namesChanged = JSON.stringify(nameMap) !== JSON.stringify(sublyNames);
+  loadSublyNames();
+  // 名前が変わっていて、表示中にサブスク行があれば描き直す
+  if (namesChanged && transactions.some(function(t){ return t.memo && t.memo.indexOf('サブスク自動追加:') === 0; })) renderList();
   var now = new Date();
   var today = localDateStr(now);
   // バックフィル窓: 先月1日〜今日（古い履歴の大量投入を避ける）
