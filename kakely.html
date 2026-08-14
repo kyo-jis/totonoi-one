@@ -3234,8 +3234,10 @@ async function fetchMonthTransactions() {
     .order('date', {ascending: false}).order('created_at', {ascending: false});
   if (res.data) {
     // temp_/pending_/tmp_ は未送信。実UUIDでもSELECTに含まれない場合（レース）は保護する
+    // ただし自動追加行（固定費/分割/サブスク）はクラウドを正とする（他端末で重複整理・削除された行を復活させない。必要なら autoAdd 系が再追加する）
     var toPreserve = transactions.filter(function(t) {
       var id = String(t.id);
+      if (t.memo && /^(固定費:|分割:|サブスク自動追加:)/.test(t.memo)) return false;
       if (/^(pending_|temp_|tmp_|tf_)/.test(id)) return true;
       return !res.data.some(function(d) { return d.id === id; });
     });
@@ -4192,6 +4194,22 @@ function dedupFixedArr(arr) {
     return byMemo[t.memo.split('（')[0]] === t;
   });
 }
+// 分割払いのローカル重複を1件に整理（同期済みを優先・クラウドとの二重表示を解消）
+function dedupInsArr(arr) {
+  var byMemo = {};
+  arr.forEach(function(t){
+    if (t.memo && t.memo.indexOf('分割:') === 0) {
+      var k = t.memo.split('（')[0];
+      var cur = byMemo[k];
+      if (!cur) byMemo[k] = t;
+      else if (isUuid(t.id) && !isUuid(cur.id)) byMemo[k] = t;
+    }
+  });
+  return arr.filter(function(t){
+    if (!(t.memo && t.memo.indexOf('分割:') === 0)) return true;
+    return byMemo[t.memo.split('（')[0]] === t;
+  });
+}
 // 固定費の頻度ラベル（1=毎月, 2=隔月, 3=3か月ごと, 6=半年ごと, 12=毎年）
 function fixedFreqLabel(iv) {
   return ({1:'毎月',2:'隔月',3:'3か月ごと',6:'半年ごと',12:'毎年'})[iv] || '毎月';
@@ -4761,6 +4779,14 @@ async function _autoAddInstallmentsBody() {
       var cacheKey = 'kakely_txn_' + tm.y + '_' + (tm.m + 1);
       var isView = (tm.y === viewYear && tm.m === viewMonth);
       var arr = isView ? transactions : JSON.parse(localStorage.getItem(cacheKey) || '[]');
+      // ローカル（同期待ち含む）の分割重複も1件に整理（クラウドとの二重表示を解消・同期済みを優先）
+      var _lb = arr.length;
+      arr = dedupInsArr(arr);
+      if (isView) transactions = arr;
+      if (arr.length !== _lb) {
+        if (isView) { saveMonthCache(); viewDirty = true; }
+        else localStorage.setItem(cacheKey, JSON.stringify(arr));
+      }
       if (existingIns[memoKey] || arr.some(function(t){ return t.memo && t.memo.split('（')[0] === memoKey; })) { lastPaidN = n; continue; }
       var dateStr = tm.y + '-' + String(tm.m + 1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
       var amt = insAmount(ins, n);
@@ -4786,8 +4812,8 @@ async function _autoAddInstallmentsBody() {
   }
 
   if (dataChanged) await persistInstallments();
+  if (viewDirty) renderAll();
   if (totalAdded > 0) {
-    if (viewDirty) renderAll();
     renderSettings();
     showToast('🧾 分割払い ' + totalAdded + '件を記録しました');
   } else if (dataChanged) {
