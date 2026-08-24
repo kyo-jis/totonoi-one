@@ -1544,7 +1544,6 @@ function openLogModal(subjId, prefill, sessionId) {
     document.getElementById('logDur').value = s.duration;
     document.getElementById('logMemo').value = s.memo || '';
     document.getElementById('logDate').value = s.date;
-    document.getElementById('logMaterial').value = s.materialId || '';
     document.getElementById('logFromPage').value = s.fromPage || '';
     document.getElementById('logToPage').value = s.toPage || '';
     document.getElementById('logModalTitle').textContent = '記録を編集';
@@ -1563,25 +1562,38 @@ function openLogModal(subjId, prefill, sessionId) {
   }
   renderLogSubjGrid();
   renderLogStudyTypeGrid();
-  renderLogMaterialSelect();
+  renderLogMaterialSelect(_logSessionId ? (sessions.find(function(x){ return x.id === _logSessionId; })||{}).materialId || '' : '');
   onLogMaterialChange();
   document.getElementById('logModal').classList.add('show');
 }
 function closeLogModal() { document.getElementById('logModal').classList.remove('show'); }
 
-function renderLogMaterialSelect() {
+// keepId 省略=現在の選択を維持 / 値を渡すとその教材を選択（'' で選択なし）
+function renderLogMaterialSelect(keepId) {
   var grp = document.getElementById('logMaterialGroup');
   var sel = document.getElementById('logMaterial');
-  if (!materials.length) { grp.style.display = 'none'; return; }
+  var prev = (keepId === undefined) ? sel.value : (keepId || '');
+  // 選択中の資格に紐づく教材だけを出す
+  var list = materials.filter(function(m){ return m.subjectId === _logSubjId; });
+  // 編集時、他の資格の教材が紐づいている記録はその教材も残す（既存のリンクを壊さない）
+  if (prev && !list.some(function(m){ return m.id === prev; })) {
+    var extra = materials.find(function(m){ return m.id === prev; });
+    if (extra) list = list.concat(extra);
+  }
+  if (!list.length) {
+    grp.style.display = 'none';
+    sel.innerHTML = '<option value="">（教材を選択しない）</option>';
+    sel.value = '';
+    return;
+  }
   grp.style.display = 'block';
-  var cur = sel.value;
   sel.innerHTML = '<option value="">（教材を選択しない）</option>'
-    + materials.map(function(m) {
+    + list.map(function(m) {
         var tail = isPercentUnit(m) ? '（％で記録）'
                  : (m.totalPages ? '（全' + m.totalPages + unitDef(matUnit(m)).short + '）' : '');
         return '<option value="' + m.id + '">' + m.title + tail + '</option>';
       }).join('');
-  if (cur) sel.value = cur;
+  sel.value = list.some(function(m){ return m.id === prev; }) ? prev : '';
 }
 
 function onLogMaterialChange() {
@@ -1617,11 +1629,17 @@ function renderLogSubjGrid() {
 }
 
 function selLogSubj(id) {
+  if (_logSubjId === id) return;
   _logSubjId = id;
   document.querySelectorAll('#logSubjGrid .subj-select-btn').forEach(function(b) { b.classList.remove('selected'); });
   var idx = subjects.findIndex(function(s) { return s.id === id; });
   var btns = document.querySelectorAll('#logSubjGrid .subj-select-btn');
   if (btns[idx]) btns[idx].classList.add('selected');
+  // 資格が変わったら教材候補を入れ替える（前の資格の教材とページが残らないように）
+  document.getElementById('logFromPage').value = '';
+  document.getElementById('logToPage').value = '';
+  renderLogMaterialSelect('');
+  onLogMaterialChange();
 }
 
 function renderLogStudyTypeGrid() {

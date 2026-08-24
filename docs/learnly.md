@@ -126,6 +126,7 @@
 | `renderToday()` | 今日タブの資格カード一覧 |
 | `renderSubjects()` | 資格タブ（インライン展開付き） |
 | `renderLog()` | 記録タブ（日付グループ + 学習方法アイコン） |
+| `renderLogMaterialSelect(keepId)` | 記録モーダルの教材プルダウン。選択中の資格(`_logSubjId`)の教材だけを出す。引数省略で現在の選択を維持 |
 | `renderSettingsStats()` | 設定タブ統計・学習方法内訳グラフ |
 | `renderStudyTypeBreakdown()` | 学習方法内訳グラフ（全体＋資格別） |
 | `persist()` | localStorage保存 + Supabaseクラウド同期 |
