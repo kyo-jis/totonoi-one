@@ -1,4 +1,4 @@
-const CACHE_NAME = 'learnly-v9';
+const CACHE_NAME = 'learnly-v10';
 const ASSETS = [
   '/learnly',
   '/learnly.html',

@@ -629,10 +629,6 @@
         <button class="dur-preset" onclick="setDur(90)">90分</button>
       </div>
     </div>
-    <div class="form-group">
-      <label>学習方法（任意）</label>
-      <div class="study-type-grid" id="logStudyTypeGrid"></div>
-    </div>
     <div class="form-group" id="logMaterialGroup" style="display:none;">
       <label>教材（任意）</label>
       <select id="logMaterial" onchange="onLogMaterialChange()">
@@ -1533,10 +1529,10 @@ function renderStudyTypeBreakdown() {
   var el = document.getElementById('studyTypeBreakdown');
   if (!el) return;
   var typed = sessions.filter(function(s){ return s.studyType; });
-  if (!typed.length) {
-    el.innerHTML = '<p style="font-size:.8rem;color:var(--muted);padding:.3rem 0;">学習方法を記録するとここに表示されます</p>';
-    return;
-  }
+  var sec = document.getElementById('studyTypeSection');
+  // 学習方法は記録モーダルから外したので、過去に記録した分がある場合だけセクションを出す
+  if (!typed.length) { if (sec) sec.style.display = 'none'; el.innerHTML = ''; return; }
+  if (sec) sec.style.display = '';
   var overall = {};
   typed.forEach(function(s){ overall[s.studyType]=(overall[s.studyType]||0)+(s.duration||0); });
   var maxOv = Math.max.apply(null, Object.values(overall));
@@ -1639,7 +1635,8 @@ function openLogModal(subjId, prefill, sessionId) {
     document.getElementById('logSaveBtn').textContent = '記録する';
   }
   renderLogSubjGrid();
-  renderLogStudyTypeGrid();
+  // 学習方法の選択欄は記録モーダルから外した（入力を速くするため）。
+  // 編集時は _logStudyType に元の値が入るので、既存記録の学習方法は保持される。
   renderLogMaterialSelect(_logSessionId ? (sessions.find(function(x){ return x.id === _logSessionId; })||{}).materialId || '' : '');
   onLogMaterialChange();
   document.getElementById('logModal').classList.add('show');
@@ -1717,20 +1714,6 @@ function selLogSubj(id) {
   onLogMaterialChange();
 }
 
-function renderLogStudyTypeGrid() {
-  var el = document.getElementById('logStudyTypeGrid');
-  if (!el) return;
-  el.innerHTML = STUDY_TYPES.map(function(t) {
-    return '<button class="study-type-btn' + (t.id===_logStudyType?' selected':'') + '" onclick="selStudyType(\'' + t.id + '\')">'
-      + '<span class="study-type-icon">' + t.icon + '</span>'
-      + '<span class="study-type-lbl">' + t.label + '</span>'
-      + '</button>';
-  }).join('');
-}
-function selStudyType(id) {
-  _logStudyType = (_logStudyType === id) ? null : id;
-  renderLogStudyTypeGrid();
-}
 
 function adjustDur(d) { var el=document.getElementById('logDur'); el.value=Math.max(1,Math.min(480,(parseInt(el.value)||0)+d)); }
 function setDur(v)    { document.getElementById('logDur').value = v; }
