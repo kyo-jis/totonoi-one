@@ -154,10 +154,21 @@
     .subjects-list { padding:0 1.25rem; }
     .subject-item { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:.625rem; display:flex; align-items:center; gap:.9rem; }
     .subject-item-info { flex:1; min-width:0; }
-    .subject-item-name { font-size:.95rem; font-weight:500; }
-    .subject-item-meta { font-size:.72rem; color:var(--muted); margin-top:.2rem; }
+    /* 折り返してカードの高さが変わらないよう1行省略にする */
+    .subject-item-name { font-size:.95rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .subject-item-meta { font-size:.72rem; color:var(--muted); margin-top:.2rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .btn-icon-sm { width:30px; height:30px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); font-size:.75rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
     .btn-icon-sm:active { transform:scale(.88); }
+    /* 資格の並び順 */
+    .sort-bar { display:flex; align-items:center; gap:.4rem; padding:0 1.25rem .75rem; }
+    .sort-bar-label { font-size:.65rem; color:var(--muted); }
+    .sort-chip { background:var(--surface2); border:1px solid var(--border); color:var(--muted); border-radius:20px; padding:.3rem .7rem; font-size:.7rem; font-family:var(--font); cursor:pointer; white-space:nowrap; }
+    .sort-chip.active { border-color:var(--accent); background:rgba(60,140,191,.14); color:var(--text); }
+    .sort-chip:active { transform:scale(.93); }
+    .reorder-btns { display:flex; flex-direction:column; gap:2px; flex-shrink:0; }
+    .reorder-btn { width:26px; height:14px; border-radius:5px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); font-size:.5rem; line-height:1; padding:0; font-family:var(--font); cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .reorder-btn:disabled { opacity:.28; }
+    .reorder-btn:active:not(:disabled) { transform:scale(.88); }
 
     /* Log Tab */
     .log-list { padding:0 1.25rem; }
@@ -1115,6 +1126,47 @@ function cancelExamApplied(examId) {
   persist(); renderAll();
 }
 
+/* ── 資格の並び順（既定=試験日が近い順 / 手動並び替え） ── */
+var subjSort = localStorage.getItem('learnly_subj_sort') || 'exam';
+// 直近の未来の試験日。無ければ Infinity（＝末尾へ）
+function subjectExamTime(id) {
+  var today = new Date(); today.setHours(0,0,0,0);
+  var t = Infinity;
+  exams.forEach(function(e){
+    if (e.subjectId !== id) return;
+    var d = parseLocalDate(e.examDate);
+    if (d && d >= today && d.getTime() < t) t = d.getTime();
+  });
+  return t;
+}
+// 画面に出す順番。手動モードでは subjects の並びをそのまま使う
+function sortedSubjects() {
+  if (subjSort !== 'exam') return subjects.slice();
+  return subjects.map(function(s, i){ return { s:s, i:i, t:subjectExamTime(s.id) }; })
+    .sort(function(a, b){
+      if (a.t !== b.t) return a.t < b.t ? -1 : 1;  // Infinity同士の引き算はNaNになるため比較で判定
+      return a.i - b.i;
+    })
+    .map(function(x){ return x.s; });
+}
+function setSubjSort(mode) {
+  if (mode === subjSort) return;
+  // 手動へ切り替えるときは、いま見えている並びをそのまま初期状態にする
+  if (mode === 'manual') { subjects = sortedSubjects(); persist(); }
+  subjSort = mode;
+  localStorage.setItem('learnly_subj_sort', mode);
+  renderSubjects(); renderToday();
+  showToast(mode === 'manual' ? '✋ 手動で並び替えできます' : '🗓 試験日が近い順に並べます');
+}
+function moveSubject(id, dir) {
+  var i = subjects.findIndex(function(s){ return s.id === id; });
+  var j = i + dir;
+  if (i < 0 || j < 0 || j >= subjects.length) return;
+  var tmp = subjects[i]; subjects[i] = subjects[j]; subjects[j] = tmp;
+  persist();
+  renderSubjects(); renderToday();
+}
+
 /* ── Today Tab ── */
 function renderToday() {
   var d = new Date();
@@ -1129,7 +1181,7 @@ function renderToday() {
     return;
   }
   var today = todayStr();
-  el.innerHTML = subjects.map(function(subj) {
+  el.innerHTML = sortedSubjects().map(function(subj) {
     var todayM = minsOnDate(today, subj.id);
     var goal   = subj.dailyGoal || 0;
     var pct    = goal ? Math.min(100, Math.round((todayM / goal) * 100)) : 0;
@@ -1346,7 +1398,13 @@ function renderSubjects() {
     el.innerHTML = '<div class="empty-state"><div class="empty-icon">📖</div><p>資格・目標がまだ登録されていません。<br>＋ボタンで追加してください。</p></div>';
     return;
   }
-  el.innerHTML = subjects.map(function(subj) {
+  var list = sortedSubjects();
+  var sortBar = list.length < 2 ? '' : '<div class="sort-bar">'
+    + '<span class="sort-bar-label">並び順</span>'
+    + '<button class="sort-chip' + (subjSort==='exam'?' active':'') + '" onclick="setSubjSort(\'exam\')">🗓 試験日順</button>'
+    + '<button class="sort-chip' + (subjSort==='manual'?' active':'') + '" onclick="setSubjSort(\'manual\')">✋ 手動</button>'
+    + '</div>';
+  el.innerHTML = sortBar + list.map(function(subj, idx) {
     var total = sessions.filter(function(s) { return s.subjectId === subj.id; })
       .reduce(function(sum, s) { return sum + (s.duration || 0); }, 0);
     var cnt = sessions.filter(function(s) { return s.subjectId === subj.id; }).length;
@@ -1394,6 +1452,12 @@ function renderSubjects() {
           + '<button class="btn-icon-sm" onclick="event.stopPropagation();openLogModal(\'' + subj.id + '\')">＋</button>'
           + '<button class="btn-icon-sm" onclick="event.stopPropagation();editSubject(\'' + subj.id + '\')" title="編集">✏️</button>'
           + '<button class="btn-icon-sm" onclick="event.stopPropagation();toggleSubjectExpand(\'' + subj.id + '\')" title="' + (isExpanded?'閉じる':'教材を表示') + '" style="color:' + (isExpanded?'var(--accent)':'var(--muted)') + ';">' + (isExpanded ? '▲' : '▼') + '</button>'
+          + (subjSort==='manual'
+              ? '<div class="reorder-btns">'
+                + '<button class="reorder-btn" onclick="event.stopPropagation();moveSubject(\'' + subj.id + '\',-1)"' + (idx===0?' disabled':'') + ' title="上へ">▲</button>'
+                + '<button class="reorder-btn" onclick="event.stopPropagation();moveSubject(\'' + subj.id + '\',1)"' + (idx===list.length-1?' disabled':'') + ' title="下へ">▼</button>'
+                + '</div>'
+              : '')
         + '</div>'
       + '</div>'
       + expandedSection
@@ -1484,7 +1548,7 @@ function renderStudyTypeBreakdown() {
     html+='<div class="breakdown-bar-row"><span class="breakdown-bar-icon">'+t.icon+'</span><span class="breakdown-bar-label">'+t.label+'</span><div class="breakdown-bar-bg"><div class="breakdown-bar-fill" style="width:'+pct+'%;"></div></div><span class="breakdown-bar-val">'+formatMin(mins)+'</span></div>';
   });
   html+='</div>';
-  var subjsWithData = subjects.filter(function(subj){ return typed.some(function(s){ return s.subjectId===subj.id; }); });
+  var subjsWithData = sortedSubjects().filter(function(subj){ return typed.some(function(s){ return s.subjectId===subj.id; }); });
   subjsWithData.forEach(function(subj){
     var ss=typed.filter(function(s){ return s.subjectId===subj.id; });
     var bt={};
@@ -1563,7 +1627,7 @@ function openLogModal(subjId, prefill, sessionId) {
     document.getElementById('logModalTitle').textContent = '記録を編集';
     document.getElementById('logSaveBtn').textContent = '更新する';
   } else {
-    _logSubjId = subjId || (subjects.length ? subjects[0].id : null);
+    _logSubjId = subjId || (subjects.length ? sortedSubjects()[0].id : null);
     _logStudyType = null;
     document.getElementById('logDur').value = prefill || 30;
     document.getElementById('logMemo').value = '';
@@ -1634,7 +1698,7 @@ function onLogMaterialChange() {
 
 function renderLogSubjGrid() {
   if (!subjects.length) { document.getElementById('logSubjGrid').innerHTML = '<p style="font-size:.8rem;color:var(--muted);">資格・目標がありません</p>'; return; }
-  document.getElementById('logSubjGrid').innerHTML = subjects.map(function(s) {
+  document.getElementById('logSubjGrid').innerHTML = sortedSubjects().map(function(s) {
     return '<button class="subj-select-btn' + (s.id===_logSubjId?' selected':'') + '" onclick="selLogSubj(\'' + s.id + '\')">'
       + '<span class="subj-select-icon">' + (s.icon||'📘') + '</span>'
       + '<span class="subj-select-name">' + s.name + '</span>'
@@ -1645,10 +1709,7 @@ function renderLogSubjGrid() {
 function selLogSubj(id) {
   if (_logSubjId === id) return;
   _logSubjId = id;
-  document.querySelectorAll('#logSubjGrid .subj-select-btn').forEach(function(b) { b.classList.remove('selected'); });
-  var idx = subjects.findIndex(function(s) { return s.id === id; });
-  var btns = document.querySelectorAll('#logSubjGrid .subj-select-btn');
-  if (btns[idx]) btns[idx].classList.add('selected');
+  renderLogSubjGrid();  // 表示順が変わっても選択位置がずれないよう描き直す
   // 資格が変わったら教材候補を入れ替える（前の資格の教材とページが残らないように）
   document.getElementById('logFromPage').value = '';
   document.getElementById('logToPage').value = '';
