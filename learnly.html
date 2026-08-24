@@ -175,6 +175,7 @@
     .page-range-row { display:flex; align-items:center; gap:.4rem; margin-top:.4rem; }
     .page-range-row input { flex:1; width:0; min-width:0; padding:.55rem .65rem; font-size:.9rem; }
     .page-range-sep { color:var(--muted); font-size:.8rem; flex-shrink:0; }
+    .unit-hint { font-size:.62rem; color:var(--muted); margin-top:.45rem; line-height:1.55; }
     .log-date-input { width:100%; padding:.65rem .9rem; font-size:.9rem; }
 
     /* Settings */
@@ -627,7 +628,7 @@
         <input type="number" id="logFromPage" placeholder="開始" min="1">
         <span class="page-range-sep">〜</span>
         <input type="number" id="logToPage" placeholder="終了" min="1">
-        <span class="page-range-sep">p</span>
+        <span class="page-range-sep" id="logPageUnit">p</span>
       </div>
     </div>
     <div class="form-group">
@@ -694,10 +695,15 @@
         <input type="text" id="materialAuthor" placeholder="著者名">
       </div>
       <div class="form-group">
-        <label>現在ページ / 総ページ数</label>
+        <label>進捗の単位</label>
+        <div class="study-type-grid" id="materialUnitGrid"></div>
+        <p class="unit-hint">電子書籍などページ番号が出ない・変わる教材は「％」や「章」がおすすめです</p>
+      </div>
+      <div class="form-group">
+        <label id="materialPageLabel">現在ページ / 総ページ数</label>
         <div style="display:flex;align-items:center;gap:.5rem;">
           <input type="number" id="materialCurrentPage" placeholder="0" min="0" style="flex:1;">
-          <span style="color:var(--muted);">/ </span>
+          <span style="color:var(--muted);" id="materialPageSep">/ </span>
           <input type="number" id="materialTotalPages" placeholder="300" min="1" style="flex:1;">
         </div>
       </div>
@@ -1250,18 +1256,55 @@ function renderResourceCardHtml(r) {
   }
   return '<div class="resource-card" style="cursor:default;">'+inner+'</div>';
 }
+/* ── 教材の進捗単位（電子書籍はページ番号が出ない・文字サイズで変わるため選べるようにする） ── */
+var MATERIAL_UNITS = [
+  { id:'page',    icon:'📄', label:'ページ',  short:'p',     suffix:'ページ' },
+  { id:'percent', icon:'％', label:'％',      short:'%',     suffix:'%' },
+  { id:'loc',     icon:'🔢', label:'位置No.', short:'No.',   suffix:' 位置No.' },
+  { id:'chapter', icon:'📑', label:'章',      short:'章',    suffix:'章' }
+];
+function unitDef(id){ for(var i=0;i<MATERIAL_UNITS.length;i++){ if(MATERIAL_UNITS[i].id===id) return MATERIAL_UNITS[i]; } return MATERIAL_UNITS[0]; }
+// 未設定の既存教材は「ページ」として扱う（後方互換）
+function matUnit(m){ return unitDef(m && m.unit).id; }
+function isPercentUnit(m){ return matUnit(m)==='percent'; }
+// ％は総量が常に100なので入力不要
+function matTotal(m){ return isPercentUnit(m) ? 100 : (m.totalPages||0); }
+function matHasProgress(m){ return isPercentUnit(m) ? (m.currentPage||0)>0 : (m.totalPages>0); }
+// 進捗バー下の詳細テキスト（例: 45/300ページ・1200/5000 位置No.・3/12章）
+function matProgressText(m){
+  if (isPercentUnit(m)) return '進捗';
+  return (m.currentPage||0)+'/'+(m.totalPages||0)+unitDef(matUnit(m)).suffix;
+}
+// カード見出し横の短いテキスト（例: 45/300p・40%）
+function matMetaText(m){
+  if (isPercentUnit(m)) return (m.currentPage||0)+'%';
+  if (!m.totalPages) return '';
+  var u = matUnit(m);
+  return (m.currentPage||0)+'/'+m.totalPages+(u==='loc' ? '' : unitDef(u).short);
+}
+// 記録一覧の範囲表示（例: p.10〜25・40〜55%）
+function sessRangeText(m, s){
+  var a = (s.fromPage!=null&&s.fromPage!=='') ? s.fromPage : '?';
+  var b = (s.toPage!=null&&s.toPage!=='')     ? s.toPage   : '?';
+  var u = matUnit(m);
+  if (u==='page') return 'p.'+a+'〜'+b;
+  if (u==='loc')  return 'No.'+a+'〜'+b;
+  return a+'〜'+b+unitDef(u).short;
+}
+
 function renderMaterialCardHtml(m) {
   var isBook = m.type==='book';
   var badge = isBook
     ? '<span class="material-type-badge material-type-book">参考書</span>'
     : '<span class="material-type-badge material-type-past">過去問</span>';
+  var metaVal = matMetaText(m);
   var meta = isBook
-    ? (m.author||'') + (m.totalPages ? ' · '+m.currentPage+'/'+m.totalPages+'p' : '')
+    ? (m.author||'') + (metaVal ? ' · '+metaVal : '')
     : (m.year||'') + (m.correctRate!=null&&m.correctRate!=='' ? ' · 正解率'+m.correctRate+'%' : '');
   var progressHtml='';
-  if (isBook && m.totalPages && m.totalPages>0) {
-    var pct=Math.min(100,Math.round((m.currentPage/m.totalPages)*100));
-    progressHtml='<div class="material-progress"><div class="material-progress-bg"><div class="material-progress-fill" style="width:'+pct+'%;"></div></div><div class="material-progress-meta"><span>'+m.currentPage+'/'+m.totalPages+'ページ</span><span>'+pct+'%</span></div></div>';
+  if (isBook && matHasProgress(m)) {
+    var pct=Math.min(100,Math.round(((m.currentPage||0)/matTotal(m))*100));
+    progressHtml='<div class="material-progress"><div class="material-progress-bg"><div class="material-progress-fill" style="width:'+pct+'%;"></div></div><div class="material-progress-meta"><span>'+matProgressText(m)+'</span><span>'+pct+'%</span></div></div>';
   } else if (!isBook && m.correctRate!=null && m.correctRate!=='') {
     var cr=parseInt(m.correctRate);
     var crColor=cr>=80?'var(--green)':cr>=60?'var(--yellow)':'var(--red)';
@@ -1358,7 +1401,7 @@ function renderLog() {
       var subj = getSubj(s.subjectId);
       var stType = STUDY_TYPES.find(function(t){ return t.id===s.studyType; });
       var mat = s.materialId ? materials.find(function(m){ return m.id===s.materialId; }) : null;
-      var matText = mat ? (mat.title + (s.fromPage||s.toPage ? ' p.'+(s.fromPage||'?')+'〜'+(s.toPage||'?') : '')) : null;
+      var matText = mat ? (mat.title + (s.fromPage||s.toPage ? ' ' + sessRangeText(mat, s) : '')) : null;
       var infoText = [matText, s.memo || (stType ? stType.label : null)].filter(Boolean).join(' · ');
       return '<div class="sess-item">'
         + '<div class="sess-icon" style="background:' + ((subj&&subj.color)||'#3c8cbf') + '22;">' + ((subj&&subj.icon)||'📘') + '</div>'
@@ -1530,7 +1573,9 @@ function renderLogMaterialSelect() {
   var cur = sel.value;
   sel.innerHTML = '<option value="">（教材を選択しない）</option>'
     + materials.map(function(m) {
-        return '<option value="' + m.id + '">' + m.title + (m.totalPages ? '（全' + m.totalPages + 'p）' : '') + '</option>';
+        var tail = isPercentUnit(m) ? '（％で記録）'
+                 : (m.totalPages ? '（全' + m.totalPages + unitDef(matUnit(m)).short + '）' : '');
+        return '<option value="' + m.id + '">' + m.title + tail + '</option>';
       }).join('');
   if (cur) sel.value = cur;
 }
@@ -1542,9 +1587,16 @@ function onLogMaterialChange() {
   if (mid) {
     var mat = materials.find(function(m){ return m.id === mid; });
     if (mat) {
-      document.getElementById('logToPage').placeholder = mat.totalPages ? mat.totalPages + 'p' : '終了';
-      if (mat.currentPage && !document.getElementById('logFromPage').value && !_logSessionId) {
-        document.getElementById('logFromPage').value = mat.currentPage + 1;
+      var u = matUnit(mat), d = unitDef(u), pct = isPercentUnit(mat);
+      var from = document.getElementById('logFromPage'), to = document.getElementById('logToPage');
+      var uEl = document.getElementById('logPageUnit');
+      if (uEl) uEl.textContent = d.short;
+      to.placeholder = pct ? '100' : (mat.totalPages ? mat.totalPages + d.short : '終了');
+      if (pct) { from.max = 100; to.max = 100; from.min = 0; }
+      else { from.removeAttribute('max'); to.removeAttribute('max'); from.min = 1; }
+      if (mat.currentPage && !from.value && !_logSessionId) {
+        // ％は「今どこまで進んだか」の続きなので現在値そのまま、それ以外は次の番号から
+        from.value = pct ? mat.currentPage : mat.currentPage + 1;
       }
     }
   }
@@ -1611,7 +1663,10 @@ function saveSession() {
 
   if (mid && toP) {
     var mi = materials.findIndex(function(m){ return m.id === mid; });
-    if (mi >= 0 && toP > (materials[mi].currentPage || 0)) materials[mi].currentPage = toP;
+    if (mi >= 0) {
+      var toV = isPercentUnit(materials[mi]) ? Math.max(0, Math.min(100, toP)) : toP;
+      if (toV > (materials[mi].currentPage || 0)) materials[mi].currentPage = toV;
+    }
   }
 
   var wasPomodoro = _timerPomodoro; _timerPomodoro = false;
@@ -1797,6 +1852,33 @@ function renderSDResources() {
 
 /* ── Material Modal ── */
 var _editMaterialId = null;
+var _materialUnit = 'page';
+function renderMaterialUnitGrid(){
+  var el=document.getElementById('materialUnitGrid');
+  if(!el) return;
+  el.innerHTML = MATERIAL_UNITS.map(function(u){
+    return '<button class="study-type-btn'+(u.id===_materialUnit?' selected':'')+'" onclick="selMaterialUnit(\''+u.id+'\')">'
+      + '<span class="study-type-icon">'+u.icon+'</span>'
+      + '<span class="study-type-lbl">'+u.label+'</span>'
+      + '</button>';
+  }).join('');
+}
+function selMaterialUnit(id){ _materialUnit=unitDef(id).id; renderMaterialUnitGrid(); applyMaterialUnitFields(); }
+function applyMaterialUnitFields(){
+  var pct = (_materialUnit==='percent');
+  var lbl=document.getElementById('materialPageLabel');
+  var sep=document.getElementById('materialPageSep');
+  var cur=document.getElementById('materialCurrentPage');
+  var tot=document.getElementById('materialTotalPages');
+  if(!lbl||!cur||!tot) return;
+  // ％は総量が常に100なので入力欄ごと隠す
+  sep.style.display = pct ? 'none' : '';
+  tot.style.display = pct ? 'none' : '';
+  if (pct)                       { lbl.textContent='現在の進捗（％）';            cur.placeholder='40';   cur.max=100; }
+  else if (_materialUnit==='loc')     { lbl.textContent='現在の位置No. / 全体の位置No.'; cur.placeholder='1200'; tot.placeholder='5000'; cur.removeAttribute('max'); }
+  else if (_materialUnit==='chapter') { lbl.textContent='現在の章 / 全何章';           cur.placeholder='3';    tot.placeholder='12';   cur.removeAttribute('max'); }
+  else                                { lbl.textContent='現在ページ / 総ページ数';      cur.placeholder='0';    tot.placeholder='300';  cur.removeAttribute('max'); }
+}
 function openMaterialModal() {
   _editMaterialId=null;
   document.getElementById('materialModalTitle').textContent='教材を追加';
@@ -1808,6 +1890,7 @@ function openMaterialModal() {
   document.getElementById('materialYear').value='';
   document.getElementById('materialCorrectRate').value='';
   document.getElementById('materialDeleteBtn').style.display='none';
+  _materialUnit='page'; renderMaterialUnitGrid(); applyMaterialUnitFields();
   onMaterialTypeChange();
   document.getElementById('materialModal').classList.add('show');
 }
@@ -1824,6 +1907,7 @@ function editMaterial(id) {
   document.getElementById('materialYear').value=m.year||'';
   document.getElementById('materialCorrectRate').value=m.correctRate!=null?m.correctRate:'';
   document.getElementById('materialDeleteBtn').style.display='block';
+  _materialUnit=matUnit(m); renderMaterialUnitGrid(); applyMaterialUnitFields();
   onMaterialTypeChange();
   document.getElementById('materialModal').classList.add('show');
 }
@@ -1838,10 +1922,16 @@ function saveMaterial(){
   if(!title){showToast('タイトルを入力してください');return;}
   var type=document.getElementById('materialType').value;
   var cr=document.getElementById('materialCorrectRate').value;
+  var unit=_materialUnit;
+  var curV=parseInt(document.getElementById('materialCurrentPage').value)||0;
+  var totV=parseInt(document.getElementById('materialTotalPages').value)||0;
+  // ％は総量を100固定にし、現在値も0〜100に収める
+  if(unit==='percent'){ totV=100; curV=Math.max(0,Math.min(100,curV)); }
   var entry={id:_editMaterialId||Date.now().toString(),subjectId:_detailSubjId,type:type,title:title,
     author:document.getElementById('materialAuthor').value.trim(),
-    currentPage:parseInt(document.getElementById('materialCurrentPage').value)||0,
-    totalPages:parseInt(document.getElementById('materialTotalPages').value)||0,
+    unit:unit,
+    currentPage:curV,
+    totalPages:totV,
     year:document.getElementById('materialYear').value.trim(),
     correctRate:cr!==''?parseInt(cr):null,createdAt:new Date().toISOString()};
   if(_editMaterialId){var idx=materials.findIndex(function(m){return m.id===_editMaterialId;});materials[idx]=entry;}
