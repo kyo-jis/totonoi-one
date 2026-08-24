@@ -31,9 +31,10 @@
     body { background: radial-gradient(ellipse 75% 45% at 12% 4%, rgba(108,142,255,.07) 0%, transparent 100%), radial-gradient(ellipse 65% 45% at 88% 92%, rgba(94,207,160,.06) 0%, transparent 100%), var(--bg); color:var(--text); font-family:var(--font); font-weight:400; min-height:100vh; padding-bottom:130px; transition: background .25s, color .25s; }
     .app-header { padding:3rem 1.25rem 1.25rem; }
     .back-link { font-size:.75rem; color:var(--muted); text-decoration:none; letter-spacing:.1em; text-transform:uppercase; display:inline-flex; align-items:center; gap:.4rem; }
-    .app-title { font-size:1.6rem; font-weight:500; letter-spacing:-.02em; }
+    .app-title { font-size:1.6rem; font-weight:600; letter-spacing:-.01em; }
     .app-title span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
-    .app-subtitle { font-size:.72rem; color:var(--muted); margin-top:.15rem; letter-spacing:.05em; }
+    .app-subtitle { font-size:.8rem; color:var(--muted); margin-top:.2rem; letter-spacing:.02em; }
+    .app-subtitle span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
     .auth-chip { background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); transition:all .2s; white-space:nowrap; }
     .auth-chip.logged-in { border-color:var(--accent); color:var(--accent); }
     /* Login Notice */
@@ -51,23 +52,22 @@
     .cat-chip { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:.3rem .8rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); white-space:nowrap; transition:all .2s; flex-shrink:0; }
     .cat-chip.active { background:var(--surface2); border-color:var(--accent); color:var(--accent); }
     .list-section { padding:0 1.25rem; }
-    .note-card { background:linear-gradient(160deg, var(--surface) 0%, var(--surface2) 100%); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:.625rem; cursor:pointer; animation:slideIn .3s ease; transition:border-color .15s; box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.07); }
+    /* 一覧は2行構成（1行目=バッジ+タイトル+日付 / 2行目=本文プレビュー+操作） */
+    .note-card { background:linear-gradient(160deg, var(--surface) 0%, var(--surface2) 100%); border:1px solid var(--border); border-radius:14px; padding:.6rem .8rem; margin-bottom:.4rem; cursor:pointer; animation:slideIn .3s ease; transition:border-color .15s; box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.07); }
     .note-card:active { border-color:var(--accent); }
     @keyframes slideIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-    .note-card-top { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:.5rem; }
-    .note-title { font-size:.95rem; font-weight:500; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .note-card-top { display:flex; align-items:center; gap:.4rem; }
+    .note-title { font-size:.9rem; font-weight:500; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .note-title.untitled { color:var(--muted); font-style:italic; }
-    .note-date { font-size:.68rem; color:var(--muted); flex-shrink:0; margin-left:.75rem; margin-top:.1rem; }
-    .note-preview { font-size:.8rem; color:var(--muted); line-height:1.5; display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
-    .note-footer { display:flex; align-items:center; gap:.5rem; margin-top:.6rem; }
-    .cat-badge { font-size:.62rem; padding:.15rem .45rem; border-radius:20px; }
+    .note-date { font-size:.66rem; color:var(--muted); flex-shrink:0; }
+    .note-card-bottom { display:flex; align-items:center; gap:.5rem; margin-top:.25rem; }
+    .note-preview { font-size:.76rem; color:var(--muted); line-height:1.4; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .cat-badge { font-size:.6rem; padding:.1rem .4rem; border-radius:20px; flex-shrink:0; white-space:nowrap; }
     .cat-note     { background:rgba(108,142,255,.15); color:var(--accent); }
     .cat-diary    { background:rgba(94,207,160,.15); color:var(--green); }
     .cat-idea     { background:rgba(232,113,138,.15); color:var(--yellow); }
-    .cat-todo     { background:rgba(179,136,255,.15); color:var(--purple); }
-    .cat-other    { background:rgba(148,148,184,.15); color:var(--muted); }
-    .note-btn-row { display:flex; gap:.4rem; margin-left:auto; }
-    .btn-icon { width:28px; height:28px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); font-size:.72rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .note-btn-row { display:flex; gap:.3rem; margin-left:auto; flex-shrink:0; }
+    .btn-icon { width:24px; height:24px; border-radius:7px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); font-size:.68rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
     .empty-state { text-align:center; padding:3rem 2rem; color:var(--muted); }
     .empty-state .empty-icon { font-size:2.5rem; margin-bottom:.75rem; }
     .empty-state p { font-size:.88rem; line-height:1.6; }
@@ -78,7 +78,8 @@
     .editor-meta { display:flex; align-items:center; gap:.75rem; margin-bottom:.75rem; flex-wrap:wrap; }
     .editor-cat { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:.35rem .65rem; font-size:.75rem; color:var(--text); font-family:var(--font); outline:none; }
     .editor-date { font-size:.72rem; color:var(--muted); }
-    .editor-body { width:100%; min-height:280px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1rem; font-size:.95rem; color:var(--text); font-family:var(--font); outline:none; line-height:1.7; resize:none; transition:border-color .15s; }
+    /* 中身の高さに合わせて伸ばす（テキスト欄とモーダルの二重スクロールを避ける） */
+    .editor-body { width:100%; min-height:220px; overflow:hidden; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1rem; font-size:1rem; color:var(--text); font-family:var(--font); outline:none; line-height:1.85; resize:none; transition:border-color .15s; }
     .editor-body:focus { border-color:var(--accent); }
     .editor-actions { display:flex; gap:.75rem; margin-top:1rem; }
     .btn-save { flex:1; padding:.85rem; background:var(--accent); color:#fff; border:none; border-radius:12px; font-size:.9rem; font-weight:500; font-family:var(--font); cursor:pointer; }
@@ -95,7 +96,7 @@
     .analysis-card-label { font-size:.65rem; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:.4rem; }
     .analysis-card-value { font-size:1.3rem; font-weight:600; letter-spacing:-.02em; }
     .analysis-card-sub { font-size:.68rem; color:var(--muted); margin-top:.2rem; }
-    .free-banner { margin:0 1.25rem 1rem; background:rgba(232,113,138,.1); border:1px solid rgba(232,113,138,.25); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+    .free-banner { display:none !important; margin:0 1.25rem 1rem; background:rgba(232,113,138,.1); border:1px solid rgba(232,113,138,.25); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
     .free-banner-text { font-size:.8rem; color:var(--yellow); }
     .upgrade-btn { font-size:.72rem; font-weight:500; color:#1a1a24; background:var(--yellow); border:none; border-radius:8px; padding:.4rem .75rem; cursor:pointer; white-space:nowrap; font-family:var(--font); }
     .fab { position:fixed; bottom:calc(72px + env(safe-area-inset-bottom)); right:1.25rem; width:56px; height:56px; border-radius:18px; background:var(--accent); color:#fff; border:none; font-size:1.5rem; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 24px rgba(108,142,255,.4); z-index:50; transition:transform .15s; }
@@ -109,7 +110,7 @@
     .form-label { font-size:.75rem; color:var(--muted); letter-spacing:.05em; text-transform:uppercase; display:block; margin-bottom:.4rem; }
     .btn-primary { width:100%; padding:.9rem; background:var(--accent); color:#fff; border:none; border-radius:12px; font-size:.95rem; font-weight:500; font-family:var(--font); cursor:pointer; margin-top:.5rem; }
     .btn-cancel { width:100%; padding:.75rem; background:none; color:var(--muted); border:none; font-size:.88rem; font-family:var(--font); cursor:pointer; margin-top:.25rem; }
-    .sync-slot{margin-top:.3rem;text-align:right;min-height:1rem;}
+    .sync-slot{margin:-.5rem 1.25rem .6rem;text-align:right;min-height:1rem;}
     .sync-badge{display:inline-flex;align-items:center;gap:.2rem;font-size:.58rem;font-weight:500;padding:.1rem .38rem;border-radius:20px;cursor:default;white-space:nowrap;}
     .sync-local{background:rgba(148,148,184,.15);color:var(--muted);}
     .sync-syncing{background:rgba(108,142,255,.15);color:#6c8eff;}
@@ -152,14 +153,6 @@
     .back-confirm-btn-stay{background:var(--surface3);color:var(--text);}
     .show-more-btn { display:block; width:100%; padding:.8rem; background:var(--surface); border:1px solid var(--border); border-radius:16px; font-size:.82rem; color:var(--muted); font-family:var(--font); cursor:pointer; text-align:center; transition:border-color .15s, color .15s; margin-bottom:.625rem; }
     .show-more-btn:active { border-color:var(--accent); color:var(--accent); transform:scale(.98); }
-    /* TODO */
-    .todo-progress-bar { background:var(--surface3); border-radius:4px; height:5px; margin:.45rem 0 .2rem; overflow:hidden; }
-    .todo-progress-fill { height:100%; border-radius:4px; background:var(--purple); transition:width .3s; }
-    .todo-progress-label { font-size:.66rem; color:var(--muted); }
-    .todo-task-item { display:flex; align-items:flex-start; gap:.4rem; padding:.22rem 0; font-size:.79rem; line-height:1.4; }
-    .todo-task-item input[type=checkbox] { flex-shrink:0; margin-top:.15rem; accent-color:var(--purple); width:14px; height:14px; cursor:pointer; }
-    .todo-task-done { color:var(--muted); text-decoration:line-through; opacity:.55; }
-    .todo-hint { font-size:.72rem; color:var(--muted); margin:.2rem 0 .6rem; line-height:1.5; }
   </style>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-E9Q0JQ0V92"></script>
@@ -179,8 +172,8 @@
       <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
     </div>
   </div>
-  <h1 class="app-title" onclick="goAppTop()" style="cursor:pointer;">Read<span>ly</span></h1>
-  <p class="app-subtitle">メモ・日記</p>
+  <h1 class="app-title" onclick="goAppTop()" style="cursor:pointer;">メモ・日記</h1>
+  <p class="app-subtitle">Read<span>ly</span></p>
 </div>
 <div id="loginNotice" class="login-notice" onclick="openAuthModal()" style="display:none">
   <span style="font-size:1rem">&#x2601;&#xFE0F;</span>
@@ -192,6 +185,8 @@
   <span class="search-icon">🔍</span>
   <input type="text" class="search-input" id="searchInput" placeholder="メモを検索..." oninput="onSearch()">
 </div>
+<!-- 同期状態はアプリ全体で1つなので、カードごとではなくここに1回だけ出す -->
+<div class="sync-slot" id="syncSlot"></div>
 
 <div class="free-banner" id="freeBanner">
   <p class="free-banner-text"><strong id="countText">0/30</strong> 件登録中（無料プラン）</p>
@@ -203,8 +198,6 @@
   <button class="cat-chip" onclick="filterCat('note',this)">📝 メモ</button>
   <button class="cat-chip" onclick="filterCat('diary',this)">📔 日記</button>
   <button class="cat-chip" onclick="filterCat('idea',this)">💡 アイデア</button>
-  <button class="cat-chip" onclick="filterCat('todo',this)">✅ TODO</button>
-  <button class="cat-chip" onclick="filterCat('other',this)">📦 その他</button>
   <button class="cat-chip" onclick="filterCat('archive',this)">🗂 アーカイブ</button>
 </div>
 <div class="idea-status-filter" id="ideaStatusFilter">
@@ -225,12 +218,9 @@
         <option value="note">📝 メモ</option>
         <option value="diary">📔 日記</option>
         <option value="idea">💡 アイデア</option>
-        <option value="todo">✅ TODO</option>
-        <option value="other">📦 その他</option>
       </select>
       <span class="editor-date" id="editorDate"></span>
     </div>
-    <p class="todo-hint" id="todoHint" style="display:none;">💡 1行につき1タスク。保存後にチェックできます。</p>
     <textarea class="editor-body" id="editorBody" placeholder="ここに書く..." oninput="updateCharCount()"></textarea>
     <p class="char-count" id="charCount">0文字</p>
     <div class="editor-actions">
@@ -255,7 +245,7 @@
         <div style="display:flex;align-items:center;justify-content:space-between;">
           <div>
             <p style="font-size:.95rem;font-weight:500;" id="planLabel">無料プラン</p>
-            <p style="font-size:.75rem;color:var(--muted);margin-top:.2rem;" id="planDesc">登録30件・広告あり</p>
+            <p style="font-size:.75rem;color:var(--muted);margin-top:.2rem;" id="planDesc">全機能を無料で利用中</p>
           </div>
           <span style="font-size:.7rem;padding:.25rem .6rem;border-radius:20px;background:rgba(108,142,255,.15);color:var(--accent);" id="planBadge">現在</span>
         </div>
@@ -284,9 +274,9 @@
 </div>
 
 <button class="fab" onclick="newNote()">✏️</button>
-<div class="ad-banner" id="adBanner">
-  <span class="ad-label">広告</span>
-  <p class="ad-content">Google AdSense 広告エリア</p>
+<div class="ad-banner" id="adBanner" onclick="location.href='index.html'" style="cursor:pointer;">
+  <span class="ad-label">近日</span>
+  <p class="ad-content">☁️ 自動クラウド保存は保存プランで（¥200/月〜）</p>
 </div>
 
 <div id="authModal" style="position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:100;display:none;align-items:flex-end;" onclick="if(event.target===this)this.style.display='none'">
@@ -300,10 +290,29 @@
 </div>
 
 <script>
-var FREE_LIMIT = 30;
+var FREE_LIMIT = Infinity;
 var isPro = localStorage.getItem('isPro') === 'true';
-var CAT_LABELS = { all:'すべて', note:'📝 メモ', diary:'📔 日記', idea:'💡 アイデア', todo:'✅ TODO', other:'📦 その他' };
+var CAT_LABELS = { all:'すべて', note:'📝 メモ', diary:'📔 日記', idea:'💡 アイデア' };
 var notes = JSON.parse(localStorage.getItem('readly_notes') || '[]');
+
+// 廃止したカテゴリ（TODO・その他）のメモを「メモ」に寄せる。本文は消さず、
+// TODOのタスクは1行ずつ本文へ戻す（完了済みは ✓ を付ける）
+function migrateRetiredCats(list) {
+  var moved = 0;
+  (list || []).forEach(function(n){
+    if (n.category !== 'todo' && n.category !== 'other') return;
+    if (n.category === 'todo' && n.tasks && n.tasks.length) {
+      var lines = n.tasks.map(function(t){ return (t.done ? '✓ ' : '') + t.text; });
+      n.body = lines.join('\n') + (n.body && n.body !== lines.join('\n') ? '' : '');
+    }
+    delete n.tasks;
+    n.category = 'note';
+    moved++;
+  });
+  return moved;
+}
+var _migrated = migrateRetiredCats(notes);
+if (_migrated) localStorage.setItem('readly_notes', JSON.stringify(notes));
 var currentCat = 'all';
 var currentIdeaStatus = 'all';
 var searchQuery = '';
@@ -373,27 +382,6 @@ function onSearch() { searchQuery = document.getElementById('searchInput').value
 
 function showAllNotes() { listShowAll = true; renderNotes(); }
 
-function renderTodoCard(n) {
-  var tasks = n.tasks || [];
-  var doneCount = tasks.filter(function(t){ return t.done; }).length;
-  var total = tasks.length;
-  var pct = total ? Math.round(doneCount / total * 100) : 0;
-  // 未完了を上、完了を下
-  var sorted = [];
-  tasks.forEach(function(t, i){ if (!t.done) sorted.push({t:t, i:i}); });
-  tasks.forEach(function(t, i){ if (t.done)  sorted.push({t:t, i:i}); });
-  var shown = sorted.slice(0, 5);
-  var taskHtml = shown.map(function(item){
-    return '<div class="todo-task-item">'
-      + '<input type="checkbox"' + (item.t.done?' checked':'') + ' onclick="event.stopPropagation();toggleTask(\''+n.id+'\','+item.i+')">'
-      + '<span class="' + (item.t.done?'todo-task-done':'') + '">' + item.t.text.replace(/</g,'&lt;') + '</span>'
-      + '</div>';
-  }).join('');
-  return '<div class="todo-progress-bar"><div class="todo-progress-fill" style="width:'+pct+'%"></div></div>'
-    + '<p class="todo-progress-label">' + doneCount + '/' + total + '完了</p>'
-    + '<div style="margin-top:.35rem;">' + taskHtml + '</div>'
-    + (sorted.length > 5 ? '<p style="font-size:.7rem;color:var(--muted);margin-top:.25rem;">他 '+(sorted.length-5)+' 件</p>' : '');
-}
 
 function renderNotes() {
   var el = document.getElementById('noteList');
@@ -417,20 +405,14 @@ function renderNotes() {
   el.innerHTML = shown.map(function(n) {
     var d = new Date(n.updatedAt || n.createdAt);
     var dateStr = d.getMonth()+1 + '/' + d.getDate();
-    var catBadge = '<span class="cat-badge cat-' + n.category + '">' + CAT_LABELS[n.category] + '</span>';
-    var isIdea = n.category === 'idea';
-    var isTodo = n.category === 'todo';
+    var cat = CAT_LABELS[n.category] ? n.category : 'note';
+    var catBadge = '<span class="cat-badge cat-' + cat + '">' + CAT_LABELS[cat] + '</span>';
+    var isIdea = cat === 'idea';
     var ideaStatus = n.status || 'pending';
     var isInactive = isIdea && (ideaStatus === 'done' || ideaStatus === 'rejected');
     var statusBtn = isIdea && !isArchiveView
       ? '<button class="status-btn" onclick="event.stopPropagation();cycleIdeaStatus(\'' + n.id + '\')" title="ステータスを変更">' + (IDEA_STATUS_ICONS[ideaStatus] || IDEA_STATUS_ICONS.pending) + '</button>'
       : '';
-    var bodySection = '';
-    if (isTodo && n.tasks && n.tasks.length) {
-      bodySection = renderTodoCard(n);
-    } else if (!isTodo && n.body) {
-      bodySection = '<p class="note-preview">' + n.body.replace(/</g,'&lt;') + '</p>';
-    }
     var archiveBtn = isArchiveView
       ? '<button class="btn-icon" onclick="event.stopPropagation();restoreNote(\'' + n.id + '\')" title="復元" style="font-size:.8rem;">↩</button>'
       : '<button class="btn-icon" onclick="event.stopPropagation();archiveNote(\'' + n.id + '\')" title="アーカイブ" style="font-size:.75rem;">🗂</button>';
@@ -438,24 +420,31 @@ function renderNotes() {
     return '<div class="note-card" onclick="openNote(\'' + n.id + '\')"' + cardOpacity + '>'
       + '<div class="note-card-top">'
         + statusBtn
-        + '<p class="note-title' + (!n.title?' untitled':'') + '">' + (n.title||'（タイトルなし）') + '</p>'
+        + catBadge
+        + '<p class="note-title' + (!n.title?' untitled':'') + '">' + escapeHtml(n.title||'（タイトルなし）') + '</p>'
         + '<span class="note-date">' + dateStr + '</span>'
       + '</div>'
-      + bodySection
-      + '<div class="note-footer">' + catBadge
+      + '<div class="note-card-bottom">'
+        + '<p class="note-preview">' + (n.body ? escapeHtml(n.body) : '') + '</p>'
         + '<div class="note-btn-row">'
           + archiveBtn
           + '<button class="btn-icon" onclick="event.stopPropagation();deleteNote(\'' + n.id + '\')">🗑</button>'
         + '</div>'
       + '</div>'
-      + '<div class="sync-slot"></div>'
       + '</div>';
   }).join('') + (!listShowAll && total > LIST_LIMIT ? '<button class="show-more-btn" onclick="showAllNotes()">さらに ' + (total - LIST_LIMIT) + ' 件を表示 ↓</button>' : '');
   var activeCount = notes.filter(function(n){ return !n.archived; }).length;
   document.getElementById('countText').textContent = activeCount + (isPro ? '件' : '/30');
 }
 
-function openEditor() { var m=document.getElementById('editorModal'); m.style.display='flex'; }
+function openEditor() {
+  var m = document.getElementById('editorModal');
+  m.style.display = 'flex';
+  // 高さは表示後でないと測れない。開いたら先頭から読めるようスクロールも戻す
+  autoGrowBody();
+  var panel = m.firstElementChild;
+  if (panel) panel.scrollTop = 0;
+}
 function closeEditor() { document.getElementById('editorModal').style.display='none'; }
 function openSettings() { var m=document.getElementById('settingsModal'); m.style.display='flex'; renderStats(); }
 function closeSettings() { document.getElementById('settingsModal').style.display='none'; }
@@ -477,13 +466,8 @@ function openNote(id) {
   if (!n) return;
   editId = id;
   document.getElementById('editorTitle').value = n.title || '';
-  document.getElementById('editorCat').value = n.category || 'note';
-  // TODOはタスクテキストを改行区切りで表示
-  if (n.category === 'todo' && n.tasks) {
-    document.getElementById('editorBody').value = n.tasks.map(function(t){ return t.text; }).join('\n');
-  } else {
-    document.getElementById('editorBody').value = n.body || '';
-  }
+  document.getElementById('editorCat').value = CAT_LABELS[n.category] ? n.category : 'note';
+  document.getElementById('editorBody').value = n.body || '';
   document.getElementById('editorDate').textContent = new Date(n.updatedAt||n.createdAt).toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
   updateCharCount();
   onCatChange();
@@ -497,29 +481,11 @@ function saveNote() {
   if (!body && !title) { showToast('内容を入力してください'); return; }
   if (!editId && notes.length >= FREE_LIMIT && !isPro) { showToast('無料プランは'+FREE_LIMIT+'件まで'); return; }
   var now = new Date().toISOString();
-  // TODOはbodyを行分割してtasks配列に変換（既存のdone状態を引き継ぐ）
-  var tasks = null;
-  if (cat === 'todo') {
-    var lines = body.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
-    var oldDone = {};
-    if (editId) {
-      var existing = notes.find(function(x){ return x.id===editId; });
-      if (existing && existing.tasks) {
-        existing.tasks.forEach(function(t){ oldDone[t.text] = t.done; });
-      }
-    }
-    tasks = lines.map(function(text){
-      return { text: text, done: oldDone[text] || false };
-    });
-  }
   if (editId) {
     var i = notes.findIndex(function(x){ return x.id===editId; });
     notes[i] = Object.assign(notes[i], {title:title, category:cat, body:body, updatedAt:now});
-    if (tasks !== null) notes[i].tasks = tasks;
   } else {
-    var entry = {id:Date.now().toString(), title:title, category:cat, body:body, createdAt:now, updatedAt:now};
-    if (tasks !== null) entry.tasks = tasks;
-    notes.unshift(entry);
+    notes.unshift({id:Date.now().toString(), title:title, category:cat, body:body, createdAt:now, updatedAt:now});
   }
   persist(); editId = null;
   showToast('✅ 保存しました');
@@ -528,27 +494,7 @@ function saveNote() {
 
 function discardNote() { editId = null; closeEditor(); }
 
-function onCatChange() {
-  var cat = document.getElementById('editorCat').value;
-  var hint = document.getElementById('todoHint');
-  var body = document.getElementById('editorBody');
-  if (cat === 'todo') {
-    hint.style.display = 'block';
-    body.placeholder = 'タスクを1行ずつ入力...\n例：資料を作成する\n例：メール返信';
-  } else {
-    hint.style.display = 'none';
-    body.placeholder = 'ここに書く...';
-  }
-}
-
-function toggleTask(noteId, taskIdx) {
-  var i = notes.findIndex(function(x){ return x.id===noteId; });
-  if (i < 0 || !notes[i].tasks || notes[i].tasks[taskIdx] === undefined) return;
-  notes[i].tasks[taskIdx].done = !notes[i].tasks[taskIdx].done;
-  notes[i].updatedAt = new Date().toISOString();
-  persist();
-  renderNotes();
-}
+function onCatChange() {}
 
 function deleteNote(id) {
   if (!confirm('削除しますか？')) return;
@@ -557,15 +503,23 @@ function deleteNote(id) {
 }
 
 function updateCharCount() {
-  var len = document.getElementById('editorBody').value.length;
-  document.getElementById('charCount').textContent = len + '文字';
+  var el = document.getElementById('editorBody');
+  document.getElementById('charCount').textContent = el.value.length + '文字';
+  autoGrowBody();
+}
+// テキスト欄を中身の高さまで伸ばす。長いメモでも全文が見え、モーダルのスクロールだけで読める
+function autoGrowBody() {
+  var el = document.getElementById('editorBody');
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
 }
 
 function persist() {
   localStorage.setItem('readly_notes', JSON.stringify(notes));
   localStorage.setItem('readly_updated_at', Date.now().toString());
   renderNotes(); renderStats();
-  if(!currentUser){_syncStatus='local';updateSyncBadges();return;}
+  if(!currentUser||!isPro){_syncStatus='local';updateSyncBadges();return;}
   _syncStatus='syncing';updateSyncBadges();
   dbSave('notes',notes).then(function(r){_syncStatus=r&&!r.error?'synced':'failed';if(r&&r.error)showToast('⚠️ クラウド同期失敗');updateSyncBadges();});
 }
@@ -591,11 +545,11 @@ function updateProUI() {
   var fab=document.querySelector('.fab'); if(fab) fab.style.bottom=isPro?'1.25rem':'calc(72px + env(safe-area-inset-bottom))';
   document.body.style.paddingBottom=isPro?'80px':'130px';
   var fb=document.getElementById('freeBanner'); if(fb) fb.style.display=isPro?'none':'flex';
-  FREE_LIMIT=isPro?9999:30;
+  FREE_LIMIT=Infinity;
   document.getElementById('countText').textContent=notes.length+(isPro?'件':'/30');
   var pl=document.getElementById('planLabel'),pd=document.getElementById('planDesc'),pb=document.getElementById('planBadge');
   if(pl) pl.textContent=isPro?'Proプラン':'無料プラン';
-  if(pd) pd.textContent=isPro?'全機能が利用できます':'登録30件・広告あり';
+  if(pd) pd.textContent=isPro?'全機能が利用できます':'全機能を無料で利用中';
   if(pb){pb.textContent=isPro?'✅ 有効中':'現在';pb.style.background=isPro?'rgba(94,207,160,.15)':'rgba(108,142,255,.15)';pb.style.color=isPro?'var(--green)':'var(--accent)';}
 }
 
@@ -620,10 +574,16 @@ var currentUser=null; var _APP='readly'; var _syncStatus='local';
 function syncBadgeHTML(){if(!currentUser)return'<span class="sync-badge sync-local">💾 ローカル</span>';if(_syncStatus==='syncing')return'<span class="sync-badge sync-syncing">🔄 同期中</span>';if(_syncStatus==='synced')return'<span class="sync-badge sync-synced">☁️</span>';return'<span class="sync-badge sync-failed" onclick="retrySync()">⚠️ 再同期</span>';}
 function updateSyncBadges(){var h=syncBadgeHTML();document.querySelectorAll('.sync-slot').forEach(function(el){el.innerHTML=h;});}
 function retrySync(){if(!currentUser)return;_syncStatus='syncing';updateSyncBadges();dbSave('notes',notes).then(function(r){_syncStatus=r&&!r.error?'synced':'failed';if(r&&r.error)showToast('⚠️ クラウド同期失敗');updateSyncBadges();});}
-function dbSave(key,data){if(!currentUser)return Promise.resolve(null);return _sb.from('user_data').upsert({user_id:currentUser.id,app:_APP,key:key,data:data,updated_at:new Date().toISOString()},{onConflict:'user_id,app,key'});}
+function escapeHtml(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function dbSave(key,data){if(!currentUser || !isPro)return Promise.resolve(null);return _sb.from('user_data').upsert({user_id:currentUser.id,app:_APP,key:key,data:data,updated_at:new Date().toISOString()},{onConflict:'user_id,app,key'});}
 function logAction(action){if(!currentUser)return;_sb.from('app_logs').insert({user_id:currentUser.id,app:_APP,action:action});}
 async function syncFromCloud(){
   logAction('open');
+  var _pp = await _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle();
+  if (_pp.data) { isPro = _pp.data.is_pro; localStorage.setItem('isPro', String(isPro)); }
+  if (currentUser.email === 'kyouji.o@gmail.com') { isPro = true; localStorage.setItem('isPro', 'true'); }
+  if (typeof updateProUI === 'function') updateProUI();
+  if (!isPro) { _syncStatus = 'local'; if (typeof updateSyncBadges === 'function') updateSyncBadges(); return; }
   var res=await _sb.from('user_data').select('key,data,updated_at').eq('user_id',currentUser.id).eq('app',_APP);
   if(res.data&&res.data.length>0){
     var localTime=parseInt(localStorage.getItem('readly_updated_at')||'0');
