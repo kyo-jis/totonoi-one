@@ -195,9 +195,9 @@
 
 <div class="cat-filter">
   <button class="cat-chip active" onclick="filterCat('all',this)">すべて</button>
-  <button class="cat-chip" onclick="filterCat('note',this)">📝 メモ</button>
-  <button class="cat-chip" onclick="filterCat('diary',this)">📔 日記</button>
   <button class="cat-chip" onclick="filterCat('idea',this)">💡 アイデア</button>
+  <button class="cat-chip" onclick="filterCat('diary',this)">📔 日記</button>
+  <button class="cat-chip" onclick="filterCat('note',this)">📝 メモ</button>
   <button class="cat-chip" onclick="filterCat('archive',this)">🗂 アーカイブ</button>
 </div>
 <div class="idea-status-filter" id="ideaStatusFilter">
@@ -215,9 +215,9 @@
     <input type="text" class="editor-title" id="editorTitle" placeholder="タイトル（任意）">
     <div class="editor-meta">
       <select class="editor-cat" id="editorCat" onchange="onCatChange()">
-        <option value="note">📝 メモ</option>
-        <option value="diary">📔 日記</option>
         <option value="idea">💡 アイデア</option>
+        <option value="diary">📔 日記</option>
+        <option value="note">📝 メモ</option>
       </select>
       <span class="editor-date" id="editorDate"></span>
     </div>
@@ -452,7 +452,9 @@ function closeSettings() { document.getElementById('settingsModal').style.displa
 function newNote() {
   editId = null;
   document.getElementById('editorTitle').value = '';
-  document.getElementById('editorCat').value = currentCat !== 'all' && currentCat !== 'idea' ? currentCat : 'note';
+  // 表示中のカテゴリを引き継ぐ。すべて/アーカイブ/アイデアなど選べない値のときは「メモ」
+  var preset = (currentCat !== 'all' && currentCat !== 'idea' && CAT_LABELS[currentCat]) ? currentCat : 'note';
+  document.getElementById('editorCat').value = preset;
   document.getElementById('editorBody').value = '';
   document.getElementById('editorDate').textContent = new Date().toLocaleDateString('ja-JP',{month:'long',day:'numeric'});
   updateCharCount();
