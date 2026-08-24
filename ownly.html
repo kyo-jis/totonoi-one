@@ -37,9 +37,10 @@
     body { background: radial-gradient(ellipse 75% 45% at 12% 4%, rgba(156,156,60,.07) 0%, transparent 100%), radial-gradient(ellipse 65% 45% at 88% 92%, rgba(108,142,255,.06) 0%, transparent 100%), var(--bg); color:var(--text); font-family:var(--font); font-weight:400; min-height:100vh; padding-bottom:130px; transition: background .25s, color .25s; }
     .app-header { padding:3rem 1.25rem 1.25rem; }
     .back-link { font-size:.75rem; color:var(--muted); text-decoration:none; letter-spacing:.1em; text-transform:uppercase; display:inline-flex; align-items:center; gap:.4rem; }
-    .app-title { font-size:1.6rem; font-weight:500; letter-spacing:-.02em; }
+    .app-title { font-size:1.6rem; font-weight:600; letter-spacing:-.01em; }
     .app-title span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
-    .app-subtitle { font-size:.72rem; color:var(--muted); margin-top:.15rem; letter-spacing:.05em; }
+    .app-subtitle { font-size:.8rem; color:var(--muted); margin-top:.2rem; letter-spacing:.02em; }
+    .app-subtitle span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
     .auth-chip { background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); transition:all .2s; white-space:nowrap; }
     .auth-chip.logged-in { border-color:var(--accent); color:var(--accent); }
     /* Login Notice */
@@ -56,7 +57,7 @@
     .summary-bar { display:flex; gap:.75rem; margin-top:1rem; flex-wrap:wrap; }
     .summary-bar-item { display:flex; align-items:center; gap:.4rem; font-size:.75rem; color:var(--muted); }
     .dot { width:8px; height:8px; border-radius:50%; }
-    .free-banner { margin:0 1.25rem 1.25rem; background:rgba(232,113,138,.1); border:1px solid rgba(232,113,138,.25); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+    .free-banner { display:none !important; margin:0 1.25rem 1.25rem; background:rgba(232,113,138,.1); border:1px solid rgba(232,113,138,.25); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
     .free-banner-text { font-size:.8rem; color:var(--yellow); }
     .upgrade-btn { font-size:.72rem; font-weight:500; color:#1a1a24; background:var(--yellow); border:none; border-radius:8px; padding:.4rem .75rem; cursor:pointer; white-space:nowrap; font-family:var(--font); }
     .tabs { display:flex; gap:0; margin:0 1.25rem 1.25rem; background:linear-gradient(160deg, var(--surface) 0%, var(--surface2) 100%); border-radius:14px; padding:4px; border:1px solid var(--border); box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.07); }
@@ -174,8 +175,8 @@
     <a class="back-link" href="index.html"> Totonoi One</a>
     <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
   </div>
-  <h1 class="app-title" onclick="goAppTop()" style="cursor:pointer;">Own<span>ly</span></h1>
-  <p class="app-subtitle">持ち物管理</p>
+  <h1 class="app-title" onclick="goAppTop()" style="cursor:pointer;">持ち物管理</h1>
+  <p class="app-subtitle">Own<span>ly</span></p>
 </div>
 <div id="loginNotice" class="login-notice" onclick="openAuthModal()" style="display:none">
   <span style="font-size:1rem">&#x2601;&#xFE0F;</span>
@@ -244,7 +245,7 @@
       <p class="analytics-title">プラン</p>
       <div class="bar-chart" style="padding:1rem 1.1rem;">
         <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div><p style="font-size:.95rem;font-weight:500;" id="planLabel">無料プラン</p><p style="font-size:.75rem;color:var(--muted);margin-top:.2rem;" id="planDesc">登録20件・広告あり</p></div>
+          <div><p style="font-size:.95rem;font-weight:500;" id="planLabel">無料プラン</p><p style="font-size:.75rem;color:var(--muted);margin-top:.2rem;" id="planDesc">全機能を無料で利用中</p></div>
           <span style="font-size:.7rem;padding:.25rem .6rem;border-radius:20px;background:rgba(156,156,60,.15);color:var(--accent);" id="planBadge">現在</span>
         </div>
         <a href="index.html" style="display:block;margin-top:.9rem;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:.75rem;font-size:.85rem;color:var(--accent);text-decoration:none;">ダッシュボードでプランを管理 →</a>
@@ -271,7 +272,7 @@
 </div>
 
 <button class="fab" onclick="openModal()">＋</button>
-<div class="ad-banner" id="adBanner"><span class="ad-label">広告</span><p class="ad-content">Google AdSense 広告エリア</p></div>
+<div class="ad-banner" id="adBanner" onclick="location.href='index.html'" style="cursor:pointer;"><span class="ad-label">近日</span><p class="ad-content">☁️ 自動クラウド保存は保存プランで（¥200/月〜）</p></div>
 
 <div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
   <div class="modal">
@@ -316,7 +317,7 @@
 </div>
 
 <script>
-var FREE_LIMIT = 20;
+var FREE_LIMIT = Infinity;
 var isPro = localStorage.getItem('isPro') === 'true';
 function localDateStr(d) {
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -368,9 +369,9 @@ function renderCard(item) {
   return '<div class="item-card' + cardCls + '">'
     + '<div class="item-card-top">'
       + '<div class="item-icon">' + (item.icon||CAT_ICONS[item.category]||'📦') + '</div>'
-      + '<div class="item-info"><p class="item-name">' + item.name + '</p>'
+      + '<div class="item-info"><p class="item-name">' + escapeHtml(item.name) + '</p>'
         + '<div class="item-meta">' + CAT_LABELS[item.category] + (item.condition?' · '+CONDITION_LABELS[item.condition]:'') + (item.purchaseDate?' · '+item.purchaseDate.replace(/(\d{4})-(\d{2})-(\d{2})/,'$1年$2月$3日購入'):'') + '</div>'
-        + (item.memo ? '<p style="font-size:.7rem;color:var(--muted);margin-top:.15rem;">' + item.memo + '</p>' : '')
+        + (item.memo ? '<p style="font-size:.7rem;color:var(--muted);margin-top:.15rem;">' + escapeHtml(item.memo) + '</p>' : '')
       + '</div>'
       + '<div style="text-align:right;flex-shrink:0;">'
         + (priceStr ? '<p class="item-price">' + priceStr + '</p>' : '')
@@ -495,7 +496,7 @@ function deleteItem(id){
 function persist(){
   localStorage.setItem('ownly_items',JSON.stringify(items));
   localStorage.setItem('ownly_updated_at',Date.now().toString());
-  if(!currentUser){_syncStatus='local';updateSyncBadges();return;}
+  if(!currentUser||!isPro){_syncStatus='local';updateSyncBadges();return;}
   _syncStatus='syncing';updateSyncBadges();
   dbSave('items',items).then(function(r){_syncStatus=r&&!r.error?'synced':'failed';if(r&&r.error)showToast('⚠️ クラウド同期失敗');updateSyncBadges();});
 }
@@ -511,11 +512,11 @@ function updateProUI(){
   var fab=document.querySelector('.fab');if(fab)fab.style.bottom=isPro?'1.25rem':'calc(72px + env(safe-area-inset-bottom))';
   document.body.style.paddingBottom=isPro?'80px':'130px';
   var fb=document.getElementById('freeBanner');if(fb)fb.style.display=isPro?'none':'flex';
-  FREE_LIMIT=isPro?999:20;
+  FREE_LIMIT=Infinity;
   document.getElementById('countText').textContent=items.length+(isPro?'件':'/20');
   var pl=document.getElementById('planLabel'),pd=document.getElementById('planDesc'),pb=document.getElementById('planBadge');
   if(pl)pl.textContent=isPro?'Proプラン':'無料プラン';
-  if(pd)pd.textContent=isPro?'全機能が利用できます':'登録20件・広告あり';
+  if(pd)pd.textContent=isPro?'全機能が利用できます':'全機能を無料で利用中';
   if(pb){pb.textContent=isPro?'✅ 有効中':'現在';pb.style.background=isPro?'rgba(94,207,160,.15)':'rgba(156,156,60,.15)';pb.style.color=isPro?'var(--green)':'var(--accent)';}
 }
 function showToast(msg){var t=document.createElement('div');t.style.cssText='position:fixed;top:1.5rem;left:50%;transform:translateX(-50%);background:#22222e;border:1px solid #35354a;border-radius:12px;padding:.75rem 1.25rem;font-size:.85rem;font-weight:500;z-index:300;color:#f0eee8;white-space:nowrap;font-family:Outfit,sans-serif;';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove();},2500);}
@@ -529,10 +530,16 @@ var currentUser=null;var _APP='ownly';var _syncStatus='local';
 function syncBadgeHTML(){if(!currentUser)return'<span class="sync-badge sync-local">💾 ローカル</span>';if(_syncStatus==='syncing')return'<span class="sync-badge sync-syncing">🔄 同期中</span>';if(_syncStatus==='synced')return'<span class="sync-badge sync-synced">☁️</span>';return'<span class="sync-badge sync-failed" onclick="retrySync()">⚠️ 再同期</span>';}
 function updateSyncBadges(){var h=syncBadgeHTML();document.querySelectorAll('.sync-slot').forEach(function(el){el.innerHTML=h;});}
 function retrySync(){if(!currentUser)return;_syncStatus='syncing';updateSyncBadges();dbSave('items',items).then(function(r){_syncStatus=r&&!r.error?'synced':'failed';if(r&&r.error)showToast('⚠️ クラウド同期失敗');updateSyncBadges();});}
-function dbSave(key,data){if(!currentUser)return Promise.resolve(null);return _sb.from('user_data').upsert({user_id:currentUser.id,app:_APP,key:key,data:data,updated_at:new Date().toISOString()},{onConflict:'user_id,app,key'});}
+function escapeHtml(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function dbSave(key,data){if(!currentUser || !isPro)return Promise.resolve(null);return _sb.from('user_data').upsert({user_id:currentUser.id,app:_APP,key:key,data:data,updated_at:new Date().toISOString()},{onConflict:'user_id,app,key'});}
 function logAction(action){if(!currentUser)return;_sb.from('app_logs').insert({user_id:currentUser.id,app:_APP,action:action});}
 async function syncFromCloud(){
   logAction('open');
+  var _pp = await _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle();
+  if (_pp.data) { isPro = _pp.data.is_pro; localStorage.setItem('isPro', String(isPro)); }
+  if (currentUser.email === 'kyouji.o@gmail.com') { isPro = true; localStorage.setItem('isPro', 'true'); }
+  if (typeof updateProUI === 'function') updateProUI();
+  if (!isPro) { _syncStatus = 'local'; if (typeof updateSyncBadges === 'function') updateSyncBadges(); return; }
   var res=await _sb.from('user_data').select('key,data,updated_at').eq('user_id',currentUser.id).eq('app',_APP);
   if(res.data&&res.data.length>0){
     var localTime=parseInt(localStorage.getItem('ownly_updated_at')||'0');

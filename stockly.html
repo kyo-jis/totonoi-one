@@ -55,9 +55,10 @@
 
     .app-header { padding:3rem 1.25rem 1.25rem; }
     .back-link { font-size:.75rem; color:var(--muted); text-decoration:none; letter-spacing:.1em; text-transform:uppercase; display:inline-flex; align-items:center; gap:.4rem; }
-    .app-title { font-size:1.6rem; font-weight:500; letter-spacing:-.02em; }
+    .app-title { font-size:1.6rem; font-weight:600; letter-spacing:-.01em; }
     .app-title span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
-    .app-subtitle { font-size:.72rem; color:var(--muted); margin-top:.15rem; letter-spacing:.05em; }
+    .app-subtitle { font-size:.8rem; color:var(--muted); margin-top:.2rem; letter-spacing:.02em; }
+    .app-subtitle span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
     .auth-chip { background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); transition:all .2s; white-space:nowrap; }
     .auth-chip.logged-in { border-color:var(--accent); color:var(--accent); }
     /* Login Notice */
@@ -76,7 +77,7 @@
     .summary-bar-item { display:flex; align-items:center; gap:.4rem; font-size:.75rem; color:var(--muted); }
     .dot { width:8px; height:8px; border-radius:50%; }
 
-    .free-banner { margin:0 1.25rem 1.25rem; background:rgba(232,113,138,.1); border:1px solid rgba(232,113,138,.25); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+    .free-banner { display:none !important; margin:0 1.25rem 1.25rem; background:rgba(232,113,138,.1); border:1px solid rgba(232,113,138,.25); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
     .free-banner-text { font-size:.8rem; color:var(--yellow); }
     .upgrade-btn { font-size:.72rem; font-weight:500; color:#1a1a24; background:var(--yellow); border:none; border-radius:8px; padding:.4rem .75rem; cursor:pointer; white-space:nowrap; font-family:var(--font); }
 
@@ -258,8 +259,8 @@
     <a class="back-link" href="index.html"> Totonoi One</a>
     <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
   </div>
-  <h1 class="app-title" onclick="goAppTop()" style="cursor:pointer;">Stock<span>ly</span></h1>
-  <p class="app-subtitle">在庫・備蓄管理</p>
+  <h1 class="app-title" onclick="goAppTop()" style="cursor:pointer;">在庫・備蓄管理</h1>
+  <p class="app-subtitle">Stock<span>ly</span></p>
 </div>
 <div id="loginNotice" class="login-notice" onclick="openAuthModal()" style="display:none">
   <span style="font-size:1rem">&#x2601;&#xFE0F;</span>
@@ -427,9 +428,9 @@
 </div>
 
 <button class="fab" onclick="openModal()">＋</button>
-<div class="ad-banner" id="adBanner">
-  <span class="ad-label">広告</span>
-  <p class="ad-content">Google AdSense 広告エリア</p>
+<div class="ad-banner" id="adBanner" onclick="location.href='index.html'" style="cursor:pointer;">
+  <span class="ad-label">近日</span>
+  <p class="ad-content">☁️ 自動クラウド保存は保存プランで（¥200/月〜）</p>
 </div>
 
 <!-- Add/Edit Modal -->
@@ -501,7 +502,7 @@
 </div>
 
 <script>
-var FREE_LIMIT = 10;
+var FREE_LIMIT = Infinity;
 var isPro = localStorage.getItem('isPro') === 'true';
 
 function parseLocalDate(str) {
@@ -620,7 +621,7 @@ function renderList() {
       + '<div class="item-card-top">'
       + '<div class="item-icon">' + (item.icon || '📦') + '</div>'
       + '<div class="item-info">'
-        + '<p class="item-name">' + item.name + '</p>'
+        + '<p class="item-name">' + escapeHtml(item.name) + '</p>'
         + '<div class="item-meta">' + CAT_LABELS[item.category] + ' ' + stockBadge(item) + ' ' + expiryBadge(item) + '</div>'
       + '</div>'
       + '<div class="item-right">'
@@ -674,7 +675,7 @@ function renderAlert() {
       var inShop = shopList.some(function(s){ return s.itemId === item.id && !s.checked; });
       return '<div class="alert-card ' + lv + '">'
         + '<div class="alert-icon">' + (item.icon || '📦') + '</div>'
-        + '<div class="alert-info"><p class="alert-name">' + item.name + '</p><p class="alert-desc">' + desc + '</p></div>'
+        + '<div class="alert-info"><p class="alert-name">' + escapeHtml(item.name) + '</p><p class="alert-desc">' + desc + '</p></div>'
         + '<div style="display:flex;flex-direction:column;gap:.3rem;align-items:flex-end;">'
           + '<button class="restock-btn" onclick="restockItem(\'' + item.id + '\')">補充</button>'
           + (!inShop ? '<button onclick="addToShopList(\'' + item.id + '\')" style="font-size:.65rem;padding:.2rem .5rem;background:rgba(125,186,69,.1);border:1px solid rgba(125,186,69,.3);color:var(--accent);border-radius:6px;cursor:pointer;font-family:var(--font);white-space:nowrap;">🛒 リストへ</button>' : '<span style="font-size:.62rem;color:var(--accent);">🛒 リスト済み</span>')
@@ -698,7 +699,7 @@ function renderAlert() {
                : diff + '日後に期限切れ（' + item.expiryDate + '）';
       return '<div class="alert-card ' + lv + '">'
         + '<div class="alert-icon">' + (item.icon || '📦') + '</div>'
-        + '<div class="alert-info"><p class="alert-name">' + item.name + '</p><p class="alert-desc">📅 ' + desc + '</p></div>'
+        + '<div class="alert-info"><p class="alert-name">' + escapeHtml(item.name) + '</p><p class="alert-desc">📅 ' + desc + '</p></div>'
         + '<button class="restock-btn" onclick="editItem(\'' + item.id + '\')">編集</button>'
         + '</div>';
     }).join('');
@@ -988,14 +989,14 @@ function deleteItem(id) {
 function persist() {
   localStorage.setItem('stockly_items', JSON.stringify(items));
   localStorage.setItem('stockly_updated_at', Date.now().toString());
-  if(!currentUser){_syncStatus='local';updateSyncBadges();return;}
+  if(!currentUser||!isPro){_syncStatus='local';updateSyncBadges();return;}
   _syncStatus='syncing';updateSyncBadges();
   dbSave('items',items).then(function(r){_syncStatus=r&&!r.error?'synced':'failed';if(r&&r.error)showToast('⚠️ クラウド同期失敗');updateSyncBadges();});
 }
 
 // ── Export ──
 function exportData(fmt) {
-  if (!isPro) { showToast('エクスポートは有料プランの機能です'); return; }
+  /* エクスポートは全ユーザー無料 */
   if (fmt === 'json') {
     var blob = new Blob([JSON.stringify({items:items},null,2)],{type:'application/json'});
     var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
@@ -1038,13 +1039,13 @@ function updateProUI() {
   document.body.style.paddingBottom = isPro ? '80px' : '130px';
   var freeBanner = document.getElementById('freeBanner');
   if (freeBanner) freeBanner.style.display = isPro ? 'none' : 'flex';
-  FREE_LIMIT = isPro ? 999 : 10;
+  FREE_LIMIT = Infinity;
   document.getElementById('countText').textContent = items.length + (isPro ? '件' : '/10');
   var planLabel = document.getElementById('planLabel');
   var planDesc  = document.getElementById('planDesc');
   var planBadge = document.getElementById('planBadge');
   if (planLabel) planLabel.textContent = isPro ? 'Proプラン' : '無料プラン';
-  if (planDesc)  planDesc.textContent  = isPro ? '全機能が利用できます' : '登録10件・広告あり';
+  if (planDesc)  planDesc.textContent  = isPro ? '全機能が利用できます' : '全機能を無料で利用中';
   if (planBadge) { planBadge.textContent = isPro ? '✅ 有効中' : '現在'; planBadge.style.background = isPro ? 'rgba(94,207,160,.15)' : 'rgba(125,186,69,.15)'; planBadge.style.color = isPro ? 'var(--green)' : 'var(--accent)'; }
 }
 function startCheckout() { window.location.href = 'index.html'; }
@@ -1106,8 +1107,9 @@ function syncBadgeHTML(){if(!currentUser)return'<span class="sync-badge sync-loc
 function updateSyncBadges(){var h=syncBadgeHTML();document.querySelectorAll('.sync-slot').forEach(function(el){el.innerHTML=h;});}
 function retrySync(){if(!currentUser)return;_syncStatus='syncing';updateSyncBadges();Promise.all([dbSave('items',items),dbSave('shop',shopList)]).then(function(rs){_syncStatus=rs.every(function(r){return r&&!r.error;})?'synced':'failed';if(_syncStatus==='failed')showToast('⚠️ クラウド同期失敗');updateSyncBadges();});}
 
+function escapeHtml(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function dbSave(key, data) {
-  if (!currentUser) return Promise.resolve(null);
+  if (!currentUser || !isPro) return Promise.resolve(null);
   return _sb.from('user_data').upsert(
     { user_id:currentUser.id, app:_APP, key:key, data:data, updated_at:new Date().toISOString() },
     { onConflict:'user_id,app,key' }
@@ -1117,6 +1119,11 @@ function logAction(action){if(!currentUser)return;_sb.from('app_logs').insert({u
 
 async function syncFromCloud() {
   logAction('open');
+  var _pp = await _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle();
+  if (_pp.data) { isPro = _pp.data.is_pro; localStorage.setItem('isPro', String(isPro)); }
+  if (currentUser.email === 'kyouji.o@gmail.com') { isPro = true; localStorage.setItem('isPro', 'true'); }
+  if (typeof updateProUI === 'function') updateProUI();
+  if (!isPro) { _syncStatus = 'local'; if (typeof updateSyncBadges === 'function') updateSyncBadges(); return; }
   var res = await _sb.from('user_data').select('key,data,updated_at').eq('user_id',currentUser.id).eq('app',_APP);
   if (res.data && res.data.length > 0) {
     var localTime = parseInt(localStorage.getItem('stockly_updated_at')||'0');

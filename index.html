@@ -193,22 +193,19 @@
 
     .bc-tag {
       display: inline-block;
-      font-size: .6rem;
+      font-size: .78rem;
       font-weight: 500;
-      letter-spacing: .06em;
-      text-transform: uppercase;
-      background: rgba(255,255,255,.15);
-      border-radius: 20px;
-      padding: .15rem .5rem;
-      margin-bottom: .3rem;
+      letter-spacing: .01em;
+      margin-bottom: .15rem;
+      opacity: .9;
     }
+    .bc-tag span { font-family: var(--serif); font-style: italic; }
 
     .bc-name {
-      font-family: var(--serif);
-      font-style: italic;
-      font-size: 1.25rem;
+      font-size: 1.15rem;
+      font-weight: 600;
       letter-spacing: -.01em;
-      line-height: 1;
+      line-height: 1.15;
     }
 
     .bc-desc {
@@ -280,7 +277,7 @@
     /* ── Modal ── */
     .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); backdrop-filter:blur(6px); z-index:100; display:none; align-items:flex-end; }
     .modal-overlay.show { display:flex; }
-    .modal { background:#1a1a24; border:1px solid #35354a; border-radius:24px 24px 0 0; padding:1.5rem 1.25rem 2rem; width:100%; animation:slideUp .3s ease; }
+    .modal { background:#1a1a24; border:1px solid #35354a; border-radius:24px 24px 0 0; padding:1.5rem 1.25rem 2rem; width:100%; max-height:90vh; overflow-y:auto; animation:slideUp .3s ease; }
     @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
     .modal-handle { width:36px; height:4px; background:#35354a; border-radius:2px; margin:0 auto 1.25rem; }
     .form-group { margin-bottom:1rem; }
@@ -382,8 +379,8 @@
     <a class="bc subly" href="subly.html">
       <div>
         <span class="bc-icon">💳</span>
-        <span class="bc-tag">サブスク管理</span>
-        <p class="bc-name">Subly</p>
+        <span class="bc-tag">Sub<span>ly</span></span>
+        <p class="bc-name">サブスク管理</p>
         <p class="bc-desc">月額費用を自動追跡</p>
       </div>
       <span class="bc-arrow">→</span>
@@ -392,8 +389,8 @@
     <a class="bc medly" href="medly.html">
       <div>
         <span class="bc-icon">💊</span>
-        <span class="bc-tag">サプリ・薬管理</span>
-        <p class="bc-name">Medly</p>
+        <span class="bc-tag">Med<span>ly</span></span>
+        <p class="bc-name">サプリ・薬管理</p>
         <p class="bc-desc">在庫・服用・相性を管理</p>
       </div>
       <span class="bc-arrow">→</span>
@@ -402,8 +399,8 @@
     <a class="bc fitly" href="fitly.html">
       <div>
         <span class="bc-icon">🏋️</span>
-        <span class="bc-tag">トレーニング記録</span>
-        <p class="bc-name">Fitly</p>
+        <span class="bc-tag">Fit<span>ly</span></span>
+        <p class="bc-name">トレーニング記録</p>
         <p class="bc-desc">筋トレ・有酸素を記録</p>
       </div>
       <span class="bc-arrow">→</span>
@@ -413,8 +410,8 @@
     <a class="bc cookly" href="cookly.html">
       <div>
         <span class="bc-icon">🍳</span>
-        <span class="bc-tag">レシピ管理</span>
-        <p class="bc-name">Cookly</p>
+        <span class="bc-tag">Cook<span>ly</span></span>
+        <p class="bc-name">レシピ管理</p>
         <p class="bc-desc">レシピを保存・整理</p>
       </div>
       <span class="bc-arrow">→</span>
@@ -424,8 +421,8 @@
     <a class="bc learnly" href="learnly.html">
       <div>
         <span class="bc-icon">📚</span>
-        <span class="bc-tag">学習プランナー</span>
-        <p class="bc-name">Learnly</p>
+        <span class="bc-tag">Learn<span>ly</span></span>
+        <p class="bc-name">学習プランナー</p>
         <p class="bc-desc">科目別タイマーで学習を記録</p>
       </div>
       <span class="bc-arrow">→</span>
@@ -434,8 +431,8 @@
     <a class="bc stockly" href="stockly.html">
       <div>
         <span class="bc-icon">📦</span>
-        <span class="bc-tag">在庫・備蓄管理</span>
-        <p class="bc-name">Stockly</p>
+        <span class="bc-tag">Stock<span>ly</span></span>
+        <p class="bc-name">在庫・備蓄管理</p>
         <p class="bc-desc">備蓄品の在庫を管理</p>
       </div>
       <span class="bc-arrow">→</span>
@@ -445,8 +442,8 @@
     <a class="bc renewly" href="renewly.html">
       <div>
         <span class="bc-icon">🔄</span>
-        <span class="bc-tag">期限管理</span>
-        <p class="bc-name">Renewly</p>
+        <span class="bc-tag">Renew<span>ly</span></span>
+        <p class="bc-name">期限管理</p>
         <p class="bc-desc">更新期限を一元管理</p>
       </div>
       <span class="bc-arrow">→</span>
@@ -455,8 +452,8 @@
     <a class="bc bookly" href="bookly.html">
       <div>
         <span class="bc-icon">📚</span>
-        <span class="bc-tag">読書管理</span>
-        <p class="bc-name">Bookly</p>
+        <span class="bc-tag">Book<span>ly</span></span>
+        <p class="bc-name">読書管理</p>
         <p class="bc-desc">漫画・小説・参考書の読書記録</p>
       </div>
       <span class="bc-arrow">→</span>
@@ -466,8 +463,8 @@
     <a class="bc readly" href="readly.html">
       <div>
         <span class="bc-icon">📝</span>
-        <span class="bc-tag">メモ・日記</span>
-        <p class="bc-name">Readly</p>
+        <span class="bc-tag">Read<span>ly</span></span>
+        <p class="bc-name">メモ・日記</p>
         <p class="bc-desc">メモ・日記・アイデアを管理</p>
       </div>
       <span class="bc-arrow">→</span>
@@ -477,8 +474,8 @@
     <a class="bc kakely" href="kakely.html">
       <div>
         <span class="bc-icon">💰</span>
-        <span class="bc-tag">家計簿</span>
-        <p class="bc-name">Kakely</p>
+        <span class="bc-tag">Kake<span>ly</span></span>
+        <p class="bc-name">家計簿</p>
         <p class="bc-desc">収支を記録して家計を整える</p>
       </div>
       <span class="bc-arrow">→</span>
@@ -487,26 +484,31 @@
     <!-- Pro Plan Card -->
     <div class="bc pro-card" id="proCard">
       <div class="pro-top">
-        <p class="pro-title">✨ Totonoi Pro</p>
-        <span class="pro-badge" id="proBadge">無料プラン</span>
+        <p class="pro-title">☁️ 保存プラン</p>
+        <span class="pro-badge" id="proBadge">未加入</span>
       </div>
+      <p style="font-size:.78rem;color:var(--muted);line-height:1.65;margin:.35rem 0 .8rem;">アプリはぜんぶ無料。<strong style="color:var(--text);font-weight:500;">自動クラウド保存</strong>なら、機種変更やキャッシュ削除でもデータが消えず、複数端末で自動同期できます。</p>
       <div class="pro-perks">
-        <span class="pro-perk">登録無制限</span>
-        <span class="pro-perk">全期間グラフ</span>
-        <span class="pro-perk">エクスポート</span>
-        <span class="pro-perk">広告なし</span>
+        <span class="pro-perk">自動クラウド保存</span>
+        <span class="pro-perk">複数端末で同期</span>
+        <span class="pro-perk">機種変も引き継ぎ</span>
       </div>
       <div id="upgradeArea">
-        <button class="btn-upgrade-main" onclick="startCheckout()">¥480/月 でアップグレード</button>
-        <button class="pro-link" onclick="deactivatePro()" id="deactivateBtn" style="display:none;">プランを解除</button>
+        <div id="planToggle" style="display:flex;gap:.5rem;margin:.9rem 0 .7rem;">
+          <button type="button" class="plan-opt" id="planMonthly" onclick="selectPlan('monthly')" style="flex:1;padding:.6rem .4rem;border:1px solid var(--border);border-radius:12px;background:var(--surface2);color:var(--text);font-family:var(--font);font-size:.82rem;cursor:pointer;line-height:1.3;">月額<br>¥200</button>
+          <button type="button" class="plan-opt" id="planYearly" onclick="selectPlan('yearly')" style="flex:1;padding:.6rem .4rem;border:1px solid var(--border);border-radius:12px;background:var(--surface2);color:var(--text);font-family:var(--font);font-size:.82rem;cursor:pointer;line-height:1.3;">年額 ¥1,800<span style="display:block;font-size:.62rem;opacity:.85;">25%オフ・実質¥150/月</span></button>
+        </div>
+        <button class="btn-upgrade-main" onclick="startCheckout()" id="upgradeBtn">保存プランに加入（月額 ¥200）</button>
+        <button class="pro-link" onclick="openBillingPortal()" id="deactivateBtn" style="display:none;">プランを管理・解約</button>
       </div>
+      <p style="text-align:center;font-size:.7rem;color:var(--muted);margin-top:.5rem;line-height:1.55;">いただいた分はサーバー・クラウドの費用にあてさせていただきます。</p>
     </div>
 
   </main>
 
   <footer>
     <p style="font-size:.72rem;color:rgba(148,148,184,.5);margin-bottom:.75rem;">💻 PC表示ならグラフ・在庫チャートなどの詳細分析が見られます</p>
-    <a href="guide.html" style="display:inline-block;margin-bottom:.5rem;font-size:.78rem;color:var(--muted);text-decoration:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.45rem .9rem;">📖 使い方ガイド &amp; Pro比較</a><br>
+    <a href="guide.html" style="display:inline-block;margin-bottom:.5rem;font-size:.78rem;color:var(--muted);text-decoration:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.45rem .9rem;">📖 使い方ガイド</a><br>
     <button class="backup-btn" onclick="openBackupModal()">💾 バックアップ / 復元</button><br>
     © 2026 Totonoi One
     <button class="footer-admin" onclick="togglePromo()">・・・</button>
@@ -646,19 +648,34 @@
       var badge = document.getElementById('proBadge');
       var upgradeArea = document.getElementById('upgradeArea');
       var deactivateBtn = document.getElementById('deactivateBtn');
+      var toggle = document.getElementById('planToggle');
+      var upBtn = document.getElementById('upgradeBtn');
       if (isPro) {
         card.classList.add('is-pro');
-        badge.textContent = '✅ Proプラン';
+        badge.textContent = '✅ 加入中';
         badge.classList.add('active');
-        upgradeArea.querySelector('.btn-upgrade-main').style.display = 'none';
+        if (toggle) toggle.style.display = 'none';
+        if (upBtn) upBtn.style.display = 'none';
         deactivateBtn.style.display = 'block';
       } else {
         card.classList.remove('is-pro');
-        badge.textContent = '無料プラン';
+        badge.textContent = '未加入';
         badge.classList.remove('active');
-        upgradeArea.querySelector('.btn-upgrade-main').style.display = 'block';
+        if (toggle) toggle.style.display = 'flex';
+        if (upBtn) upBtn.style.display = 'block';
         deactivateBtn.style.display = 'none';
       }
+    }
+
+    var _selectedPlan = 'monthly';
+    function selectPlan(p) {
+      _selectedPlan = (p === 'yearly') ? 'yearly' : 'monthly';
+      var m = document.getElementById('planMonthly'), y = document.getElementById('planYearly');
+      [m, y].forEach(function(b){ if(b){ b.style.borderColor='var(--border)'; b.style.background='var(--surface2)'; b.style.color='var(--text)'; } });
+      var sel = (_selectedPlan === 'yearly') ? y : m;
+      if (sel) { sel.style.borderColor='#9b6dff'; sel.style.background='rgba(155,109,255,.15)'; sel.style.color='#c89aff'; }
+      var btn = document.getElementById('upgradeBtn');
+      if (btn) btn.textContent = (_selectedPlan === 'yearly') ? '保存プランに加入（年額 ¥1,800）' : '保存プランに加入（月額 ¥200）';
     }
 
     async function startCheckout() {
@@ -668,7 +685,7 @@
         var res = await fetch('/api/create-checkout-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: currentUser.id, userEmail: currentUser.email })
+          body: JSON.stringify({ userId: currentUser.id, userEmail: currentUser.email, plan: _selectedPlan })
         });
         var data = await res.json();
         if (data.url) window.location.href = data.url;
@@ -679,6 +696,21 @@
     function deactivatePro() {
       if (!confirm('有料プランを解除しますか？')) return;
       localStorage.removeItem('isPro'); isPro = false; updateProUI();
+    }
+
+    async function openBillingPortal() {
+      if (!currentUser) { openAuthModal(); showToast('まずログインしてください'); return; }
+      showToast('プラン管理ページへ移動中...');
+      try {
+        var res = await fetch('/api/create-portal-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: currentUser.id })
+        });
+        var data = await res.json();
+        if (data.url) window.location.href = data.url;
+        else showToast('⚠️ ' + (data.error || 'エラーが発生しました'));
+      } catch(e) { showToast('⚠️ 通信エラーが発生しました'); }
     }
 
     function togglePromo() {
@@ -769,6 +801,7 @@
     }
 
     updateProUI();
+    selectPlan('monthly');
 
     // ── Bento Customization ──
     var APP_KEYS = ['kakely','subly','medly','fitly','stockly','bookly','cookly','renewly','readly','learnly'];

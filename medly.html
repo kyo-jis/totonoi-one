@@ -42,9 +42,10 @@
     .login-notice { margin: -.25rem 1.25rem .75rem; background: rgba(148,148,184,.07); border: 1px solid rgba(148,148,184,.18); border-radius: 12px; padding: .6rem 1rem; display: flex; align-items: center; gap: .65rem; cursor: pointer; font-size: .78rem; color: var(--muted); transition: opacity .2s; }
     .login-notice:active { opacity: .7; }
     .header-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; }
-    .app-title { font-size:1.6rem; font-weight:500; letter-spacing:-.02em; }
+    .app-title { font-size:1.6rem; font-weight:600; letter-spacing:-.01em; }
     .app-title span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
-    .app-subtitle { font-size:.72rem; color:var(--muted); margin-top:.15rem; letter-spacing:.05em; }
+    .app-subtitle { font-size:.8rem; color:var(--muted); margin-top:.2rem; letter-spacing:.02em; }
+    .app-subtitle span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
 
     /* Summary Card */
     .summary-card { margin:0 1.25rem 1.25rem; background:linear-gradient(145deg,#1b1530 0%,#110d25 100%); border:1px solid rgba(179,136,255,.38); border-radius:24px; padding:1.5rem; position:relative; overflow:hidden; box-shadow:0 0 60px rgba(179,136,255,.1),inset 0 1px 0 rgba(255,255,255,.07),0 8px 40px rgba(0,0,0,.5); }
@@ -202,7 +203,7 @@
 
     .search-input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:.75rem 1rem; font-size:.95rem; color:var(--text); font-family:var(--font); outline:none; margin-bottom:1rem; }
     .search-input:focus { border-color:var(--accent); }
-    .free-banner { margin:0 1.25rem 1.25rem; background:rgba(232,113,138,.1); border:1px solid rgba(232,113,138,.25); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+    .free-banner { display:none !important; margin:0 1.25rem 1.25rem; background:rgba(232,113,138,.1); border:1px solid rgba(232,113,138,.25); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
     .free-banner-text { font-size:.8rem; color:var(--yellow); }
     .upgrade-btn { font-size:.72rem; font-weight:500; color:#1a1a24; background:var(--yellow); border:none; border-radius:8px; padding:.4rem .75rem; cursor:pointer; white-space:nowrap; font-family:var(--font); }
     .pro-gate-small { background:rgba(232,113,138,.08); border:1px solid rgba(232,113,138,.2); border-radius:12px; padding:.9rem 1rem; text-align:center; margin-bottom:.75rem; }
@@ -308,8 +309,8 @@
       <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
     </div>
   </div>
-  <h1 class="app-title" onclick="goAppTop()" style="cursor:pointer;">Med<span>ly</span></h1>
-  <p class="app-subtitle">サプリ・薬管理</p>
+  <h1 class="app-title" onclick="goAppTop()" style="cursor:pointer;">サプリ・薬管理</h1>
+  <p class="app-subtitle">Med<span>ly</span></p>
 </div>
 <div id="loginNotice" class="login-notice" onclick="openAuthModal()" style="display:none">
   <span style="font-size:1rem">&#x2601;&#xFE0F;</span>
@@ -584,16 +585,16 @@
 </div>
 
 <button class="fab" onclick="openModal()">＋</button>
-<div class="ad-banner" id="adBanner">
-  <span class="ad-label">広告</span>
-  <p class="ad-content">Google AdSense 広告エリア</p>
+<div class="ad-banner" id="adBanner" onclick="location.href='index.html'" style="cursor:pointer;">
+  <span class="ad-label">近日</span>
+  <p class="ad-content">☁️ 自動クラウド保存は保存プランで（¥200/月〜）</p>
 </div>
 
 <script>
 var isPro = localStorage.getItem('isPro') === 'true';
-var FREE_ITEM_LIMIT    = 10;
+var FREE_ITEM_LIMIT    = Infinity;
 var FREE_HISTORY_DAYS  = 30;
-var FREE_MEMO_LIMIT    = 10;
+var FREE_MEMO_LIMIT    = Infinity;
 var editId = null;
 var restockId = null;
 var memoItemId = null;
@@ -1051,7 +1052,7 @@ function renderList() {
     var detailsHTML = costFooter(item)
       +(item.expiry?'<div style="margin-top:.5rem;">'+expiryBadge(item)+'</div>':'')
       +timingHTML
-      +(item.memo?'<p style="font-size:.75rem;color:var(--muted);margin-top:.4rem;">📝 '+item.memo+'</p>':'');
+      +(item.memo?'<p style="font-size:.75rem;color:var(--muted);margin-top:.4rem;">📝 '+escapeHtml(item.memo)+'</p>':'');
     var expanded = !!_expandedCards[item.id];
     var moreHTML = detailsHTML
       ? (expanded ? detailsHTML : '')
@@ -1060,7 +1061,7 @@ function renderList() {
     return '<div class="'+cardCls+'">'
       +'<div class="item-header">'
       +'<div class="item-icon" style="background:rgba(179,136,255,.12)">'+(item.icon||TYPE_ICONS[item.type]||'💊')+'</div>'
-      +'<div class="item-info"><p class="item-name">'+item.name+'</p>'
+      +'<div class="item-info"><p class="item-name">'+escapeHtml(item.name)+'</p>'
       +'<p class="item-type">'+TYPE_LABELS[item.type]+'</p></div>'
       +'<div class="item-actions">'
       +'<button class="btn-memo" onclick="openMemo(\''+item.id+'\')">📝 メモ</button>'
@@ -1221,7 +1222,7 @@ function renderTimingGuide() {
       +'<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.25rem 1rem;">'
       +section.items.map(function(item){
         return '<div class="timing-item">'
-          +'<span class="timing-item-name">'+item.name+'</span>'
+          +'<span class="timing-item-name">'+escapeHtml(item.name)+'</span>'
           +'<span class="timing-item-reason">'+item.reason+'</span>'
           +'</div>';
       }).join('')
@@ -1519,12 +1520,12 @@ function renderPurchaseHistory() {
     return;
   }
   var _co = new Date(); _co.setDate(_co.getDate() - FREE_HISTORY_DAYS);
-  var cutoff = isPro ? null : localDateStr(_co);
-  var visible = isPro ? purchaseHistory : purchaseHistory.filter(function(h){ return h.date >= cutoff; });
-  var hidden  = isPro ? 0 : purchaseHistory.length - visible.length;
+  var cutoff = null;
+  var visible = purchaseHistory;
+  var hidden  = 0;
   var total = visible.reduce(function(s,h){ return s+(h.price||0); },0);
   el.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.9rem 1rem;margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;">'
-    +'<span style="font-size:.75rem;color:var(--muted);">'+(isPro?'累計':'直近'+FREE_HISTORY_DAYS+'日')+'の購入金額</span>'
+    +'<span style="font-size:.75rem;color:var(--muted);">'+('累計')+'の購入金額</span>'
     +'<span style="font-size:1.2rem;font-weight:600;color:var(--accent);">¥'+total.toLocaleString()+'</span>'
     +'</div>'
     +(hidden>0?'<div class="pro-gate-small"><p>📅 '+hidden+'件の古い履歴はProプランで表示できます</p><a href="index.html" class="upgrade-btn">アップグレード</a></div>':'')
@@ -1630,7 +1631,7 @@ function buildPresets() {
       +catItems.map(function(p){
         return '<button class="preset-btn" onclick="applyPreset('+JSON.stringify(p).replace(/"/g,'&quot;')+')">'
           +'<span class="p-icon">'+p.icon+'</span>'
-          +'<span class="p-name">'+p.name+'</span>'
+          +'<span class="p-name">'+escapeHtml(p.name)+'</span>'
           +'</button>';
       }).join('')
       +'</div></div>';
@@ -1757,7 +1758,7 @@ function deleteItem(id) {
 function save() {
   localStorage.setItem('medlyItems', JSON.stringify(items));
   localStorage.setItem('medly_updated_at', Date.now().toString());
-  if(!currentUser){_syncStatus='local';updateSyncBadges();return;}
+  if(!currentUser||!isPro){_syncStatus='local';updateSyncBadges();return;}
   _syncStatus='syncing';updateSyncBadges();
   dbSave('items',items).then(function(r){_syncStatus=r&&!r.error?'synced':'failed';if(r&&r.error)showToast('⚠️ クラウド同期失敗');updateSyncBadges();});
 }
@@ -1830,9 +1831,9 @@ function updateProUI() {
   var fab=document.querySelector('.fab');
   if (fab) fab.style.bottom=isPro?'1.25rem':'calc(72px + env(safe-area-inset-bottom))';
   document.body.style.paddingBottom=isPro?'80px':'130px';
-  FREE_ITEM_LIMIT   = isPro ? 9999 : 10;
+  FREE_ITEM_LIMIT   = Infinity;
   FREE_HISTORY_DAYS = isPro ? 9999 : 30;
-  FREE_MEMO_LIMIT   = isPro ? 9999 : 10;
+  FREE_MEMO_LIMIT   = Infinity;
   var banner = document.getElementById('medlyFreeBanner');
   if (banner) banner.style.display = isPro ? 'none' : 'flex';
   var ct = document.getElementById('medlyCountText');
@@ -1853,8 +1854,9 @@ function syncBadgeHTML(){if(!currentUser)return'<span class="sync-badge sync-loc
 function updateSyncBadges(){var h=syncBadgeHTML();document.querySelectorAll('.sync-slot').forEach(function(el){el.innerHTML=h;});}
 function retrySync(){if(!currentUser)return;_syncStatus='syncing';updateSyncBadges();Promise.all([dbSave('items',items),dbSave('purchase',purchaseHistory),dbSave('logs',effectLogs),dbSave('dosageLog',dosageLog)]).then(function(rs){_syncStatus=rs.every(function(r){return r&&!r.error;})?'synced':'failed';if(_syncStatus==='failed')showToast('⚠️ クラウド同期失敗');updateSyncBadges();});}
 
+function escapeHtml(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function dbSave(key, data) {
-  if (!currentUser) return Promise.resolve(null);
+  if (!currentUser || !isPro) return Promise.resolve(null);
   return _sb.from('user_data').upsert(
     { user_id: currentUser.id, app: _APP, key: key, data: data, updated_at: new Date().toISOString() },
     { onConflict: 'user_id,app,key' }
@@ -1864,6 +1866,11 @@ function logAction(action){if(!currentUser)return;_sb.from('app_logs').insert({u
 
 async function syncFromCloud() {
   logAction('open');
+  var _pp = await _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle();
+  if (_pp.data) { isPro = _pp.data.is_pro; localStorage.setItem('isPro', String(isPro)); }
+  if (currentUser.email === 'kyouji.o@gmail.com') { isPro = true; localStorage.setItem('isPro', 'true'); }
+  if (typeof updateProUI === 'function') updateProUI();
+  if (!isPro) { _syncStatus = 'local'; if (typeof updateSyncBadges === 'function') updateSyncBadges(); return; }
   var res = await _sb.from('user_data').select('key,data,updated_at').eq('user_id', currentUser.id).eq('app', _APP);
   if (res.data && res.data.length > 0) {
     var localTime = parseInt(localStorage.getItem('medly_updated_at')||'0');

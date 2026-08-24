@@ -85,9 +85,10 @@
     .login-notice { margin: -.25rem 1.25rem .75rem; background: rgba(148,148,184,.07); border: 1px solid rgba(148,148,184,.18); border-radius: 12px; padding: .6rem 1rem; display: flex; align-items: center; gap: .65rem; cursor: pointer; font-size: .78rem; color: var(--muted); transition: opacity .2s; }
     .login-notice:active { opacity: .7; }
     .header-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; }
-    .app-title { font-size:1.6rem; font-weight:500; letter-spacing:-.02em; }
+    .app-title { font-size:1.6rem; font-weight:600; letter-spacing:-.01em; }
     .app-title span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
-    .app-subtitle { font-size:.72rem; color:var(--muted); margin-top:.15rem; letter-spacing:.05em; }
+    .app-subtitle { font-size:.8rem; color:var(--muted); margin-top:.2rem; letter-spacing:.02em; }
+    .app-subtitle span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
 
     /* Tabs */
     .tabs { display:flex; gap:0; margin:0 1.25rem 1.25rem; background:linear-gradient(180deg, var(--surface) 0%, var(--surface2) 100%); border-radius:14px; padding:4px; border:1px solid var(--border); overflow-x:auto; box-shadow:var(--shadow-md), inset 0 1px 0 rgba(255,255,255,.06); }
@@ -550,8 +551,8 @@
       <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
     </div>
   </div>
-  <h1 class="app-title" onclick="goAppTop()" style="cursor:pointer;">Fit<span>ly</span></h1>
-  <p class="app-subtitle">トレーニング記録</p>
+  <h1 class="app-title" onclick="goAppTop()" style="cursor:pointer;">トレーニング記録</h1>
+  <p class="app-subtitle">Fit<span>ly</span></p>
 </div>
 <div id="loginNotice" class="login-notice" onclick="openAuthModal()" style="display:none">
   <span style="font-size:1rem">&#x2601;&#xFE0F;</span>
@@ -694,17 +695,8 @@
   </div>
 
   <!-- アクティブ中ヘッダー（ワークアウト中） -->
-  <div id="workoutActiveHeader" style="display:none;margin-bottom:1.25rem;">
-    <div style="display:flex;align-items:center;justify-content:space-between;">
-      <div>
-        <p class="section-label" id="workoutStatusLabel">種目を選択中</p>
-        <p class="workout-timer" id="workoutTimer">00:00</p>
-      </div>
-      <div style="display:flex;gap:.5rem;">
-        <button class="btn-start" id="btnStartWorkout" onclick="beginTimer()">▶ 開始</button>
-        <button class="btn-end" id="btnEndWorkout" onclick="endWorkout()" style="display:none;">完了</button>
-      </div>
-    </div>
+  <div id="workoutActiveHeader" style="display:none;margin-bottom:1rem;">
+    <button id="btnBackWorkout" onclick="endWorkout()" style="background:none;border:none;color:var(--muted);font-size:.85rem;font-family:var(--font);cursor:pointer;padding:.2rem 0;display:inline-flex;align-items:center;gap:.3rem;">← 戻る</button>
   </div>
 
   <div id="exerciseList"></div>
@@ -1067,9 +1059,9 @@
   </div>
 </div>
 
-<div class="ad-banner" id="adBanner">
-  <span class="ad-label">広告</span>
-  <p class="ad-content">Google AdSense 広告エリア</p>
+<div class="ad-banner" id="adBanner" onclick="location.href='index.html'" style="cursor:pointer;">
+  <span class="ad-label">近日</span>
+  <p class="ad-content">☁️ 自動クラウド保存は保存プランで（¥200/月〜）</p>
 </div>
 
 <script>
@@ -1151,6 +1143,11 @@ function localDateStr(d) {
   return d.getFullYear() + '-'
     + String(d.getMonth()+1).padStart(2,'0') + '-'
     + String(d.getDate()).padStart(2,'0');
+}
+// 現在時刻を HH:MM で返す（ワークアウトの記録時刻用）
+function nowHM() {
+  var d = new Date();
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
 }
 // ワークアウト履歴のdate正規化（ISOフルタイムスタンプでも日付部分のみ返す）
 function wDateStr(w) {
@@ -1659,9 +1656,6 @@ function init() {
     document.getElementById('workoutActiveHeader').style.display = 'block';
     document.getElementById('workoutDashboard').style.display = 'none';
     document.getElementById('btnAddExercise').style.display = 'block';
-    if (currentWorkout.startTime) {
-      workoutTimerInterval = setInterval(updateWorkoutTimer, 1000);
-    }
     renderExerciseCards();
     showToast('📋 前回のワークアウトを復元しました');
   }
@@ -2001,7 +1995,7 @@ function renderWorkoutDashboard() {
       var ds = wDateStr(w);
       var d  = new Date(ds);
       var dateStr = (d.getMonth()+1)+'/'+(d.getDate())+'（'+weekdays[d.getDay()]+'）';
-      var dur = w.duration ? Math.floor(w.duration/60)+'分' : '';
+      var timeStr = w.time || '';
       var parts = {};
       (w.exercises||[]).forEach(function(ex){ if (ex.part && partOrder2.indexOf(ex.part)>=0) parts[ex.part]=true; });
       var partTags = Object.keys(parts).map(function(p){
@@ -2014,7 +2008,7 @@ function renderWorkoutDashboard() {
       return '<div class="wd-recent-card" onclick="openDayDetail(\''+ds+'\')">'
         +'<div class="wd-recent-top">'
         +'<span class="wd-recent-date">'+dateStr+prBadge+'</span>'
-        +'<span class="wd-recent-duration">'+dur+'</span>'
+        +'<span class="wd-recent-duration">'+timeStr+'</span>'
         +'</div>'
         +(partTags?'<div class="wd-recent-parts">'+partTags+'</div>':'')
         +'<div class="wd-recent-vol-wrap">'
@@ -2061,7 +2055,7 @@ function renderWorkoutDashboard() {
       var d = new Date(p.date);
       var dateStr = (d.getMonth()+1)+'/'+(d.getDate());
       return '<div class="wd-pr-row">'
-        + '<span class="wd-pr-name">'+p.name+'</span>'
+        + '<span class="wd-pr-name">'+escapeHtml(p.name)+'</span>'
         + '<div class="wd-pr-right">'
         + '<p class="wd-pr-val">'+p.weight+'kg × '+p.reps+'rep</p>'
         + '<p class="wd-pr-date">推定1RM: '+p.est1RM+'kg · '+dateStr+'</p>'
@@ -2087,7 +2081,7 @@ function renderWorkoutDashboard() {
         +'<div class="wd-menu-item-icon">'+icon+'</div>'
         +'<div class="wd-menu-item-body">'
           +'<p class="wd-menu-item-num">マイセット '+(i+1)+'</p>'
-          +'<p class="wd-menu-item-name">'+m.name+'</p>'
+          +'<p class="wd-menu-item-name">'+escapeHtml(m.name)+'</p>'
           +'<p class="wd-menu-item-meta">'+exNames+more+'</p>'
         +'</div>'
         +'<button class="wd-menu-item-start" onclick="startFromMenu('+i+')">▶ スタート</button>'
@@ -2249,7 +2243,6 @@ function startWorkoutCustom() {
   workoutTimerInterval = null;
   currentWorkout = {exercises:[], startTime:null, running:false};
   localStorage.removeItem('fitlyCurrentWorkout');
-  document.getElementById('workoutTimer').textContent = '00:00';
   activateWorkoutUI();
   renderExerciseCards();
   openAddExercise();
@@ -2260,45 +2253,29 @@ function activateWorkoutUI() {
   document.getElementById('workoutDashboard').style.display = 'none';
   document.getElementById('workoutActiveHeader').style.display = 'block';
   document.getElementById('btnAddExercise').style.display = 'block';
-  document.getElementById('btnStartWorkout').style.display = 'block';
-  document.getElementById('btnEndWorkout').style.display = 'none';
-  document.getElementById('workoutStatusLabel').textContent = '種目を選択中';
 }
 
-function beginTimer() {
-  if (currentWorkout.startTime) return;
-  currentWorkout.startTime = Date.now();
-  document.getElementById('btnStartWorkout').style.display = 'none';
-  document.getElementById('btnEndWorkout').style.display = 'block';
-  document.getElementById('workoutStatusLabel').textContent = 'ワークアウト中';
-  workoutTimerInterval = setInterval(updateWorkoutTimer, 1000);
-}
-
-// ── Workout Timer ──
 function startWorkout() {
   clearInterval(workoutTimerInterval);
   workoutTimerInterval = null;
   currentWorkout = {exercises:[], startTime:null, running:false};
   localStorage.removeItem('fitlyCurrentWorkout');
-  document.getElementById('workoutTimer').textContent = '00:00';
   activateWorkoutUI();
 }
 
-function updateWorkoutTimer() {
-  if (!currentWorkout.startTime) return;
-  var elapsed = Math.floor((Date.now() - currentWorkout.startTime) / 1000);
-  var m = Math.floor(elapsed / 60), s = elapsed % 60;
-  document.getElementById('workoutTimer').textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
-}
-
+// ワークアウト画面から戻る（記録は自動保存済み。種目があれば確定保存、無ければ破棄して戻る）
 function endWorkout() {
-  saveWorkout();
-  clearInterval(workoutTimerInterval);
+  if (currentWorkout.exercises.length) {
+    saveWorkout(); // 保存＋UIリセット＋ダッシュボード表示まで実施
+  } else {
+    localStorage.removeItem('fitlyCurrentWorkout');
+    currentWorkout = {exercises:[], startTime:null, running:false};
+    document.getElementById('exerciseList').innerHTML = '';
+  }
   currentWorkout.running = false;
   document.getElementById('workoutDashboard').style.display = 'block';
   document.getElementById('workoutActiveHeader').style.display = 'none';
   document.getElementById('btnAddExercise').style.display = 'none';
-  document.getElementById('exerciseList').innerHTML = '';
   renderWorkoutDashboard();
 }
 
@@ -2321,7 +2298,8 @@ function saveWorkout() {
   }
   var record = {
     id: idx >= 0 ? workoutHistory[idx].id : Date.now().toString(),
-    date: localDateStr(),
+    date: idx >= 0 ? (workoutHistory[idx].date || localDateStr()) : localDateStr(),
+    time: idx >= 0 ? (workoutHistory[idx].time || nowHM()) : nowHM(),
     duration: elapsed,
     exercises: currentWorkout.exercises,
     totalSets: totalSets,
@@ -2360,7 +2338,6 @@ function saveWorkout() {
   clearInterval(workoutTimerInterval);
   workoutTimerInterval = null;
   currentWorkout = {exercises:[], startTime:null, running:false};
-  document.getElementById('workoutTimer').textContent = '00:00';
   document.getElementById('workoutActiveHeader').style.display = 'none';
   document.getElementById('workoutDashboard').style.display = 'block';
   document.getElementById('btnAddExercise').style.display = 'none';
@@ -2448,7 +2425,7 @@ function renderExerciseCards() {
       +'</div>';
     return '<div class="exercise-card">'
       +'<div class="exercise-header">'
-      +'<div><p class="exercise-name">'+ex.name+'</p>'
+      +'<div><p class="exercise-name">'+escapeHtml(ex.name)+'</p>'
       +'<p class="exercise-meta">'+PART_LABELS[ex.part]+'・'+CAT_LABELS[ex.cat]+'</p></div>'
       +'<div style="display:flex;gap:.4rem;align-items:center;">'
       +'<a href="'+ytURL+'" target="_blank" class="btn-yt">▶ 動画</a>'
@@ -2616,6 +2593,7 @@ function autoSaveToHistory() {
     workoutHistory.unshift({
       id: currentWorkout.historyId,
       date: localDateStr(),
+      time: nowHM(),
       duration: elapsed,
       exercises: JSON.parse(JSON.stringify(currentWorkout.exercises)),
       totalSets: totalSets,
@@ -3196,7 +3174,7 @@ function renderExerciseModal(list) {
     var isFav = favorites.indexOf(ex.id) >= 0;
     var starBtn = '<button onclick="toggleFavorite(\''+ex.id+'\',event)" style="background:none;border:none;font-size:1.15rem;cursor:pointer;padding:.1rem .15rem;line-height:1;color:'+(isFav?'var(--yellow)':'var(--border)')+';transition:color .15s;" title="お気に入り">'+(isFav?'★':'☆')+'</button>';
     return '<div class="exercise-list-item" onclick="addExerciseToWorkout('+JSON.stringify(ex).replace(/"/g,'&quot;')+')">'
-      +'<div><p class="exercise-list-name">'+ex.name+'</p>'
+      +'<div><p class="exercise-list-name">'+escapeHtml(ex.name)+'</p>'
       +'<p class="exercise-list-meta">'+CAT_LABELS[ex.cat]+'</p></div>'
       +'<div style="display:flex;align-items:center;gap:.35rem;">'
       +daysBadge
@@ -3421,7 +3399,7 @@ function mbFilterExercises() {
         var badgeCls = 'badge-'+(e.cat||'strength');
         var partLabel = PART_LABELS[e.part] || e.part || '';
         return '<div class="exercise-list-item" onclick="mbToggleExercise(\''+e.id+'\')" style="'+(added?'opacity:.45;pointer-events:none;':'')+'">'
-          +'<div><p class="exercise-list-name">'+e.name+'</p>'
+          +'<div><p class="exercise-list-name">'+escapeHtml(e.name)+'</p>'
           +'<p class="exercise-list-meta">'+partLabel+'</p></div>'
           +'<span class="exercise-list-badge '+badgeCls+'">'+(added?'追加済':'＋')+'</span>'
           +'</div>';
@@ -3525,7 +3503,7 @@ function renderMenuList() {
       +'<div class="menu-card-header">'
       +'<div style="display:flex;align-items:center;gap:.6rem;">'
       +'<div style="width:36px;height:36px;border-radius:10px;background:rgba(94,207,160,.1);display:flex;align-items:center;justify-content:center;font-size:1.15rem;flex-shrink:0;">'+icon+'</div>'
-      +'<div><p class="menu-card-name">'+m.name+'</p><p style="font-size:.62rem;color:var(--muted);margin-top:.1rem;">マイセット '+(i+1)+'</p></div>'
+      +'<div><p class="menu-card-name">'+escapeHtml(m.name)+'</p><p style="font-size:.62rem;color:var(--muted);margin-top:.1rem;">マイセット '+(i+1)+'</p></div>'
       +'</div>'
       +'<div style="display:flex;gap:.4rem;">'
       +'<button class="btn-use-menu" onclick="useMenu('+i+')">スタート</button>'
@@ -3909,8 +3887,8 @@ function renderHistoryList() {
   el.innerHTML=filtered.map(function(w){
     var realIdx=workoutHistory.indexOf(w);
     var d=new Date(w.date);
-    var dateStr=(d.getMonth()+1)+'月'+d.getDate()+'日';
-    var dur=w.duration?Math.floor(w.duration/60)+'分':'—';
+    var dateStr=(d.getMonth()+1)+'月'+d.getDate()+'日'+(w.time?' '+w.time:'');
+    var dur=w.duration?Math.floor(w.duration/60)+'分':'';
     
     var displayExes = w.exercises || [];
     if (activeHistoryPart !== 'all') {
@@ -3933,7 +3911,7 @@ function renderHistoryList() {
       +rightBtns
       +'</div>'
       +'<div class="history-stats">'
-      +'<span class="history-stat">⏱ <span>'+dur+'</span></span>'
+      +(dur?'<span class="history-stat">⏱ <span>'+dur+'</span></span>':'')
       +'<span class="history-stat">🏋️ <span>'+((w.totalSets||0)+'セット')+'</span></span>'
       +'<span class="history-stat">📦 <span>'+((w.totalVolume||0).toLocaleString())+'kg</span></span>'
       +'</div>'
@@ -4308,7 +4286,7 @@ function renderMonthlyAnalysis(targetMonth) {
   freeHtml += '</div>';
 
   var proInner = '';
-  if (!isPro) {
+  if (false) {
     proInner = '<div class="pro-gate"><div class="pro-gate-icon">📈</div>'
       +'<p class="pro-gate-title">詳細分析はProプラン限定</p>'
       +'<p class="pro-gate-text">部位別ボリューム・停滞部位・種目別の伸び・体重推移が確認できます。</p>'
@@ -4365,7 +4343,7 @@ function renderMonthlyAnalysis(targetMonth) {
     +'<div class="analysis-wrap-pc"><div class="analysis-pc-grid">'+freeHtml+'</div></div>'
     + proInner;
 
-  if (isPro) {
+  if (true) {
     var partKeys3 = Object.keys(report.partVolume);
     var partColorMap2 = {'💪 胸':'#ff7c6e','🦅 背中':'#6c8eff','🏋️ 肩':'#b388ff',
       '💪 腕':'#f5c842','🦵 脚':'#5ecfa0','🧘 体幹':'#8888a0','🌟 全身':'#ffa07a','その他':'#888'};
@@ -4550,7 +4528,7 @@ function renderAnalysis() {
       +'</div>';
   }
 
-  if (!isPro) {
+  if (false) {
     el.innerHTML = bannerHtml + subTabHtml
       +'<div class="pro-gate"><div class="pro-gate-icon">📊</div><p class="pro-gate-title">週間分析はProプラン限定</p>'
       +'<p class="pro-gate-text">部位別ボリューム・推移グラフ・PRなどの詳細分析が使えます。</p>'
@@ -4841,9 +4819,10 @@ function syncBadgeHTML(){if(!currentUser)return'<span class="sync-badge sync-loc
 function updateSyncBadges(){var h=syncBadgeHTML();document.querySelectorAll('.sync-slot').forEach(function(el){el.innerHTML=h;});}
 function retrySync(){if(!currentUser)return;_syncStatus='syncing';updateSyncBadges();Promise.all([dbSave('history',workoutHistory),dbSave('menus',savedMenus),dbSave('exSettings',exerciseSettings),dbSave('bodyweight',bodyWeightLog),dbSave('prs',personalRecords),dbSave('favorites',favorites)]).then(function(rs){_syncStatus=rs.every(function(r){return r&&!r.error;})?'synced':'failed';if(_syncStatus==='failed')showToast('⚠️ クラウド同期失敗');updateSyncBadges();});}
 
+function escapeHtml(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function dbSave(key, data) {
   localStorage.setItem('fitly_updated_at', Date.now().toString());
-  if (!currentUser) { return Promise.resolve(null); }
+  if (!currentUser || !isPro) { return Promise.resolve(null); }
   _syncStatus = 'syncing'; updateSyncBadges();
   return _sb.from('user_data').upsert(
     { user_id: currentUser.id, app: _APP, key: key, data: data, updated_at: new Date().toISOString() },
@@ -4857,6 +4836,11 @@ function logAction(action){if(!currentUser)return;_sb.from('app_logs').insert({u
 
 async function syncFromCloud() {
   logAction('open');
+  var _pp = await _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle();
+  if (_pp.data) { isPro = _pp.data.is_pro; localStorage.setItem('isPro', String(isPro)); }
+  if (currentUser.email === 'kyouji.o@gmail.com') { isPro = true; localStorage.setItem('isPro', 'true'); }
+  if (typeof updateProUI === 'function') updateProUI();
+  if (!isPro) { _syncStatus = 'local'; if (typeof updateSyncBadges === 'function') updateSyncBadges(); return; }
   var res = await _sb.from('user_data').select('key,data,updated_at').eq('user_id', currentUser.id).eq('app', _APP);
   if (res.data && res.data.length > 0) {
     var localTime = parseInt(localStorage.getItem('fitly_updated_at')||'0');
