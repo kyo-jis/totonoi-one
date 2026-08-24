@@ -43,9 +43,10 @@
 
     .app-header { padding:3rem 1.25rem 1.25rem; }
     .back-link { font-size:.75rem; color:var(--muted); text-decoration:none; letter-spacing:.1em; text-transform:uppercase; display:inline-flex; align-items:center; gap:.4rem; }
-    .app-title { font-size:1.6rem; font-weight:500; letter-spacing:-.02em; }
+    .app-title { font-size:1.6rem; font-weight:600; letter-spacing:-.01em; }
     .app-title span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
-    .app-subtitle { font-size:.72rem; color:var(--muted); margin-top:.15rem; letter-spacing:.05em; }
+    .app-subtitle { font-size:.8rem; color:var(--muted); margin-top:.2rem; letter-spacing:.02em; }
+    .app-subtitle span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
     .header-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; }
     .auth-chip { background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); white-space:nowrap; }
     .auth-chip.logged-in { border-color:var(--accent); color:var(--accent); }
@@ -75,6 +76,25 @@
     .week-bar-fill { width:100%; border-radius:3px; background:rgba(60,140,191,.45); transition:height .4s var(--spring); }
     .week-bar-fill.today { background:var(--accent); }
     .week-bar-label { font-size:.6rem; color:var(--muted); }
+    /* 折りたたみ（初期はコンパクト。タップで詳細を開く） */
+    .summary-head { display:flex; align-items:flex-end; justify-content:space-between; gap:.75rem; position:relative; z-index:1; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+    .summary-head:active { opacity:.75; }
+    .summary-toggle { flex:none; font-size:.9rem; line-height:1; color:var(--muted); background:rgba(255,255,255,.07); border:1px solid var(--border); border-radius:50%; width:26px; height:26px; display:flex; align-items:center; justify-content:center; transition:transform .25s var(--spring); }
+    .summary-card.compact { padding:.8rem 1rem; border-radius:18px; margin-bottom:.75rem; }
+    .summary-card.compact::before { top:-50px; right:-50px; width:150px; height:150px; }
+    .summary-card.compact .summary-label { font-size:.55rem; margin-bottom:.1rem; }
+    .summary-card.compact .summary-today-hero { margin-bottom:0; }
+    .summary-card.compact .summary-today-value { font-size:1.85rem; }
+    .summary-card.compact .summary-today-unit { font-size:.8rem; margin-bottom:.15rem; }
+    .summary-card.compact .summary-streak-chip { font-size:.62rem; padding:.15rem .5rem; margin-bottom:.12rem; }
+    .summary-card.compact .summary-detail { display:none; }
+    .summary-card.compact .summary-toggle { transform:rotate(0deg); }
+    .summary-card.compact .summary-mini-stats { gap:.85rem; margin:.4rem 0 0; position:relative; z-index:1; }
+    .summary-card.compact .summary-mini-stat { flex-direction:row-reverse; align-items:baseline; gap:.25rem; }
+    .summary-card.compact .summary-mini-val { font-size:.8rem; }
+    .summary-card.compact .summary-mini-lbl { margin-top:0; }
+    .summary-card.compact .card-deco { font-size:4.2rem; bottom:-1.1rem; right:2.4rem; }
+    .summary-card:not(.compact) .summary-toggle { transform:rotate(180deg); }
 
     /* Tabs */
     .tabs { display:flex; margin:0 1.25rem 1.25rem; background:linear-gradient(160deg, var(--surface) 0%, var(--surface2) 100%); border-radius:14px; padding:4px; border:1px solid var(--border); box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.07); }
@@ -370,8 +390,8 @@
     <a class="back-link" href="index.html">← Totonoi One</a>
     <button class="auth-chip" id="authBtn" onclick="openAuthModal()">ログイン</button>
   </div>
-  <h1 class="app-title" onclick="goAppTop()" style="cursor:pointer;">Learn<span>ly</span></h1>
-  <p class="app-subtitle">学習プランナー</p>
+  <h1 class="app-title" onclick="goAppTop()" style="cursor:pointer;">学習プランナー</h1>
+  <p class="app-subtitle">Learn<span>ly</span></p>
 </div>
 <div id="loginNotice" class="login-notice" onclick="openAuthModal()" style="display:none">
   <span style="font-size:1rem">&#x2601;&#xFE0F;</span>
@@ -380,16 +400,23 @@
 </div>
 
 <div class="exam-cd-section" id="examCountdownSection" style="display:none;"></div>
-<div class="summary-card">
-  <p class="summary-label">TODAY</p>
-  <div class="summary-today-hero">
-    <span class="summary-today-value" id="summaryToday">0</span>
-    <span class="summary-today-unit">分</span>
-    <span class="summary-streak-chip" id="summaryStreakChip" style="display:none;"></span>
+<div class="summary-card compact" id="summaryCard">
+  <div class="summary-head" onclick="toggleSummary()">
+    <div style="min-width:0;">
+      <p class="summary-label">TODAY</p>
+      <div class="summary-today-hero">
+        <span class="summary-today-value" id="summaryToday">0</span>
+        <span class="summary-today-unit">分</span>
+        <span class="summary-streak-chip" id="summaryStreakChip" style="display:none;"></span>
+      </div>
+    </div>
+    <span class="summary-toggle" id="summaryToggle" aria-hidden="true">⌄</span>
   </div>
   <div class="summary-mini-stats" id="summaryMiniStats"></div>
-  <div class="week-goal-bar" id="weekGoalBar" style="display:none;"></div>
-  <div class="week-bar" id="weekBar"></div>
+  <div class="summary-detail" id="summaryDetail">
+    <div class="week-goal-bar" id="weekGoalBar" style="display:none;"></div>
+    <div class="week-bar" id="weekBar"></div>
+  </div>
   <span class="card-deco" aria-hidden="true">学</span>
 </div>
 
@@ -514,9 +541,9 @@
 </div>
 
 <button class="fab" id="fab" onclick="onFab()">＋</button>
-<div class="ad-banner" id="adBanner">
-  <span class="ad-label">広告</span>
-  <p class="ad-content">Google AdSense 広告エリア</p>
+<div class="ad-banner" id="adBanner" onclick="location.href='index.html'" style="cursor:pointer;">
+  <span class="ad-label">近日</span>
+  <p class="ad-content">☁️ 自動クラウド保存は保存プランで（¥200/月〜）</p>
 </div>
 
 <!-- Timer Set Modal -->
@@ -1043,6 +1070,20 @@ function renderWeekBar() {
   }).join('');
 }
 
+/* サマリーカードの開閉（初期はコンパクト＝記録ボタンをすぐ押せるように） */
+function toggleSummary() {
+  var c = document.getElementById('summaryCard');
+  if (!c) return;
+  var compact = !c.classList.contains('compact');
+  c.classList.toggle('compact', compact);
+  localStorage.setItem('learnly_summary_compact', compact ? '1' : '0');
+}
+function applySummaryCompact() {
+  var c = document.getElementById('summaryCard');
+  if (!c) return;
+  c.classList.toggle('compact', localStorage.getItem('learnly_summary_compact') !== '0');
+}
+
 function fmtMD(dateStr) {
   if (!dateStr) return '';
   var d = parseLocalDate(dateStr);
@@ -1182,7 +1223,7 @@ function renderExamItemHtml(exam) {
   }
   return '<div class="exam-item">'
     +'<div class="exam-item-top">'
-      +'<p class="exam-name-text">'+exam.name+'</p>'
+      +'<p class="exam-name-text">'+escapeHtml(exam.name)+'</p>'
       +(days!==null?'<span class="exam-days-badge" style="color:'+color+';">'+dStr+'</span>':'')
     +'</div>'
     +'<div class="exam-dates-meta">'
@@ -1200,7 +1241,7 @@ function renderResourceCardHtml(r) {
     :'<div class="resource-thumb">'+icon+'</div>';
   var inner = thumb
     +'<div style="flex:1;min-width:0;">'
-      +'<p class="resource-name">'+r.name+'</p>'
+      +'<p class="resource-name">'+escapeHtml(r.name)+'</p>'
       +(r.url?'<span class="resource-url-text">'+r.url+'</span>':'')
     +'</div>'
     +'<button onclick="event.stopPropagation();editResourceInline(\''+r.id+'\')" style="background:none;border:none;color:var(--muted);font-size:.85rem;cursor:pointer;flex-shrink:0;">✏️</button>';
@@ -1229,7 +1270,7 @@ function renderMaterialCardHtml(m) {
   return '<div class="material-card">'
     +'<div class="material-card-top">'
       +'<div style="flex:1;min-width:0;">'
-        +'<p class="material-title">'+m.title+'</p>'
+        +'<p class="material-title">'+escapeHtml(m.title)+'</p>'
         +(meta?'<span class="material-meta-text">'+meta+'</span>':'')
       +'</div>'
       +badge
@@ -1709,7 +1750,7 @@ function renderExamCountdown() {
     return '<div class="exam-countdown-card" onclick="openSubjectDetail(\''+(exam.subjectId||'')+'\')">'
       +'<p class="exam-cd-days" style="color:'+color+';">'+days+'<span style="font-size:.75rem;font-weight:400;">日</span></p>'
       +'<div style="flex:1;min-width:0;">'
-        +'<p class="exam-cd-name">'+exam.name+'</p>'
+        +'<p class="exam-cd-name">'+escapeHtml(exam.name)+'</p>'
         +'<p class="exam-cd-meta">'+(subj?subj.icon+' '+subj.name+' · ':'')+'試験日: '+exam.examDate+'</p>'
         +alert
       +'</div>'
@@ -1917,7 +1958,7 @@ function persist() {
   localStorage.setItem('learnly_resources', JSON.stringify(resources));
   localStorage.setItem('learnly_exams',     JSON.stringify(exams));
   localStorage.setItem('learnly_updated_at', Date.now().toString());
-  if(!currentUser){_syncStatus='local';updateSyncBadges();return;}
+  if(!currentUser||!isPro){_syncStatus='local';updateSyncBadges();return;}
   _syncStatus='syncing';updateSyncBadges();
   Promise.all([dbSave('subjects',subjects),dbSave('sessions',sessions),dbSave('materials',materials),dbSave('resources',resources),dbSave('exams',exams)]).then(function(rs){_syncStatus=rs.every(function(r){return r&&!r.error;})?'synced':'failed';if(_syncStatus==='failed')showToast('⚠️ クラウド同期失敗');updateSyncBadges();});
 }
@@ -1930,7 +1971,7 @@ function updateProUI() {
   document.body.style.paddingBottom = isPro ? '80px' : '130px';
   var pl=document.getElementById('planLabel'), pd=document.getElementById('planDesc'), pb=document.getElementById('planBadge');
   if (pl) pl.textContent = isPro ? 'Proプラン' : '無料プラン';
-  if (pd) pd.textContent = isPro ? '全機能が利用できます' : '広告あり';
+  if (pd) pd.textContent = isPro ? '全機能が利用できます' : '全機能を無料で利用中';
   if (pb) { pb.textContent=isPro?'✅ 有効中':'現在'; pb.style.background=isPro?'rgba(94,207,160,.15)':'rgba(60,140,191,.15)'; pb.style.color=isPro?'var(--green)':'var(--accent)'; }
 }
 
@@ -1943,7 +1984,7 @@ function showToast(msg) {
 
 /* ── Export ── */
 function exportData(fmt) {
-  if (!isPro) { showToast('エクスポートは有料プランの機能です'); return; }
+  /* エクスポートは全ユーザー無料 */
   if (fmt === 'json') {
     var b = new Blob([JSON.stringify({subjects:subjects,sessions:sessions},null,2)],{type:'application/json'});
     var a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='learnly_'+todayStr()+'.json'; a.click();
@@ -1976,14 +2017,20 @@ function syncBadgeHTML(){if(!currentUser)return'<span class="sync-badge sync-loc
 function updateSyncBadges(){var h=syncBadgeHTML();document.querySelectorAll('.sync-slot').forEach(function(el){el.innerHTML=h;});}
 function retrySync(){if(!currentUser)return;_syncStatus='syncing';updateSyncBadges();Promise.all([dbSave('subjects',subjects),dbSave('sessions',sessions),dbSave('materials',materials),dbSave('resources',resources),dbSave('exams',exams)]).then(function(rs){_syncStatus=rs.every(function(r){return r&&!r.error;})?'synced':'failed';if(_syncStatus==='failed')showToast('⚠️ クラウド同期失敗');updateSyncBadges();});}
 
+function escapeHtml(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function dbSave(key, data) {
-  if (!currentUser) return Promise.resolve(null);
+  if (!currentUser || !isPro) return Promise.resolve(null);
   return _sb.from('user_data').upsert({ user_id:currentUser.id, app:'learnly', key:key, data:data, updated_at:new Date().toISOString() }, { onConflict:'user_id,app,key' });
 }
 function logAction(action){if(!currentUser)return;_sb.from('app_logs').insert({user_id:currentUser.id,app:_APP,action:action});}
 
 async function syncFromCloud() {
   logAction('open');
+  var _pp = await _sb.from('profiles').select('is_pro').eq('id', currentUser.id).maybeSingle();
+  if (_pp.data) { isPro = _pp.data.is_pro; localStorage.setItem('isPro', String(isPro)); }
+  if (currentUser.email === 'kyouji.o@gmail.com') { isPro = true; localStorage.setItem('isPro', 'true'); }
+  if (typeof updateProUI === 'function') updateProUI();
+  if (!isPro) { _syncStatus = 'local'; if (typeof updateSyncBadges === 'function') updateSyncBadges(); return; }
   var res = await _sb.from('user_data').select('key,data,updated_at').eq('user_id',currentUser.id).eq('app','learnly');
   if (res.data && res.data.length > 0) {
     var localTime = parseInt(localStorage.getItem('learnly_updated_at')||'0');
@@ -2066,6 +2113,7 @@ _sb.auth.getSession().then(function(res) {
 
 if('serviceWorker' in navigator) window.addEventListener('load',function(){ navigator.serviceWorker.register('/sw-learnly.js').catch(function(){}); });
 
+applySummaryCompact();
 renderAll();
 updateProUI();
 
