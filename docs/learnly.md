@@ -50,7 +50,7 @@
   type: "book"|"past", // 参考書 or 過去問
   title: string,
   author: string,
-  unit: "page"|"percent"|"loc"|"chapter",  // 進捗の単位（未設定＝"page" 扱い・後方互換）
+  unit: "page"|"question"|"percent"|"loc"|"chapter",  // 進捗の単位（未設定＝"page" 扱い・後方互換）
   currentPage: number,  // 単位に応じた現在値（percent は 0〜100）
   totalPages: number,   // 単位に応じた総量（percent は常に100固定・入力欄は非表示）
   year: string,        // 過去問の年度
@@ -78,10 +78,11 @@
 
 | id | icon | label | 表示例（カード / 記録一覧） |
 |----|------|-------|------|
-| page    | 📄 | ページ  | `45/300p` / `p.10〜25` |
-| percent | ％ | ％      | `40%` / `40〜55%` |
-| loc     | 🔢 | 位置No. | `1200/5000` / `No.1200〜1400` |
-| chapter | 📑 | 章      | `3/12章` / `3〜4章` |
+| page     | 📄 | ページ  | `45/300p` / `p.10〜25` |
+| question | 📝 | 問      | `45/200問` / `46〜60問` |
+| percent  | ％ | ％      | `40%` / `40〜55%` |
+| loc      | 🔢 | 位置No. | `1200/5000` / `No.1200〜1400` |
+| chapter  | 📑 | 章      | `3/12章` / `3〜4章` |
 
 ヘルパー: `matUnit(m)`（未設定は `page`）、`isPercentUnit(m)`、`matTotal(m)`、`matHasProgress(m)`、`matProgressText(m)`、`matMetaText(m)`、`sessRangeText(m, s)`
 
@@ -145,7 +146,8 @@
 - 試験日・申込期間登録 + 申込済み管理（キャンセル確認あり）
 - 試験カウントダウン（7日以内赤・30日以内黄）
 - 申込期限アラート（7日以内⚠️）
-- 教材管理（参考書・過去問・進捗バー / 進捗の単位を ページ・％・位置No.・章 から選択可）
+- 教材管理（参考書・過去問・進捗バー / 進捗の単位を ページ・問・％・位置No.・章 から選択可）
+- タブ順は「今日 / 記録 / 資格 / 設定」（他アプリと同様、日々使うものを左・管理系を右）
 - 学習リソース（YouTube / サイト / PDF）
 - 今日タブ資格カードをタップ → Subject Detail Overlay
 - 学習方法内訳グラフ（設定タブ）

@@ -176,6 +176,9 @@
     .page-range-row input { flex:1; width:0; min-width:0; padding:.55rem .65rem; font-size:.9rem; }
     .page-range-sep { color:var(--muted); font-size:.8rem; flex-shrink:0; }
     .unit-hint { font-size:.62rem; color:var(--muted); margin-top:.45rem; line-height:1.55; }
+    /* 単位は5つ。.study-type-grid の4列指定を上書きするため詳細度を上げる */
+    .study-type-grid.unit-grid { grid-template-columns:repeat(5,1fr); }
+    .study-type-grid.unit-grid .study-type-lbl { white-space:nowrap; }
     .log-date-input { width:100%; padding:.65rem .9rem; font-size:.9rem; }
 
     /* Settings */
@@ -423,8 +426,8 @@
 
 <div class="tabs">
   <button class="tab active" onclick="switchTab('today',this)">今日</button>
-  <button class="tab" onclick="switchTab('subjects',this)">資格</button>
   <button class="tab" onclick="switchTab('log',this)">記録</button>
+  <button class="tab" onclick="switchTab('subjects',this)">資格</button>
   <button class="tab" onclick="switchTab('settings',this)">設定</button>
 </div>
 
@@ -447,14 +450,14 @@
   <div class="subj-list" id="todaySubjList"></div>
 </div>
 
-<!-- Subjects -->
-<div class="view" id="view-subjects">
-  <div class="subjects-list" id="subjectsList"></div>
-</div>
-
 <!-- Log -->
 <div class="view" id="view-log">
   <div class="log-list" id="logList"></div>
+</div>
+
+<!-- Subjects -->
+<div class="view" id="view-subjects">
+  <div class="subjects-list" id="subjectsList"></div>
 </div>
 
 <!-- Settings -->
@@ -696,7 +699,7 @@
       </div>
       <div class="form-group">
         <label>進捗の単位</label>
-        <div class="study-type-grid" id="materialUnitGrid"></div>
+        <div class="study-type-grid unit-grid" id="materialUnitGrid"></div>
         <p class="unit-hint">電子書籍などページ番号が出ない・変わる教材は「％」や「章」がおすすめです</p>
       </div>
       <div class="form-group">
@@ -1258,10 +1261,11 @@ function renderResourceCardHtml(r) {
 }
 /* ── 教材の進捗単位（電子書籍はページ番号が出ない・文字サイズで変わるため選べるようにする） ── */
 var MATERIAL_UNITS = [
-  { id:'page',    icon:'📄', label:'ページ',  short:'p',     suffix:'ページ' },
-  { id:'percent', icon:'％', label:'％',      short:'%',     suffix:'%' },
-  { id:'loc',     icon:'🔢', label:'位置No.', short:'No.',   suffix:' 位置No.' },
-  { id:'chapter', icon:'📑', label:'章',      short:'章',    suffix:'章' }
+  { id:'page',     icon:'📄', label:'ページ',  short:'p',     suffix:'ページ' },
+  { id:'question', icon:'📝', label:'問',      short:'問',    suffix:'問' },
+  { id:'percent',  icon:'％', label:'％',      short:'%',     suffix:'%' },
+  { id:'loc',      icon:'🔢', label:'位置No.', short:'No.',   suffix:' 位置No.' },
+  { id:'chapter',  icon:'📑', label:'章',      short:'章',    suffix:'章' }
 ];
 function unitDef(id){ for(var i=0;i<MATERIAL_UNITS.length;i++){ if(MATERIAL_UNITS[i].id===id) return MATERIAL_UNITS[i]; } return MATERIAL_UNITS[0]; }
 // 未設定の既存教材は「ページ」として扱う（後方互換）
@@ -1770,13 +1774,12 @@ function switchTab(name, btn) {
   if (name === 'subjects') renderSubjects();
 }
 function switchTabByName(name) {
-  var idx = ['today','subjects','log','settings'].indexOf(name);
+  var idx = ['today','log','subjects','settings'].indexOf(name);
   if (idx >= 0) document.querySelectorAll('.tab')[idx].click();
 }
 
 function onFab() {
-  var idx = Array.from(document.querySelectorAll('.tab')).findIndex(function(t){ return t.classList.contains('active'); });
-  if (idx === 1) openSubjModal(); else openLogModal(null);
+  if (_currentTab === 'subjects') openSubjModal(); else openLogModal(null);
 }
 
 function renderAll() { renderSummary(); renderToday(); renderExamCountdown(); if(_currentTab==='subjects') renderSubjects(); if(_currentTab==='log') renderLog(); }
@@ -1874,10 +1877,11 @@ function applyMaterialUnitFields(){
   // ％は総量が常に100なので入力欄ごと隠す
   sep.style.display = pct ? 'none' : '';
   tot.style.display = pct ? 'none' : '';
-  if (pct)                       { lbl.textContent='現在の進捗（％）';            cur.placeholder='40';   cur.max=100; }
+  if (pct)                            { lbl.textContent='現在の進捗（％）';              cur.placeholder='40';   cur.max=100; }
+  else if (_materialUnit==='question'){ lbl.textContent='解いた問数 / 全問数';           cur.placeholder='45';   tot.placeholder='200';  cur.removeAttribute('max'); }
   else if (_materialUnit==='loc')     { lbl.textContent='現在の位置No. / 全体の位置No.'; cur.placeholder='1200'; tot.placeholder='5000'; cur.removeAttribute('max'); }
-  else if (_materialUnit==='chapter') { lbl.textContent='現在の章 / 全何章';           cur.placeholder='3';    tot.placeholder='12';   cur.removeAttribute('max'); }
-  else                                { lbl.textContent='現在ページ / 総ページ数';      cur.placeholder='0';    tot.placeholder='300';  cur.removeAttribute('max'); }
+  else if (_materialUnit==='chapter') { lbl.textContent='現在の章 / 全何章';             cur.placeholder='3';    tot.placeholder='12';   cur.removeAttribute('max'); }
+  else                                { lbl.textContent='現在ページ / 総ページ数';       cur.placeholder='0';    tot.placeholder='300';  cur.removeAttribute('max'); }
 }
 function openMaterialModal() {
   _editMaterialId=null;
@@ -2170,7 +2174,7 @@ _sb.auth.getSession().then(function(res) {
 
 /* ── Swipe Tabs ── */
 (function(){
-  var TABS=['today','subjects','log','settings'], ci=0, sx=0, sy=0;
+  var TABS=['today','log','subjects','settings'], ci=0, sx=0, sy=0;
   document.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
   document.addEventListener('touchend',function(e){
     if(document.querySelector('.modal-overlay.show')) return;
