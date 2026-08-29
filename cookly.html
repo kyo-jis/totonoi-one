@@ -196,6 +196,15 @@
     .cook-start-btn:active{transform:scale(.97);}
     .cooked-btn{width:100%;padding:.8rem;border-radius:12px;border:1px solid var(--green);background:rgba(94,207,160,.12);color:var(--green);font-size:.95rem;font-weight:500;font-family:var(--font);cursor:pointer;margin-bottom:.6rem;}
     .cooked-btn:active{transform:scale(.97);}
+    /* Nutrition */
+    .nutri-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.6rem;}
+    #nutriDetails summary{font-size:.75rem;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;cursor:pointer;padding:.2rem 0;list-style:none;}
+    #nutriDetails summary::-webkit-details-marker{display:none;}
+    .nutri-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;}
+    .nutri-badge{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:.55rem .5rem;text-align:center;}
+    .nutri-label{display:block;font-size:.6rem;color:var(--muted);margin-bottom:.15rem;}
+    .nutri-val{font-size:.9rem;font-weight:500;}
+    .nutri-val small{font-size:.6rem;color:var(--muted);margin-left:1px;}
   </style>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-E9Q0JQ0V92"></script>
@@ -281,6 +290,7 @@
       <p class="detail-section-title">作り方</p>
       <div id="detailSteps"></div>
     </div>
+    <div id="detailNutriWrap"></div>
     <div id="detailMemoWrap" style="margin-bottom:1.25rem;"></div>
     <button class="cooked-btn" id="detailCookedBtn">🍳 作った！（調理記録）</button>
     <div style="display:flex;gap:.5rem;">
@@ -295,6 +305,7 @@
   <div class="detail-wrap">
     <button class="btn-back" onclick="backToList()">← キャンセル</button>
     <p style="font-size:1rem;font-weight:500;margin-bottom:1.25rem;" id="editorTitle">レシピを追加</p>
+    <button class="btn-add-row" style="margin:0 0 1.25rem;" onclick="openPasteModal()">📋 テキストから自動入力（YouTube概要欄など）</button>
     <div class="form-group"><label>料理名</label><input type="text" id="fName" placeholder="例：肉じゃが"></div>
     <div class="form-row">
       <div class="form-group"><label>アイコン</label><input type="text" id="fIcon" placeholder="🍱" maxlength="2"></div>
@@ -324,6 +335,18 @@
       <div id="stepInputs"></div>
       <button class="btn-add-row" onclick="addStepRow()">＋ 手順を追加</button>
     </div>
+    <div class="form-group"><label>URL（動画・参考リンク）</label><input type="url" id="fURL" placeholder="https://youtube.com/..."></div>
+    <details class="form-group" id="nutriDetails">
+      <summary>🌱 栄養価（1食あたり・任意） ▾</summary>
+      <div class="nutri-form-grid">
+        <div><label>エネルギー(kcal)</label><input type="number" id="fNutKcal" step="any" min="0" placeholder="487"></div>
+        <div><label>たんぱく質(g)</label><input type="number" id="fNutProtein" step="any" min="0"></div>
+        <div><label>脂質(g)</label><input type="number" id="fNutFat" step="any" min="0"></div>
+        <div><label>炭水化物(g)</label><input type="number" id="fNutCarbs" step="any" min="0"></div>
+        <div><label>食塩相当量(g)</label><input type="number" id="fNutSalt" step="any" min="0"></div>
+        <div><label>食物繊維(g)</label><input type="number" id="fNutFiber" step="any" min="0"></div>
+      </div>
+    </details>
     <div class="form-group"><label>メモ（コツ・ポイント）</label><textarea id="fMemo" rows="2" placeholder="隠し味や調理のコツなど..."></textarea></div>
     <button class="btn-primary" id="saveBtn" onclick="saveRecipe()">保存する</button>
   </div>
@@ -400,6 +423,7 @@ function renderCard(r) {
       + '<div class="recipe-info"><p class="recipe-name">' + escapeHtml(r.name) + '</p>'
         + '<div class="recipe-meta"><span class="cat-badge">' + CAT_LABELS[r.category] + '</span>'
           + (r.ingredients&&r.ingredients.length?'材料'+r.ingredients.length+'品':'')
+          + (r.nutrition&&r.nutrition.kcal!=null?' · '+r.nutrition.kcal+'kcal':'')
           + (r.cookCount?' · 🍳'+r.cookCount+'回':'') + '</div>'
       + '</div>'
       + '<div class="recipe-right">'
@@ -453,6 +477,7 @@ function openDetail(id) {
   if (r.time) chips += '<span class="detail-chip">⏱ ' + r.time + '分</span>';
   if (r.cookCount) chips += '<span class="detail-chip">🍳 ' + r.cookCount + '回</span>';
   if (r.lastCooked) chips += '<span class="detail-chip">最終 ' + fmtMD(r.lastCooked) + '</span>';
+  if (r.url && /^https?:\/\//.test(r.url)) chips += '<a class="detail-chip" href="' + escapeHtml(r.url) + '" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">▶ 動画を見る</a>';
   document.getElementById('detailChips').innerHTML = chips;
   renderServingsStepper();
   renderDetailIngredients();
@@ -460,6 +485,14 @@ function openDetail(id) {
     return '<div class="step-row"><div class="step-num">' + (i+1) + '</div><p class="step-text">' + escapeHtml(step) + '</p></div>';
   }).join('') || '<p style="font-size:.82rem;color:var(--muted);">未登録</p>';
   document.getElementById('detailMemoWrap').innerHTML = r.memo ? '<div style="background:var(--surface2);border-radius:12px;padding:.875rem;"><p style="font-size:.68rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem;">メモ</p><p style="font-size:.85rem;line-height:1.6;">'+escapeHtml(r.memo)+'</p></div>' : '';
+  var nutriWrap = document.getElementById('detailNutriWrap');
+  if (r.nutrition) {
+    var nitems = [['エネルギー',r.nutrition.kcal,'kcal'],['たんぱく質',r.nutrition.protein,'g'],['脂質',r.nutrition.fat,'g'],['炭水化物',r.nutrition.carbs,'g'],['食塩',r.nutrition.salt,'g'],['食物繊維',r.nutrition.fiber,'g']];
+    nutriWrap.innerHTML = '<div class="detail-section"><p class="detail-section-title">栄養価（1食あたり）</p><div class="nutri-grid">'
+      + nitems.filter(function(it){ return it[1]!=null; }).map(function(it){
+          return '<div class="nutri-badge"><span class="nutri-label">'+it[0]+'</span><span class="nutri-val">'+it[1]+'<small>'+it[2]+'</small></span></div>';
+        }).join('') + '</div></div>';
+  } else nutriWrap.innerHTML = '';
   document.getElementById('detailEditBtn').onclick = function(){ editRecipe(id); };
   document.getElementById('detailDeleteBtn').onclick = function(){ deleteRecipe(id); };
   document.getElementById('detailCookBtn').onclick = function(){ openCookMode(id); };
@@ -483,6 +516,8 @@ function openEditor() {
   document.getElementById('fTime').value = '';
   document.getElementById('fServings').value = '2';
   document.getElementById('fMemo').value = '';
+  document.getElementById('fURL').value = '';
+  setNutritionForm(null);
   document.getElementById('ingredientInputs').innerHTML = '';
   document.getElementById('stepInputs').innerHTML = '';
   addIngredientRow(); addIngredientRow(); addIngredientRow();
@@ -502,6 +537,8 @@ function editRecipe(id) {
   document.getElementById('fTime').value = r.time||'';
   document.getElementById('fServings').value = r.servings||2;
   document.getElementById('fMemo').value = r.memo||'';
+  document.getElementById('fURL').value = r.url||'';
+  setNutritionForm(r.nutrition);
   document.getElementById('ingredientInputs').innerHTML = '';
   (r.ingredients||[]).forEach(function(ing){ addIngredientRow(ing.name, ing.amount); });
   if (!(r.ingredients&&r.ingredients.length)) addIngredientRow();
@@ -515,8 +552,8 @@ function editRecipe(id) {
 
 function addIngredientRow(name, amount) {
   var row = document.createElement('div'); row.className = 'ingredient-input-row';
-  row.innerHTML = '<input type="text" placeholder="材料名" value="' + (name||'') + '">'
-    + '<input type="text" placeholder="量（例：2個）" value="' + (amount||'') + '">'
+  row.innerHTML = '<input type="text" placeholder="材料名" value="' + escapeHtml(name||'') + '">'
+    + '<input type="text" placeholder="量（例：2個）" value="' + escapeHtml(amount||'') + '">'
     + '<button class="btn-remove-row" onclick="this.parentNode.remove()">×</button>';
   document.getElementById('ingredientInputs').appendChild(row);
 }
@@ -525,7 +562,7 @@ function addStepRow(text) {
   var row = document.createElement('div'); row.className = 'step-input-row';
   var idx = document.getElementById('stepInputs').children.length + 1;
   row.innerHTML = '<div class="step-num" style="margin-top:.5rem;">' + idx + '</div>'
-    + '<textarea placeholder="手順を入力...">' + (text||'') + '</textarea>'
+    + '<textarea placeholder="手順を入力...">' + escapeHtml(text||'') + '</textarea>'
     + '<button class="btn-remove-row" onclick="this.parentNode.remove();renumberSteps()" style="margin-top:.5rem;">×</button>';
   document.getElementById('stepInputs').appendChild(row);
 }
@@ -554,6 +591,8 @@ function saveRecipe() {
     servings:parseInt(document.getElementById('fServings').value)||2,
     ingredients:ingredients, steps:steps,
     memo:document.getElementById('fMemo').value.trim(),
+    url:document.getElementById('fURL').value.trim(),
+    nutrition:getNutritionForm(),
     fav: editId ? (recipes.find(function(x){return x.id===editId;})||{}).fav||false : false,
     cookCount: editId ? (recipes.find(function(x){return x.id===editId;})||{}).cookCount||0 : 0,
     lastCooked: editId ? (recipes.find(function(x){return x.id===editId;})||{}).lastCooked||null : null
@@ -570,6 +609,130 @@ function deleteRecipe(id) {
   if (!confirm('削除しますか？')) return;
   recipes = recipes.filter(function(x){ return x.id!==id; });
   persist(); backToList(); showToast('🗑 削除しました');
+}
+
+/* ── 栄養価フォーム ── */
+var NUTRI_FIELDS = [['fNutKcal','kcal'],['fNutProtein','protein'],['fNutFat','fat'],['fNutCarbs','carbs'],['fNutSalt','salt'],['fNutFiber','fiber']];
+function getNutritionForm() {
+  var n = {}, any = false;
+  NUTRI_FIELDS.forEach(function(f){
+    var v = parseFloat(document.getElementById(f[0]).value);
+    n[f[1]] = isFinite(v) ? v : null;
+    if (isFinite(v)) any = true;
+  });
+  return any ? n : null;
+}
+function setNutritionForm(n) {
+  NUTRI_FIELDS.forEach(function(f){
+    document.getElementById(f[0]).value = (n && n[f[1]] != null) ? n[f[1]] : '';
+  });
+  document.getElementById('nutriDetails').open = !!n;
+}
+
+/* ── テキスト貼り付け自動入力 ── */
+function openPasteModal() {
+  document.getElementById('pasteText').value = '';
+  document.getElementById('pasteModal').classList.add('show');
+}
+function runPasteParse() {
+  var t = document.getElementById('pasteText').value;
+  if (!t.trim()) { showToast('テキストを貼り付けてください'); return; }
+  var p = parseRecipeText(t);
+  if (!p.ingredients.length && !p.steps.length && !p.name && !p.nutrition) { showToast('⚠️ レシピ情報を読み取れませんでした'); return; }
+  applyParsedRecipe(p);
+  document.getElementById('pasteModal').classList.remove('show');
+  var parts = [];
+  if (p.ingredients.length) parts.push('材料'+p.ingredients.length+'件');
+  if (p.steps.length) parts.push('手順'+p.steps.length+'件');
+  if (p.nutrition) parts.push('栄養価');
+  showToast('✅ 読み取りました（' + (parts.join('・')||'料理名') + '）確認して保存してください');
+}
+
+function parseRecipeText(text) {
+  var UNIT_START = /^(?:約|各)?(?:大さじ|小さじ|ひとつまみ|ひとかけ|少々|適量|適宜|お好み|\d)/;
+  var NUTRI_MAP = [
+    [/(?:エネルギー|カロリー|熱量)[：:…‥\s]+([\d.]+)/, 'kcal'],
+    [/(?:たんぱく質|タンパク質|蛋白質)[：:…‥\s]+([\d.]+)/, 'protein'],
+    [/脂質[：:…‥\s]+([\d.]+)/, 'fat'],
+    [/(?:炭水化物|糖質)[：:…‥\s]+([\d.]+)/, 'carbs'],
+    [/(?:食塩相当量|塩分)[：:…‥\s]+([\d.]+)/, 'salt'],
+    [/食物繊維[：:…‥\s]+([\d.]+)/, 'fiber']
+  ];
+  text = text.replace(/[０-９]/g, function(c){ return String.fromCharCode(c.charCodeAt(0)-0xFEE0); }).replace(/．/g,'.').replace(/／/g,'/');
+  var lines = text.split(/\r?\n/);
+  var result = { name:null, servings:null, ingredients:[], steps:[], notes:[], nutrition:null };
+  var nutri = {}, nutriAny = false, fallbackName = null;
+  var section = 'none';
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].replace(/^[\s　・●○◎▪▫☆★‣▶►\-*]+/, '').replace(/\s+$/, '');
+    if (!line) continue;
+    if (/^[─━―ー\-=＝_＿~〜・.。,、\s]{3,}$/.test(line)) continue;
+    if (/https?:\/\//.test(line)) continue;
+    if (/^[#＃]/.test(line)) continue;
+    if (!/[ぁ-んァ-ヶ一-龠a-zA-Z0-9]/.test(line)) continue;
+    if (result.servings == null) {
+      var sv = line.match(/(\d+(?:\.\d+)?)\s*(?:人分|人前|食分)/);
+      if (sv) result.servings = Math.round(parseFloat(sv[1]));
+    }
+    var isNutriLine = /PFC/i.test(line);
+    for (var k = 0; k < NUTRI_MAP.length && !isNutriLine; k++) {
+      var nm = line.match(NUTRI_MAP[k][0]);
+      if (nm) { if (nutri[NUTRI_MAP[k][1]] == null) { nutri[NUTRI_MAP[k][1]] = parseFloat(nm[1]); nutriAny = true; } isNutriLine = true; }
+    }
+    if (isNutriLine) continue;
+    if (/材料/.test(line) && line.length <= 20 && section !== 'ingredients') { section = 'ingredients'; continue; }
+    if (/栄養価|栄養成分/.test(line) && line.length <= 25) { section = 'nutrition'; continue; }
+    if (/^【?(作り方|作りかた|手順|調理手順)】?/.test(line) && line.length <= 15) { section = 'steps'; continue; }
+    if (section === 'ingredients') {
+      if (result.ingredients.length >= 40) continue;
+      if (/^[（(].*[)）]$/.test(line)) { result.notes.push(line); continue; }
+      var m, ingName = null, ingAmount = '';
+      if (m = line.match(/^(.+?)[　\t]+(.+)$/)) { ingName = m[1]; ingAmount = m[2]; }
+      else if (m = line.match(/^(.+?)[…‥⋯]+\s*(.+)$/)) { ingName = m[1]; ingAmount = m[2]; }
+      else if (m = line.match(/^(.+?)[：:]\s*(.+)$/)) { ingName = m[1]; ingAmount = m[2]; }
+      else if ((m = line.match(/^(.+?)\s+(\S.*)$/)) && UNIT_START.test(m[2])) { ingName = m[1]; ingAmount = m[2]; }
+      if (ingName) result.ingredients.push({ name: ingName.trim(), amount: ingAmount.trim() });
+      else if (!result.ingredients.length && result.name == null && !/\d/.test(line)) result.name = line;
+      else result.ingredients.push({ name: line, amount: '' });
+      continue;
+    }
+    if (section === 'steps') {
+      if (result.steps.length >= 30) continue;
+      var st = line.replace(/^(?:\d+[.．)）:：]|STEP\s*\d+[:：]?|[①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮])\s*/i, '').trim();
+      if (st) result.steps.push(st);
+      continue;
+    }
+    if (section === 'nutrition') {
+      if (result.name == null && !/\d/.test(line) && line.length <= 30) result.name = line;
+      continue;
+    }
+    if (fallbackName == null && i < 8 && !/\d/.test(line) && line.length <= 30 && !/レシピ|今回|本日|チャンネル|登録|概要|紹介/.test(line)) fallbackName = line;
+  }
+  if (result.name == null) result.name = fallbackName;
+  if (nutriAny) {
+    result.nutrition = {};
+    NUTRI_FIELDS.forEach(function(f){ result.nutrition[f[1]] = nutri[f[1]] != null ? nutri[f[1]] : null; });
+  }
+  return result;
+}
+
+function applyParsedRecipe(p) {
+  if (p.name) document.getElementById('fName').value = p.name;
+  if (p.servings) document.getElementById('fServings').value = p.servings;
+  if (p.ingredients.length) {
+    document.getElementById('ingredientInputs').innerHTML = '';
+    p.ingredients.forEach(function(ing){ addIngredientRow(ing.name, ing.amount); });
+    addIngredientRow();
+  }
+  if (p.steps.length) {
+    document.getElementById('stepInputs').innerHTML = '';
+    p.steps.forEach(function(s){ addStepRow(s); });
+  }
+  if (p.notes.length) {
+    var memoEl = document.getElementById('fMemo');
+    memoEl.value = (memoEl.value ? memoEl.value + '\n' : '') + p.notes.join('\n');
+  }
+  if (p.nutrition) setNutritionForm(p.nutrition);
 }
 
 function persist() {
@@ -773,6 +936,17 @@ function confirmBack(go){document.getElementById('backConfirm').classList.remove
     <button onclick="handleGoogleAuth()" style="width:100%;padding:.85rem;background:#fff;color:#1a1a24;border:none;border-radius:12px;font-size:.95rem;font-weight:500;font-family:var(--font);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.6rem;margin-bottom:.75rem;"><svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>Google でログイン</button>
 
     <button class="btn-cancel" onclick="document.getElementById('authModal').classList.remove('show')">キャンセル</button>
+  </div>
+</div>
+<!-- Paste import modal -->
+<div class="modal-overlay" id="pasteModal" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <p style="text-align:center;font-size:1rem;font-weight:500;margin-bottom:.5rem;">テキストから自動入力</p>
+    <p style="font-size:.75rem;color:var(--muted);margin-bottom:.75rem;line-height:1.5;">YouTube概要欄などのレシピテキストを貼り付けてください。料理名・材料・人数・栄養価を読み取ります。</p>
+    <textarea id="pasteText" rows="10" placeholder="ここに貼り付け..." style="font-size:.85rem;"></textarea>
+    <button class="btn-primary" onclick="runPasteParse()">解析して入力</button>
+    <button class="btn-cancel" onclick="document.getElementById('pasteModal').classList.remove('show')">キャンセル</button>
   </div>
 </div>
 <!-- Back confirm dialog -->
