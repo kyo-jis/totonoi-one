@@ -23,7 +23,11 @@
   date: string,        // "YYYY-MM-DD"（localDateStr形式）
   duration: number,    // 分
   memo: string,
-  studyType: string|null,  // 学習方法ID（後述）
+  studyType: string|null,  // 学習方法ID（後述・記録モーダルからは削除済み）
+  materialId: string|null, // 紐づけた教材
+  fromPage: number|null,   // 単位に応じた開始値
+  toPage: number|null,     // 単位に応じた終了値（教材の currentPage を更新）
+  resourceId: string|null, // 紐づけた学習リソース
   createdAt: string    // ISO文字列
 }
 ```
@@ -138,6 +142,7 @@
 | `moveSubject(id, dir)` | 手動並び替え（dir: -1=上 / +1=下） |
 | `renderLog()` | 記録タブ（日付グループ + 学習方法アイコン） |
 | `renderLogMaterialSelect(keepId)` | 記録モーダルの教材プルダウン。選択中の資格(`_logSubjId`)の教材だけを出す。引数省略で現在の選択を維持 |
+| `renderLogResourceSelect(keepId)` | 記録モーダルの学習リソースプルダウン。同上（リソースが無い資格では欄ごと非表示） |
 | `renderSettingsStats()` | 設定タブ統計・学習方法内訳グラフ |
 | `renderStudyTypeBreakdown()` | 学習方法内訳グラフ（全体＋資格別） |
 | `persist()` | localStorage保存 + Supabaseクラウド同期 |
@@ -151,8 +156,8 @@
 ## 実装済み機能（2026-06 時点）
 
 - 資格・目標の登録（アイコン・カラー・1日目標）
-- 学習セッション記録（手動 / タイマー / ストップウォッチ / ポモドーロ）
-- タイマー終了後の自動記録モーダル
+- 学習セッション記録（手動入力）
+- 記録に教材と学習リソースを紐づけ（どちらも選択中の資格のものだけを候補に出す）
 - 週間目標とサマリーカード（既定はコンパクト表示。タップで週間目標バー・週バーを展開）
 - 試験日・申込期間登録 + 申込済み管理（キャンセル確認あり）
 - 試験カウントダウン（7日以内赤・30日以内黄）
@@ -169,5 +174,4 @@
 ## 既知の制限・TODO
 
 - 試験日の編集はSubject Detail Overlayからのみ（今日タブカードから直接編集不可）
-- 学習セッションの編集機能なし（削除のみ）
-- 過去の日付での記録入力不可（常に今日の日付）
+- タイマー / ストップウォッチ / ポモドーロは削除済み（2026-09-01）。記録は手動入力のみ

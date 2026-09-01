@@ -37,7 +37,6 @@
     [data-theme="light"] body { background: radial-gradient(ellipse 75% 45% at 12% 4%, rgba(94,207,160,.07) 0%, transparent 100%), radial-gradient(ellipse 65% 45% at 88% 92%, rgba(108,142,255,.06) 0%, transparent 100%), var(--bg); }
     [data-theme="light"] .summary-card { background: linear-gradient(145deg, #c8e4f4 0%, #e0f2fc 100%); border-color: rgba(60,140,191,.45); box-shadow: 0 0 40px rgba(60,140,191,.18), inset 0 1px 0 rgba(255,255,255,.6), 0 8px 30px rgba(20,60,100,.08); }
     [data-theme="light"] .summary-card::before { background: radial-gradient(circle, rgba(60,140,191,.3) 0%, transparent 60%); }
-    [data-theme="light"] .timer-card { background: linear-gradient(135deg, #d0ecf8 0%, #e4f6ff 100%); border-color: rgba(60,140,191,.5); }
     html { font-size:16px; }
     body { background: radial-gradient(ellipse 75% 45% at 12% 4%, rgba(60,140,191,.07) 0%, transparent 100%), radial-gradient(ellipse 65% 45% at 88% 92%, rgba(94,207,160,.06) 0%, transparent 100%), var(--bg); color:var(--text); font-family:var(--font); font-weight:400; min-height:100vh; padding-bottom:130px; transition: background .25s, color .25s; }
 
@@ -109,28 +108,6 @@
     .today-date { font-size:.68rem; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
     .today-total-label { font-size:1rem; font-weight:600; }
 
-    /* Timer Card */
-    .timer-card { display:none; margin:0 1.25rem .75rem; background:linear-gradient(135deg,#0a1a2e,#0f2540); border:1px solid rgba(60,140,191,.5); border-radius:18px; padding:1.1rem 1.25rem; align-items:center; justify-content:space-between; gap:1rem; }
-    .timer-card.running { display:flex; }
-    .timer-subj { font-size:.82rem; color:var(--muted); margin-bottom:.2rem; }
-    .timer-display { font-size:2rem; font-weight:600; letter-spacing:-.02em; font-variant-numeric:tabular-nums; color:var(--accent); }
-    .timer-stop { background:var(--red); color:#fff; border:none; border-radius:10px; padding:.55rem 1rem; font-size:.8rem; font-weight:500; font-family:var(--font); cursor:pointer; white-space:nowrap; flex-shrink:0; }
-    .timer-stop:active { transform:scale(.93); }
-    .timer-progress { width:100%; height:3px; background:rgba(255,255,255,.1); border-radius:2px; margin-top:.65rem; overflow:hidden; }
-    .timer-progress-fill { height:100%; background:var(--accent); border-radius:2px; transition:width .5s linear; }
-    .timer-card.break-mode .timer-display { color:var(--green); }
-    .timer-card.break-mode { border-color:rgba(94,207,160,.5); background:linear-gradient(135deg,#0a2010,#0f2a1a); }
-
-    /* Timer preset modal */
-    .timer-preset-grid { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; margin-bottom:1rem; }
-    .timer-preset-btn { background:var(--surface2); border:1px solid var(--border); border-radius:14px; padding:.85rem .5rem; cursor:pointer; font-family:var(--font); text-align:center; transition:all .15s; }
-    .timer-preset-btn:active { transform:scale(.95); border-color:var(--accent); }
-    .timer-preset-btn.pomodoro { grid-column:1/-1; border-color:rgba(255,107,107,.4); background:rgba(255,107,107,.08); }
-    .timer-preset-btn .tp-icon { font-size:1.4rem; display:block; margin-bottom:.25rem; }
-    .timer-preset-btn .tp-label { font-size:.9rem; font-weight:500; }
-    .timer-preset-btn .tp-sub { font-size:.65rem; color:var(--muted); margin-top:.15rem; }
-    .timer-divider { display:flex; align-items:center; gap:.75rem; margin:.75rem 0; color:var(--muted); font-size:.75rem; }
-    .timer-divider::before, .timer-divider::after { content:''; flex:1; height:1px; background:var(--border); }
 
     /* Subject cards (today) */
     .subj-list { padding:0 1.25rem; }
@@ -141,8 +118,6 @@
     .subj-name { font-size:.95rem; font-weight:500; }
     .subj-today-min { font-size:.72rem; color:var(--muted); margin-top:.15rem; }
     .subj-actions { display:flex; gap:.4rem; flex-shrink:0; }
-    .btn-timer { width:36px; height:36px; border-radius:10px; border:1px solid var(--border); background:var(--surface2); color:var(--accent); font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; }
-    .btn-timer:active { transform:scale(.88); background:rgba(60,140,191,.2); }
     .btn-log { background:var(--accent); color:#fff; border:none; border-radius:10px; padding:.4rem .85rem; font-size:.75rem; font-weight:500; font-family:var(--font); cursor:pointer; white-space:nowrap; }
     .btn-log:active { transform:scale(.93); }
     .goal-bar { margin-top:.65rem; }
@@ -444,16 +419,6 @@
 
 <!-- Today -->
 <div class="view active" id="view-today">
-  <div class="timer-card" id="timerCard">
-    <div style="flex:1;min-width:0;">
-      <p class="timer-subj" id="timerSubjName">勉強中...</p>
-      <p class="timer-display" id="timerDisplay">00:00</p>
-      <div class="timer-progress" id="timerProgressWrap" style="display:none;">
-        <div class="timer-progress-fill" id="timerProgressFill" style="width:100%;"></div>
-      </div>
-    </div>
-    <button class="timer-stop" onclick="stopTimer()">■ 記録</button>
-  </div>
   <div class="today-header">
     <p class="today-date" id="todayDateLabel"></p>
     <p class="today-total-label"><span id="todayTotalMin">0</span>分 学習</p>
@@ -561,45 +526,6 @@
   <p class="ad-content">☁️ 自動クラウド保存は保存プランで（¥200/月〜）</p>
 </div>
 
-<!-- Timer Set Modal -->
-<div class="modal-overlay" id="timerSetModal" onclick="if(event.target===this)closeTimerSetModal()">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <p class="modal-title" id="timerSetTitle">タイマーを設定</p>
-    <div class="timer-preset-grid">
-      <button class="timer-preset-btn pomodoro" onclick="startCountdown(25, true)">
-        <span class="tp-icon">🍅</span>
-        <span class="tp-label">ポモドーロ</span>
-        <span class="tp-sub">25分学習 → 5分休憩</span>
-      </button>
-      <button class="timer-preset-btn" onclick="startCountdown(30, false)">
-        <span class="tp-icon">⏱</span>
-        <span class="tp-label">30分</span>
-        <span class="tp-sub">標準セッション</span>
-      </button>
-      <button class="timer-preset-btn" onclick="startCountdown(45, false)">
-        <span class="tp-icon">⏱</span>
-        <span class="tp-label">45分</span>
-        <span class="tp-sub">集中セッション</span>
-      </button>
-      <button class="timer-preset-btn" onclick="startCountdown(60, false)">
-        <span class="tp-icon">⏱</span>
-        <span class="tp-label">60分</span>
-        <span class="tp-sub">1時間セッション</span>
-      </button>
-    </div>
-    <div class="timer-divider">またはカスタム</div>
-    <div class="dur-stepper" style="margin-bottom:.5rem;">
-      <button class="dur-btn" onclick="adjustTimerDur(-5)">−</button>
-      <input type="number" class="dur-input" id="timerDurInput" value="25" min="1" max="180">
-      <button class="dur-btn" onclick="adjustTimerDur(5)">＋</button>
-    </div>
-    <button class="btn-primary" onclick="startCountdownCustom()">▶ タイマー開始</button>
-    <button class="btn-cancel" onclick="startStopwatch()">⏱ ストップウォッチ（時間無制限）</button>
-    <button class="btn-cancel" onclick="closeTimerSetModal()">キャンセル</button>
-  </div>
-</div>
-
 <!-- Log Session Modal -->
 <div class="modal-overlay" id="logModal" onclick="if(event.target===this)closeLogModal()">
   <div class="modal">
@@ -640,6 +566,12 @@
         <input type="number" id="logToPage" placeholder="終了" min="1">
         <span class="page-range-sep" id="logPageUnit">p</span>
       </div>
+    </div>
+    <div class="form-group" id="logResourceGroup" style="display:none;">
+      <label>学習リソース（任意）</label>
+      <select id="logResource">
+        <option value="">（リソースを選択しない）</option>
+      </select>
     </div>
     <div class="form-group">
       <label>メモ（任意）</label>
@@ -911,126 +843,7 @@ function calcStreak() {
   }
   return streak;
 }
-
 function getSubj(id) { return subjects.find(function(s) { return s.id === id; }); }
-function fmt2(n) { return String(n).padStart(2, '0'); }
-
-/* ── Timer ── */
-var _timerSubId = null, _timerStart = null, _timerIv = null;
-var _timerIsCountdown = false, _timerTargetSecs = 0;
-var _timerPomodoro = false, _timerIsBreak = false;
-var _pendingTimerSubjId = null;
-
-function openTimerSetModal(subjId) {
-  _pendingTimerSubjId = subjId;
-  var s = getSubj(subjId);
-  document.getElementById('timerSetTitle').textContent = s ? (s.icon + ' ' + s.name + ' のタイマー') : 'タイマーを設定';
-  document.getElementById('timerSetModal').classList.add('show');
-}
-function closeTimerSetModal() { document.getElementById('timerSetModal').classList.remove('show'); }
-function adjustTimerDur(d) { var el=document.getElementById('timerDurInput'); el.value=Math.max(1,Math.min(180,(parseInt(el.value)||25)+d)); }
-
-function startCountdown(minutes, isPomodoro) {
-  closeTimerSetModal();
-  _timerPomodoro = !!isPomodoro;
-  _doStartTimer(_pendingTimerSubjId, true, minutes * 60);
-}
-function startCountdownCustom() {
-  var m = parseInt(document.getElementById('timerDurInput').value) || 25;
-  closeTimerSetModal();
-  _timerPomodoro = false;
-  _doStartTimer(_pendingTimerSubjId, true, m * 60);
-}
-function startStopwatch() {
-  closeTimerSetModal();
-  _timerPomodoro = false;
-  _doStartTimer(_pendingTimerSubjId, false, 0);
-}
-
-function _doStartTimer(subjId, isCountdown, targetSecs) {
-  if (_timerIv) { clearInterval(_timerIv); _timerIv = null; }
-  _timerSubId = subjId; _timerStart = Date.now();
-  _timerIsCountdown = isCountdown; _timerTargetSecs = targetSecs; _timerIsBreak = false;
-
-  var s = getSubj(subjId);
-  document.getElementById('timerSubjName').textContent = s ? (s.icon + ' ' + s.name) : '勉強中...';
-  var card = document.getElementById('timerCard');
-  card.classList.remove('break-mode'); card.classList.add('running');
-
-  var wrap = document.getElementById('timerProgressWrap');
-  wrap.style.display = isCountdown ? 'block' : 'none';
-  document.getElementById('timerProgressFill').style.width = '100%';
-
-  _timerIv = setInterval(function() {
-    var elapsed = Math.floor((Date.now() - _timerStart) / 1000);
-    var display, pct;
-    if (isCountdown) {
-      var rem = Math.max(0, targetSecs - elapsed);
-      display = fmt2(Math.floor(rem/60)) + ':' + fmt2(rem%60);
-      pct = (rem / targetSecs) * 100;
-      document.getElementById('timerProgressFill').style.width = pct + '%';
-      if (rem <= 0) { clearInterval(_timerIv); _timerIv = null; _onTimerEnd(); return; }
-      if (rem <= 60) document.getElementById('timerDisplay').style.color = 'var(--yellow)';
-      else document.getElementById('timerDisplay').style.color = 'var(--accent)';
-    } else {
-      display = fmt2(Math.floor(elapsed/60)) + ':' + fmt2(elapsed%60);
-    }
-    document.getElementById('timerDisplay').textContent = display;
-  }, 500);
-
-  if (navigator.vibrate) navigator.vibrate(20);
-  var modeLabel = isCountdown ? Math.round(targetSecs/60) + '分タイマー開始' : 'ストップウォッチ開始';
-  showToast('▶ ' + modeLabel);
-}
-
-function _onTimerEnd() {
-  var durationMin = Math.round(_timerTargetSecs / 60);
-  if (navigator.vibrate) navigator.vibrate([100,50,100,50,200]);
-  document.getElementById('timerCard').classList.remove('running');
-  document.getElementById('timerDisplay').style.color = 'var(--accent)';
-  var sid = _timerSubId; _timerSubId = null;
-  showToast('⏰ ' + durationMin + '分終了！お疲れさまでした');
-  if (!_timerIsBreak) {
-    setTimeout(function() { openLogModal(sid, durationMin); }, 600);
-  } else {
-    _timerIsBreak = false;
-    showToast('☕ 休憩終了！また頑張りましょう ✨');
-  }
-}
-
-function startBreakTimer(minutes) {
-  _timerIsBreak = true; _timerPomodoro = false;
-  _timerSubId = null; _timerStart = Date.now();
-  _timerIsCountdown = true; _timerTargetSecs = minutes * 60;
-  if (_timerIv) { clearInterval(_timerIv); _timerIv = null; }
-
-  var card = document.getElementById('timerCard');
-  card.classList.add('running','break-mode');
-  document.getElementById('timerSubjName').textContent = '☕ 休憩中...';
-  document.getElementById('timerDisplay').style.color = 'var(--green)';
-  document.getElementById('timerProgressWrap').style.display = 'block';
-  document.getElementById('timerProgressFill').style.width = '100%';
-
-  _timerIv = setInterval(function() {
-    var rem = Math.max(0, _timerTargetSecs - Math.floor((Date.now()-_timerStart)/1000));
-    document.getElementById('timerDisplay').textContent = fmt2(Math.floor(rem/60)) + ':' + fmt2(rem%60);
-    document.getElementById('timerProgressFill').style.width = (rem/_timerTargetSecs*100) + '%';
-    if (rem <= 0) { clearInterval(_timerIv); _timerIv = null; _onTimerEnd(); }
-  }, 500);
-  showToast('☕ 休憩タイマー ' + minutes + '分');
-}
-
-function stopTimer() {
-  if (!_timerIv && !document.getElementById('timerCard').classList.contains('running')) return;
-  clearInterval(_timerIv); _timerIv = null;
-  var elapsed = Math.max(1, Math.round((Date.now() - _timerStart) / 60000));
-  var card = document.getElementById('timerCard');
-  card.classList.remove('running','break-mode');
-  document.getElementById('timerDisplay').style.color = 'var(--accent)';
-  var sid = _timerSubId; _timerSubId = null; _timerStart = null;
-  if (_timerIsBreak) { _timerIsBreak = false; return; }
-  openLogModal(sid, elapsed);
-}
 
 /* ── Summary ── */
 function renderSummary() {
@@ -1221,7 +1034,6 @@ function renderToday() {
           + '<p class="subj-today-min">' + (goal ? '目標 ' + goal + '分/日' : '今日: ' + todayM + '分') + '</p>'
         + '</div>'
         + '<div class="subj-actions">'
-          + '<button class="btn-timer" onclick="event.stopPropagation();openTimerSetModal(\'' + subj.id + '\')" title="タイマー設定">▶</button>'
           + '<button class="btn-log" onclick="event.stopPropagation();openLogModal(\'' + subj.id + '\')">記録</button>'
         + '</div>'
       + '</div>'
@@ -1480,7 +1292,9 @@ function renderLog() {
       var stType = STUDY_TYPES.find(function(t){ return t.id===s.studyType; });
       var mat = s.materialId ? materials.find(function(m){ return m.id===s.materialId; }) : null;
       var matText = mat ? (mat.title + (s.fromPage||s.toPage ? ' ' + sessRangeText(mat, s) : '')) : null;
-      var infoText = [matText, s.memo || (stType ? stType.label : null)].filter(Boolean).join(' · ');
+      var resr = s.resourceId ? resources.find(function(r){ return r.id===s.resourceId; }) : null;
+      var resText = resr ? (resourceIcon(resr) + ' ' + resr.name) : null;
+      var infoText = [matText, resText, s.memo || (stType ? stType.label : null)].filter(Boolean).join(' · ');
       return '<div class="sess-item">'
         + '<div class="sess-icon" style="background:' + ((subj&&subj.color)||'#3c8cbf') + '22;">' + ((subj&&subj.icon)||'📘') + '</div>'
         + '<div class="sess-info">'
@@ -1637,11 +1451,44 @@ function openLogModal(subjId, prefill, sessionId) {
   renderLogSubjGrid();
   // 学習方法の選択欄は記録モーダルから外した（入力を速くするため）。
   // 編集時は _logStudyType に元の値が入るので、既存記録の学習方法は保持される。
-  renderLogMaterialSelect(_logSessionId ? (sessions.find(function(x){ return x.id === _logSessionId; })||{}).materialId || '' : '');
+  var _editing = _logSessionId ? (sessions.find(function(x){ return x.id === _logSessionId; }) || {}) : {};
+  renderLogMaterialSelect(_editing.materialId || '');
+  renderLogResourceSelect(_editing.resourceId || '');
   onLogMaterialChange();
   document.getElementById('logModal').classList.add('show');
 }
 function closeLogModal() { document.getElementById('logModal').classList.remove('show'); }
+
+// 学習リソースのアイコン（一覧カードと同じ見た目に揃える）
+function resourceIcon(r) {
+  return r.rtype==='youtube' ? '▶️' : r.rtype==='pdf' ? '📄' : r.rtype==='site' ? '🌐' : '🔗';
+}
+// keepId 省略=現在の選択を維持 / 値を渡すとそのリソースを選択（'' で選択なし）
+function renderLogResourceSelect(keepId) {
+  var grp = document.getElementById('logResourceGroup');
+  var sel = document.getElementById('logResource');
+  if (!grp || !sel) return;
+  var prev = (keepId === undefined) ? sel.value : (keepId || '');
+  // 選択中の資格に紐づくリソースだけを出す
+  var list = resources.filter(function(r){ return r.subjectId === _logSubjId; });
+  // 編集時、他の資格のリソースが紐づいている記録はそれも残す（既存のリンクを壊さない）
+  if (prev && !list.some(function(r){ return r.id === prev; })) {
+    var extra = resources.find(function(r){ return r.id === prev; });
+    if (extra) list = list.concat(extra);
+  }
+  if (!list.length) {
+    grp.style.display = 'none';
+    sel.innerHTML = '<option value="">（リソースを選択しない）</option>';
+    sel.value = '';
+    return;
+  }
+  grp.style.display = 'block';
+  sel.innerHTML = '<option value="">（リソースを選択しない）</option>'
+    + list.map(function(r) {
+        return '<option value="' + r.id + '">' + resourceIcon(r) + ' ' + escapeHtml(r.name) + '</option>';
+      }).join('');
+  sel.value = list.some(function(r){ return r.id === prev; }) ? prev : '';
+}
 
 // keepId 省略=現在の選択を維持 / 値を渡すとその教材を選択（'' で選択なし）
 function renderLogMaterialSelect(keepId) {
@@ -1711,6 +1558,7 @@ function selLogSubj(id) {
   document.getElementById('logFromPage').value = '';
   document.getElementById('logToPage').value = '';
   renderLogMaterialSelect('');
+  renderLogResourceSelect('');
   onLogMaterialChange();
 }
 
@@ -1727,7 +1575,8 @@ function saveSession() {
   var mid  = document.getElementById('logMaterial').value || null;
   var fromP = mid ? (parseInt(document.getElementById('logFromPage').value) || null) : null;
   var toP   = mid ? (parseInt(document.getElementById('logToPage').value)   || null) : null;
-  var data = { subjectId:_logSubjId, date:date, duration:dur, memo:memo, studyType:_logStudyType||null, materialId:mid, fromPage:fromP, toPage:toP };
+  var rid = document.getElementById('logResource').value || null;
+  var data = { subjectId:_logSubjId, date:date, duration:dur, memo:memo, studyType:_logStudyType||null, materialId:mid, fromPage:fromP, toPage:toP, resourceId:rid };
 
   if (_logSessionId) {
     var idx = sessions.findIndex(function(s){ return s.id === _logSessionId; });
@@ -1749,7 +1598,6 @@ function saveSession() {
     }
   }
 
-  var wasPomodoro = _timerPomodoro; _timerPomodoro = false;
   persist(); closeLogModal(); renderAll();
   var subj = getSubj(_logSubjId);
   if (subj && subj.dailyGoal) {
@@ -1757,25 +1605,10 @@ function saveSession() {
     if (nowM >= subj.dailyGoal && nowM - dur < subj.dailyGoal) {
       confetti({ particleCount:80, spread:70, origin:{y:.6}, colors:['#3c8cbf','#5ecfa0','#f5c842'] });
       showToast('🎉 ' + subj.name + ' 目標達成！');
-      if (wasPomodoro) setTimeout(showBreakPrompt, 1500);
       return;
     }
   }
   showToast('✅ ' + dur + '分を記録しました');
-  if (wasPomodoro) setTimeout(showBreakPrompt, 800);
-}
-
-function showBreakPrompt() {
-  var t = document.createElement('div');
-  t.style.cssText = 'position:fixed;bottom:calc(80px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:#1a2a3a;border:1px solid rgba(94,207,160,.4);border-radius:16px;padding:.85rem 1.1rem;z-index:200;white-space:nowrap;font-family:Outfit,sans-serif;box-shadow:0 4px 24px rgba(0,0,0,.5);';
-  t.innerHTML = '<p style="font-size:.78rem;color:#9494b8;margin-bottom:.5rem;">☕ 休憩しますか？</p>'
-    + '<div style="display:flex;gap:.4rem;">'
-    + '<button onclick="startBreakTimer(5);this.closest(\'[style]\').remove();" style="flex:1;background:rgba(94,207,160,.15);border:1px solid rgba(94,207,160,.4);color:#5ecfa0;border-radius:8px;padding:.45rem;font-size:.82rem;font-weight:500;font-family:Outfit,sans-serif;cursor:pointer;">5分</button>'
-    + '<button onclick="startBreakTimer(10);this.closest(\'[style]\').remove();" style="flex:1;background:rgba(94,207,160,.15);border:1px solid rgba(94,207,160,.4);color:#5ecfa0;border-radius:8px;padding:.45rem;font-size:.82rem;font-weight:500;font-family:Outfit,sans-serif;cursor:pointer;">10分</button>'
-    + '<button onclick="this.closest(\'[style]\').remove();" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:.45rem;font-size:.82rem;font-family:Outfit,sans-serif;cursor:pointer;">スキップ</button>'
-    + '</div>';
-  document.body.appendChild(t);
-  setTimeout(function(){ if(t.parentNode) t.remove(); }, 10000);
 }
 
 function deleteSession(id) {
