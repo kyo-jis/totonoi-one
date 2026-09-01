@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-v4';
+const CACHE_NAME = 'portal-v5';
 // HTMLはプリキャッシュしない（常に最新を取得、オフライン時のみキャッシュ利用）
 const ASSETS = [
   '/manifest-portal.json',

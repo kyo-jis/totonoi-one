@@ -123,6 +123,24 @@ function localDateStr(d) {
 - `font-weight: 400`（300は使わない）
 - ボタンの押下: `:active { transform: scale(.93); }`
 
+### アクセシビリティの基準（全アプリ適用済み・2026-09-01）
+
+計測して不合格になる箇所を作らないための共通ルール。新規コード・新規アプリでも守る。
+
+- **文字サイズ**: 下限は `.69rem`（11px）。それ未満を書かない
+- **タップ領域**: 操作要素は実効24×24px以上（WCAG 2.2 AA）。見た目を保ったまま広げるため、
+  小さいボタンには `::after` で44×44の当たり判定を敷く（`position:relative; z-index:2` が前提）
+
+```css
+.btn-icon { position:relative; z-index:2; }
+.btn-icon::after { content:''; position:absolute; left:50%; top:50%; width:44px; height:44px; transform:translate(-50%,-50%); }
+```
+
+- **色**: 色を**文字**に使う場合は `--accent-text` `--green-text` `--yellow-text` `--red-text` を使う。
+  `--accent` `--green` などは**背景・枠線専用**。ライトテーマでは文字用トークンだけ暗くし、
+  背景に対し4.5:1以上を確保している（アクセント色はアプリごとに値が異なる）
+- **フォーカス**: 各アプリに `:focus-visible` の共通アウトラインあり（マウス・タップ時は非表示）
+
 ### 認証モーダル（全アプリ共通パターン）
 
 ```html

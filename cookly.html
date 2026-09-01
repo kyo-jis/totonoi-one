@@ -20,24 +20,24 @@
     :root {
       --bg:#0c0c18; --surface:#14142a; --surface2:#1c1c38; --surface3:#242448;
       --border:#2e2e50; --text:#f2f2fa; --muted:#9494b8;
-      --accent:#bf6c3c; --accent-dark:#9a4e20; --accent2:#ff7c6e;
-      --green:#5ecfa0; --yellow:#e8718a; --orange:#ffb347;
+      --accent:#bf6c3c; --accent-text:#c57446; --accent-dark:#9a4e20; --accent2:#ff7c6e;
+      --green:#5ecfa0; --green-text:#5ecfa0; --yellow:#e8718a; --yellow-text:#e8718a; --orange:#ffb347;
       --font:'Outfit',sans-serif;
       --shadow-sm:0 2px 14px rgba(0,0,0,.38); --shadow-md:0 6px 32px rgba(0,0,0,.55);
       --spring:cubic-bezier(.34,1.56,.64,1);
     }
-    [data-theme="light"] { --bg:#e8e7f5; --surface:#f4f3fc; --surface2:#e6e5f6; --surface3:#dddcf0; --border:#c8c6e6; --text:#1a1838; --muted:#686898; }
+    [data-theme="light"] { --bg:#e8e7f5; --surface:#f4f3fc; --surface2:#e6e5f6; --surface3:#dddcf0; --border:#c8c6e6; --text:#1a1838; --muted:#5f5f8f; --accent-text:#895a3f; --green-text:#2a7454; --yellow-text:#a5334d; }
     [data-theme="light"] body { background: radial-gradient(ellipse 75% 45% at 12% 4%, rgba(94,207,160,.07) 0%, transparent 100%), radial-gradient(ellipse 65% 45% at 88% 92%, rgba(108,142,255,.06) 0%, transparent 100%), var(--bg); }
     html { font-size:16px; }
     body { background: radial-gradient(ellipse 75% 45% at 12% 4%, rgba(191,108,60,.07) 0%, transparent 100%), radial-gradient(ellipse 65% 45% at 88% 92%, rgba(108,142,255,.06) 0%, transparent 100%), var(--bg); color:var(--text); font-family:var(--font); font-weight:400; min-height:100vh; padding-bottom:130px; transition: background .25s, color .25s; }
     .app-header { padding:3rem 1.25rem 1.25rem; }
     .back-link { font-size:.75rem; color:var(--muted); text-decoration:none; letter-spacing:.1em; text-transform:uppercase; display:inline-flex; align-items:center; gap:.4rem; }
     .app-title { font-size:1.6rem; font-weight:600; letter-spacing:-.01em; }
-    .app-title span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
+    .app-title span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent-text); }
     .app-subtitle { font-size:.8rem; color:var(--muted); margin-top:.2rem; letter-spacing:.02em; }
-    .app-subtitle span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
+    .app-subtitle span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent-text); }
     .auth-chip { background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); transition:all .2s; white-space:nowrap; }
-    .auth-chip.logged-in { border-color:var(--accent); color:var(--accent); }
+    .auth-chip.logged-in { border-color:var(--accent); color:var(--accent-text); }
     /* Login Notice */
     .login-notice { margin: -.25rem 1.25rem .75rem; background: rgba(148,148,184,.07); border: 1px solid rgba(148,148,184,.18); border-radius: 12px; padding: .6rem 1rem; display: flex; align-items: center; gap: .65rem; cursor: pointer; font-size: .78rem; color: var(--muted); transition: opacity .2s; }
     .login-notice:active { opacity: .7; }
@@ -47,7 +47,7 @@
     .search-input:focus { border-color:var(--accent); }
     .search-icon { position:absolute; left:.85rem; top:50%; transform:translateY(-50%); color:var(--muted); }
     .free-banner { display:none !important; margin:0 1.25rem 1rem; background:rgba(232,113,138,.1); border:1px solid rgba(232,113,138,.25); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
-    .free-banner-text { font-size:.8rem; color:var(--yellow); }
+    .free-banner-text { font-size:.8rem; color:var(--yellow-text); }
     .upgrade-btn { font-size:.72rem; font-weight:500; color:#1a1a24; background:var(--yellow); border:none; border-radius:8px; padding:.4rem .75rem; cursor:pointer; white-space:nowrap; font-family:var(--font); }
     .tabs { display:flex; gap:0; margin:0 1.25rem 1.25rem; background:linear-gradient(160deg, var(--surface) 0%, var(--surface2) 100%); border-radius:14px; padding:4px; border:1px solid var(--border); box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.07); }
     .tab { flex:1; padding:.58rem .2rem; font-size:.72rem; font-weight:400; color:var(--muted); background:none; border:none; border-radius:10px; cursor:pointer; font-family:var(--font); transition:all .2s var(--spring); }
@@ -58,7 +58,7 @@
     .cat-filter { display:flex; gap:.4rem; padding:0 1.25rem 1rem; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
     .cat-filter::-webkit-scrollbar { display:none; }
     .cat-chip { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:.3rem .8rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); white-space:nowrap; transition:all .2s; flex-shrink:0; }
-    .cat-chip.active { background:var(--surface2); border-color:var(--accent); color:var(--accent); }
+    .cat-chip.active { background:var(--surface2); border-color:var(--accent); color:var(--accent-text); }
     .list-section { padding:0 1.25rem; }
     .recipe-card { background:linear-gradient(160deg, var(--surface) 0%, var(--surface2) 100%); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:.625rem; animation:slideIn .3s ease; cursor:pointer; transition:border-color .15s; box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.07); }
     .recipe-card:active { border-color:var(--accent); }
@@ -71,9 +71,9 @@
     .recipe-meta { font-size:.72rem; color:var(--muted); margin-top:.2rem; display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
     .recipe-right { display:flex; flex-direction:column; align-items:flex-end; gap:.3rem; flex-shrink:0; }
     .recipe-time { font-size:.82rem; font-weight:500; }
-    .recipe-servings { font-size:.68rem; color:var(--muted); }
+    .recipe-servings { font-size:.69rem; color:var(--muted); }
     .fav-btn { background:none; border:none; font-size:1.1rem; cursor:pointer; padding:.1rem; }
-    .cat-badge { font-size:.62rem; padding:.15rem .45rem; border-radius:20px; background:rgba(191,108,60,.15); color:var(--accent); }
+    .cat-badge { font-size:.69rem; padding:.15rem .45rem; border-radius:20px; background:rgba(191,108,60,.15); color:var(--accent-text); }
     .recipe-actions { display:flex; gap:.4rem; margin-top:.7rem; justify-content:flex-end; }
     .btn-icon { width:30px; height:30px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); font-size:.75rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
     .empty-state { text-align:center; padding:3rem 2rem; color:var(--muted); }
@@ -91,7 +91,7 @@
     .detail-section-title { font-size:.7rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:.65rem; }
     .ingredient-row { display:flex; align-items:center; justify-content:space-between; padding:.5rem 0; border-bottom:1px solid var(--border); font-size:.88rem; }
     .ingredient-row:last-child { border-bottom:none; }
-    .ingredient-amount { color:var(--accent); font-weight:500; }
+    .ingredient-amount { color:var(--accent-text); font-weight:500; }
     .step-row { display:flex; gap:.75rem; margin-bottom:.875rem; }
     .step-num { width:28px; height:28px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-size:.78rem; font-weight:600; flex-shrink:0; margin-top:.1rem; }
     .step-text { flex:1; font-size:.88rem; line-height:1.6; }
@@ -107,7 +107,7 @@
     .ingredient-input-row input { flex:2; }
     .ingredient-input-row input:last-of-type { flex:1; }
     .btn-add-row { background:none; border:1px dashed var(--border); border-radius:8px; padding:.5rem; font-size:.8rem; color:var(--muted); cursor:pointer; font-family:var(--font); width:100%; margin-top:.3rem; }
-    .btn-add-row:active { border-color:var(--accent); color:var(--accent); }
+    .btn-add-row:active { border-color:var(--accent); color:var(--accent-text); }
     .btn-remove-row { background:none; border:none; color:var(--muted); font-size:1rem; cursor:pointer; padding:.2rem; flex-shrink:0; }
     .step-input-row { display:flex; gap:.5rem; margin-bottom:.4rem; align-items:flex-start; }
     .step-input-row textarea { flex:1; min-height:60px; resize:none; }
@@ -122,20 +122,20 @@
     .btn-back { display:inline-flex; align-items:center; gap:.4rem; font-size:.75rem; color:var(--muted); background:none; border:none; cursor:pointer; font-family:var(--font); margin-bottom:1rem; letter-spacing:.05em; text-transform:uppercase; }
     .analytics-wrap { padding:0 1.25rem; }
     .analytics-section { margin-bottom:1.5rem; }
-    .analytics-title { font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:.75rem; }
+    .analytics-title { font-size:.69rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:.75rem; }
     .bar-chart { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.25rem 1rem; }
     .analysis-grid { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; }
     .analysis-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1rem; }
-    .analysis-card-label { font-size:.65rem; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:.4rem; }
+    .analysis-card-label { font-size:.69rem; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:.4rem; }
     .analysis-card-value { font-size:1.3rem; font-weight:600; letter-spacing:-.02em; }
-    .analysis-card-sub { font-size:.68rem; color:var(--muted); margin-top:.2rem; }
+    .analysis-card-sub { font-size:.69rem; color:var(--muted); margin-top:.2rem; }
     .fab { position:fixed; bottom:calc(72px + env(safe-area-inset-bottom)); right:1.25rem; width:56px; height:56px; border-radius:18px; background:var(--accent); color:#fff; border:none; font-size:1.5rem; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 24px rgba(191,108,60,.4); z-index:50; transition:transform .15s; }
     .fab:active { transform:scale(.92); }
     .ad-banner { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--border); padding:.6rem 1rem; display:flex; align-items:center; justify-content:center; gap:.5rem; z-index:40; padding-bottom:calc(.6rem + env(safe-area-inset-bottom)); }
-    .ad-label { font-size:.6rem; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; }
+    .ad-label { font-size:.69rem; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; }
     .ad-content { font-size:.78rem; color:var(--muted); flex:1; text-align:center; }
     .sync-slot{margin-top:.3rem;text-align:right;min-height:1rem;}
-    .sync-badge{display:inline-flex;align-items:center;gap:.2rem;font-size:.58rem;font-weight:500;padding:.1rem .38rem;border-radius:20px;cursor:default;white-space:nowrap;}
+    .sync-badge{display:inline-flex;align-items:center;gap:.2rem;font-size:.69rem;font-weight:500;padding:.1rem .38rem;border-radius:20px;cursor:default;white-space:nowrap;}
     .sync-local{background:rgba(148,148,184,.15);color:var(--muted);}
     .sync-syncing{background:rgba(108,142,255,.15);color:#6c8eff;}
     .sync-synced{background:rgba(94,207,160,.15);color:#5ecfa0;}
@@ -177,7 +177,7 @@
     .cook-close{width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:1rem;cursor:pointer;flex-shrink:0;}
     .cook-progress{font-size:.72rem;color:var(--muted);letter-spacing:.12em;margin-bottom:.75rem;}
     .cook-step{flex:1;overflow-y:auto;display:flex;flex-direction:column;justify-content:center;text-align:center;padding:.5rem 0;}
-    .cook-step-num{font-size:.78rem;color:var(--accent);letter-spacing:.15em;font-weight:600;margin-bottom:1rem;}
+    .cook-step-num{font-size:.78rem;color:var(--accent-text);letter-spacing:.15em;font-weight:600;margin-bottom:1rem;}
     .cook-step-text{font-size:1.45rem;line-height:1.75;font-weight:400;}
     .cook-timer{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:.9rem 1rem;margin:.6rem 0;text-align:center;}
     .cook-timer-time{font-size:2.1rem;font-weight:600;font-variant-numeric:tabular-nums;margin-bottom:.55rem;}
@@ -194,7 +194,7 @@
     .cook-nav-btn.cook-next{background:var(--accent);color:#fff;border-color:transparent;}
     .cook-start-btn{width:100%;padding:.9rem;border-radius:14px;border:none;background:var(--accent);color:#fff;font-size:1rem;font-weight:500;font-family:var(--font);cursor:pointer;margin-bottom:1.25rem;}
     .cook-start-btn:active{transform:scale(.97);}
-    .cooked-btn{width:100%;padding:.8rem;border-radius:12px;border:1px solid var(--green);background:rgba(94,207,160,.12);color:var(--green);font-size:.95rem;font-weight:500;font-family:var(--font);cursor:pointer;margin-bottom:.6rem;}
+    .cooked-btn{width:100%;padding:.8rem;border-radius:12px;border:1px solid var(--green);background:rgba(94,207,160,.12);color:var(--green-text);font-size:.95rem;font-weight:500;font-family:var(--font);cursor:pointer;margin-bottom:.6rem;}
     .cooked-btn:active{transform:scale(.97);}
     /* Nutrition */
     .nutri-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:.6rem;}
@@ -202,9 +202,14 @@
     #nutriDetails summary::-webkit-details-marker{display:none;}
     .nutri-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;}
     .nutri-badge{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:.55rem .5rem;text-align:center;}
-    .nutri-label{display:block;font-size:.6rem;color:var(--muted);margin-bottom:.15rem;}
+    .nutri-label{display:block;font-size:.69rem;color:var(--muted);margin-bottom:.15rem;}
     .nutri-val{font-size:.9rem;font-weight:500;}
-    .nutri-val small{font-size:.6rem;color:var(--muted);margin-left:1px;}
+    .nutri-val small{font-size:.69rem;color:var(--muted);margin-left:1px;}
+    /* キーボード・スイッチ操作時に現在位置が分かるように */
+    :focus-visible { outline:2px solid var(--accent, #6c8eff); outline-offset:2px; border-radius:4px; }
+    /* タップ領域: 見た目は変えず、擬似要素で当たり判定を44pxに広げる */
+    .btn-icon, .servings-stepper button, .cook-close { position:relative; z-index:2; }
+    .btn-icon::after, .servings-stepper button::after, .cook-close::after { content:''; position:absolute; left:50%; top:50%; width:44px; height:44px; transform:translate(-50%,-50%); }
   </style>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-E9Q0JQ0V92"></script>
@@ -262,7 +267,7 @@
 
 <div class="view" id="view-fav">
   <div class="list-section" style="padding-top:.25rem;">
-    <p style="font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:0 0 .75rem;">お気に入りレシピ</p>
+    <p style="font-size:.69rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:0 0 .75rem;">お気に入りレシピ</p>
     <div id="favList"></div>
   </div>
 </div>
@@ -363,16 +368,16 @@
       <div class="bar-chart" style="padding:1rem 1.1rem;">
         <div style="display:flex;align-items:center;justify-content:space-between;">
           <div><p style="font-size:.95rem;font-weight:500;" id="planLabel">無料プラン</p><p style="font-size:.75rem;color:var(--muted);margin-top:.2rem;" id="planDesc">全機能を無料で利用中</p></div>
-          <span style="font-size:.7rem;padding:.25rem .6rem;border-radius:20px;background:rgba(191,108,60,.15);color:var(--accent);" id="planBadge">現在</span>
+          <span style="font-size:.7rem;padding:.25rem .6rem;border-radius:20px;background:rgba(191,108,60,.15);color:var(--accent-text);" id="planBadge">現在</span>
         </div>
-        <a href="index.html" style="display:block;margin-top:.9rem;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:.75rem;font-size:.85rem;color:var(--accent);text-decoration:none;">ダッシュボードでプランを管理 →</a>
+        <a href="index.html" style="display:block;margin-top:.9rem;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:.75rem;font-size:.85rem;color:var(--accent-text);text-decoration:none;">ダッシュボードでプランを管理 →</a>
       </div>
     </div>
     <div class="analytics-section">
       <p class="analytics-title">使い方ガイド</p>
       <div class="bar-chart" style="padding:1rem 1.1rem;">
         <p style="font-size:.82rem;color:var(--muted);margin-bottom:.875rem;line-height:1.5;">各機能の使い方・無料/Proプランの比較はガイドページで確認できます。</p>
-        <a href="guide.html" style="display:block;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:.75rem;font-size:.85rem;color:var(--accent);text-decoration:none;">📖 使い方ガイドを見る →</a>
+        <a href="guide.html" style="display:block;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:.75rem;font-size:.85rem;color:var(--accent-text);text-decoration:none;">📖 使い方ガイドを見る →</a>
       </div>
     </div>
     <div class="analytics-section">
@@ -477,14 +482,14 @@ function openDetail(id) {
   if (r.time) chips += '<span class="detail-chip">⏱ ' + r.time + '分</span>';
   if (r.cookCount) chips += '<span class="detail-chip">🍳 ' + r.cookCount + '回</span>';
   if (r.lastCooked) chips += '<span class="detail-chip">最終 ' + fmtMD(r.lastCooked) + '</span>';
-  if (r.url && /^https?:\/\//.test(r.url)) chips += '<a class="detail-chip" href="' + escapeHtml(r.url) + '" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;">▶ 動画を見る</a>';
+  if (r.url && /^https?:\/\//.test(r.url)) chips += '<a class="detail-chip" href="' + escapeHtml(r.url) + '" target="_blank" rel="noopener" style="color:var(--accent-text);text-decoration:none;">▶ 動画を見る</a>';
   document.getElementById('detailChips').innerHTML = chips;
   renderServingsStepper();
   renderDetailIngredients();
   document.getElementById('detailSteps').innerHTML = (r.steps||[]).map(function(step,i){
     return '<div class="step-row"><div class="step-num">' + (i+1) + '</div><p class="step-text">' + escapeHtml(step) + '</p></div>';
   }).join('') || '<p style="font-size:.82rem;color:var(--muted);">未登録</p>';
-  document.getElementById('detailMemoWrap').innerHTML = r.memo ? '<div style="background:var(--surface2);border-radius:12px;padding:.875rem;"><p style="font-size:.68rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem;">メモ</p><p style="font-size:.85rem;line-height:1.6;">'+escapeHtml(r.memo)+'</p></div>' : '';
+  document.getElementById('detailMemoWrap').innerHTML = r.memo ? '<div style="background:var(--surface2);border-radius:12px;padding:.875rem;"><p style="font-size:.69rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem;">メモ</p><p style="font-size:.85rem;line-height:1.6;">'+escapeHtml(r.memo)+'</p></div>' : '';
   var nutriWrap = document.getElementById('detailNutriWrap');
   if (r.nutrition) {
     var nitems = [['エネルギー',r.nutrition.kcal,'kcal'],['たんぱく質',r.nutrition.protein,'g'],['脂質',r.nutrition.fat,'g'],['炭水化物',r.nutrition.carbs,'g'],['食塩',r.nutrition.salt,'g'],['食物繊維',r.nutrition.fiber,'g']];
@@ -755,7 +760,7 @@ function renderStats() {
   var el = document.getElementById('statsGrid'); if (!el) return;
   document.getElementById('statsGrid').innerHTML =
     '<div class="analysis-card"><p class="analysis-card-label">総レシピ</p><p class="analysis-card-value">'+recipes.length+'件</p><p class="analysis-card-sub">合計</p></div>'
-    +'<div class="analysis-card"><p class="analysis-card-label">お気に入り</p><p class="analysis-card-value" style="color:var(--yellow)">'+recipes.filter(function(r){return r.fav;}).length+'件</p><p class="analysis-card-sub">⭐</p></div>'
+    +'<div class="analysis-card"><p class="analysis-card-label">お気に入り</p><p class="analysis-card-value" style="color:var(--yellow-text)">'+recipes.filter(function(r){return r.fav;}).length+'件</p><p class="analysis-card-sub">⭐</p></div>'
     +'<div class="analysis-card"><p class="analysis-card-label">平均調理時間</p><p class="analysis-card-value">'+(function(){var ts=recipes.filter(function(r){return r.time;});return ts.length?Math.round(ts.reduce(function(s,r){return s+r.time;},0)/ts.length):0;}())+'分</p><p class="analysis-card-sub">平均</p></div>'
     +'<div class="analysis-card"><p class="analysis-card-label">和食</p><p class="analysis-card-value">'+recipes.filter(function(r){return r.category==='japanese';}).length+'件</p><p class="analysis-card-sub">🍱</p></div>';
 }
@@ -770,7 +775,7 @@ function updateProUI(){
   var pl=document.getElementById('planLabel'),pd=document.getElementById('planDesc'),pb=document.getElementById('planBadge');
   if(pl)pl.textContent=isPro?'Proプラン':'無料プラン';
   if(pd)pd.textContent=isPro?'全機能が利用できます':'全機能を無料で利用中';
-  if(pb){pb.textContent=isPro?'✅ 有効中':'現在';pb.style.background=isPro?'rgba(94,207,160,.15)':'rgba(191,108,60,.15)';pb.style.color=isPro?'var(--green)':'var(--accent)';}
+  if(pb){pb.textContent=isPro?'✅ 有効中':'現在';pb.style.background=isPro?'rgba(94,207,160,.15)':'rgba(191,108,60,.15)';pb.style.color=isPro?'var(--green-text)':'var(--accent-text)';}
 }
 function showToast(msg){var t=document.createElement('div');t.style.cssText='position:fixed;top:1.5rem;left:50%;transform:translateX(-50%);background:#22222e;border:1px solid #35354a;border-radius:12px;padding:.75rem 1.25rem;font-size:.85rem;font-weight:500;z-index:300;color:#f0eee8;white-space:nowrap;font-family:Outfit,sans-serif;';t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove();},2500);}
 

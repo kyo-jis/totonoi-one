@@ -26,11 +26,11 @@
       --border: #3c3c6e;
       --text: #f4f4fc;
       --muted: #a2a2c8;
-      --accent: #5ecfa0;
+      --accent: #5ecfa0; --accent-text:#5ecfa0;
       --accent-dark: #3aae82;
       --accent2: #ff7c6e;
       --blue: #6c8eff;
-      --yellow: #e8718a;
+      --yellow: #e8718a; --yellow-text:#e8718a;
       --purple: #b388ff;
       --font: 'Outfit', sans-serif;
       --shadow-sm: 0 2px 14px rgba(0,0,0,.38);
@@ -45,11 +45,10 @@
       --surface3: #dddcf0;
       --border: #c8c6e6;
       --text: #1a1838;
-      --muted: #686898;
+      --muted:#5f5f8f;
       --accent-dark: #2a9468;
       --shadow-sm: 0 2px 14px rgba(50,40,140,.08);
-      --shadow-md: 0 6px 30px rgba(50,40,140,.14);
-    }
+      --shadow-md: 0 6px 30px rgba(50,40,140,.14); --accent-text:#337157; --yellow-text:#a5334d; }
     [data-theme="light"] .wd-hero {
       background: linear-gradient(145deg, #d6f0e6 0%, #edf9f4 100%);
       border-color: rgba(94,207,160,.45);
@@ -78,7 +77,7 @@
     .app-header { padding: 3rem 1.25rem 1.25rem; }
     .back-link { font-size:.75rem; color:var(--muted); text-decoration:none; letter-spacing:.1em; text-transform:uppercase; display:inline-flex; align-items:center; gap:.4rem; margin-bottom:0; }
     .auth-chip { background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); transition:all .2s; white-space:nowrap; }
-    .auth-chip.logged-in { border-color:var(--accent); color:var(--accent); }
+    .auth-chip.logged-in { border-color:var(--accent); color:var(--accent-text); }
     .theme-btn { background:var(--surface2); border:1px solid var(--border); border-radius:20px; width:2rem; height:2rem; display:flex; align-items:center; justify-content:center; font-size:.9rem; cursor:pointer; transition:all .2s; flex-shrink:0; }
     .theme-btn:active { transform:scale(.88); }
     /* Login Notice */
@@ -86,9 +85,9 @@
     .login-notice:active { opacity: .7; }
     .header-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem; }
     .app-title { font-size:1.6rem; font-weight:600; letter-spacing:-.01em; }
-    .app-title span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
+    .app-title span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent-text); }
     .app-subtitle { font-size:.8rem; color:var(--muted); margin-top:.2rem; letter-spacing:.02em; }
-    .app-subtitle span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
+    .app-subtitle span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent-text); }
 
     /* Tabs */
     .tabs { display:flex; gap:0; margin:0 1.25rem 1.25rem; background:linear-gradient(180deg, var(--surface) 0%, var(--surface2) 100%); border-radius:14px; padding:4px; border:1px solid var(--border); overflow-x:auto; box-shadow:var(--shadow-md), inset 0 1px 0 rgba(255,255,255,.06); }
@@ -101,13 +100,13 @@
     .view.active { display:block; }
 
     /* Section */
-    .section-label { font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:.75rem; font-weight:500; }
+    .section-label { font-size:.69rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:.75rem; font-weight:500; }
     .card { background:linear-gradient(160deg, var(--surface) 0%, var(--surface2) 100%); border:1px solid var(--border); border-radius:18px; padding:1rem 1.1rem; margin-bottom:.75rem; box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.07); }
 
     /* Workout Header */
     .workout-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.25rem; }
-    .workout-timer { font-size:1.4rem; font-weight:700; letter-spacing:-.02em; color:var(--accent); }
-    .workout-timer-label { font-size:.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; }
+    .workout-timer { font-size:1.4rem; font-weight:700; letter-spacing:-.02em; color:var(--accent-text); }
+    .workout-timer-label { font-size:.69rem; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; }
     .btn-start { background:linear-gradient(135deg,var(--accent),var(--accent-dark)); color:#0c0c18; border:none; border-radius:12px; padding:.65rem 1.3rem; font-size:.85rem; font-weight:700; font-family:var(--font); cursor:pointer; transition:all .18s var(--spring); box-shadow:0 4px 16px rgba(94,207,160,.35); }
     .btn-start:active { transform:scale(.92); }
     .btn-end { background:var(--accent2); color:#fff; border:none; border-radius:12px; padding:.65rem 1.3rem; font-size:.85rem; font-weight:700; font-family:var(--font); cursor:pointer; transition:all .18s var(--spring); box-shadow:0 4px 16px rgba(255,124,110,.3); }
@@ -120,12 +119,12 @@
     .exercise-name { font-size:.95rem; font-weight:600; }
     .exercise-meta { font-size:.72rem; color:var(--muted); margin-top:.1rem; }
     .exercise-actions { display:flex; gap:.4rem; }
-    .btn-yt { font-size:.65rem; color:var(--accent2); background:rgba(255,124,110,.12); border:1px solid rgba(255,124,110,.25); border-radius:7px; padding:.28rem .55rem; cursor:pointer; font-family:var(--font); text-decoration:none; display:inline-block; font-weight:500; transition:all .15s; }
+    .btn-yt { font-size:.69rem; color:var(--accent2); background:rgba(255,124,110,.12); border:1px solid rgba(255,124,110,.25); border-radius:7px; padding:.28rem .55rem; cursor:pointer; font-family:var(--font); text-decoration:none; display:inline-block; font-weight:500; transition:all .15s; }
     .btn-yt:active { transform:scale(.9); }
 
     /* Set Row */
     .set-header { display:grid; gap:.4rem; margin-bottom:.4rem; }
-    .set-header-label { font-size:.62rem; color:var(--muted); text-align:center; text-transform:uppercase; letter-spacing:.05em; font-weight:500; }
+    .set-header-label { font-size:.69rem; color:var(--muted); text-align:center; text-transform:uppercase; letter-spacing:.05em; font-weight:500; }
     .set-row { display:grid; gap:.4rem; align-items:center; margin-bottom:.4rem; }
     .set-cols-3 { grid-template-columns:28px 1fr 1fr 1fr 36px; }
     .set-cols-2 { grid-template-columns:28px 1fr 1fr 36px; }
@@ -141,20 +140,20 @@
     .set-row.completed .set-input { background:rgba(94,207,160,.13); border-color:rgba(94,207,160,.3); }
 
     .btn-add-set { width:100%; padding:.6rem; background:none; border:1px dashed var(--border); border-radius:10px; color:var(--muted); font-size:.82rem; font-family:var(--font); cursor:pointer; margin-top:.4rem; }
-    .btn-add-set:active { border-color:var(--accent); color:var(--accent); }
+    .btn-add-set:active { border-color:var(--accent); color:var(--accent-text); }
 
     .prev-record { font-size:.7rem; color:var(--muted); background:var(--surface2); border-radius:8px; padding:.4rem .7rem; margin-bottom:.6rem; }
-    .prev-record span { color:var(--accent); font-weight:500; }
+    .prev-record span { color:var(--accent-text); font-weight:500; }
 
     /* Rest Timer Overlay */
     .rest-overlay { position:fixed; inset:0; background:rgba(15,15,20,.92); backdrop-filter:blur(8px); z-index:200; display:none; flex-direction:column; align-items:center; justify-content:center; }
     .rest-overlay.show { display:flex; }
     .rest-label { font-size:.8rem; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-bottom:1rem; }
-    .rest-time { font-size:5rem; font-weight:600; letter-spacing:-.04em; color:var(--accent); line-height:1; }
+    .rest-time { font-size:5rem; font-weight:600; letter-spacing:-.04em; color:var(--accent-text); line-height:1; }
     .rest-exercise { font-size:.9rem; color:var(--muted); margin-top:.75rem; }
     .rest-controls { display:flex; gap:.75rem; margin-top:2rem; }
     .rest-preset { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:.6rem .9rem; font-size:.82rem; color:var(--text); cursor:pointer; font-family:var(--font); }
-    .rest-preset.active { border-color:var(--accent); color:var(--accent); }
+    .rest-preset.active { border-color:var(--accent); color:var(--accent-text); }
     .rest-adjust { display:flex; align-items:center; gap:1rem; margin-top:1rem; }
     .rest-adj-btn { width:44px; height:44px; border-radius:12px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-size:1.2rem; cursor:pointer; display:flex; align-items:center; justify-content:center; font-family:var(--font); }
     .rest-adj-label { font-size:.75rem; color:var(--muted); }
@@ -168,7 +167,7 @@
       0%,100% { background:rgba(255,59,48,.18); }
       50%      { background:transparent; }
     }
-    .timer-big.timer-finished { font-size:5.8rem; font-weight:800; color:var(--accent); }
+    .timer-big.timer-finished { font-size:5.8rem; font-weight:800; color:var(--accent-text); }
 
     /* Add Exercise Modal */
     .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); backdrop-filter:blur(6px); z-index:100; display:none; align-items:flex-end; }
@@ -193,12 +192,12 @@
     .exercise-list-item:last-child { border-bottom:none; }
     .exercise-list-name { font-size:.9rem; font-weight:400; }
     .exercise-list-meta { font-size:.7rem; color:var(--muted); margin-top:.15rem; }
-    .exercise-list-badge { font-size:.62rem; padding:.2rem .5rem; border-radius:20px; }
+    .exercise-list-badge { font-size:.69rem; padding:.2rem .5rem; border-radius:20px; }
     .badge-strength { background:rgba(108,142,255,.15); color:var(--blue); }
     .badge-cardio { background:rgba(255,124,110,.15); color:var(--accent2); }
-    .badge-bodyweight { background:rgba(94,207,160,.15); color:var(--accent); }
+    .badge-bodyweight { background:rgba(94,207,160,.15); color:var(--accent-text); }
     .badge-stretch { background:rgba(179,136,255,.15); color:var(--purple); }
-    .badge-mindfulness { background:rgba(232,113,138,.15); color:var(--yellow); }
+    .badge-mindfulness { background:rgba(232,113,138,.15); color:var(--yellow-text); }
 
     /* Menu Tab */
     .menu-card { background:linear-gradient(160deg, var(--surface) 0%, var(--surface2) 100%); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:.75rem; box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.07); }
@@ -206,7 +205,7 @@
     .menu-card-name { font-size:.95rem; font-weight:500; }
     .menu-card-meta { font-size:.72rem; color:var(--muted); }
     .menu-exercises { display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.6rem; }
-    .menu-ex-tag { font-size:.68rem; background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:.2rem .5rem; color:var(--muted); }
+    .menu-ex-tag { font-size:.69rem; background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:.2rem .5rem; color:var(--muted); }
     .btn-use-menu { background:var(--accent); color:#1a1a24; border:none; border-radius:8px; padding:.5rem .9rem; font-size:.78rem; font-weight:600; font-family:var(--font); cursor:pointer; }
 
     /* Timer Tab */
@@ -214,7 +213,7 @@
     .timer-big { font-size:5rem; font-weight:600; letter-spacing:-.04em; color:var(--text); line-height:1; }
     .timer-presets { display:grid; grid-template-columns:repeat(5,1fr); gap:.5rem; margin-bottom:1rem; }
     .timer-preset { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:.6rem .3rem; font-size:.78rem; color:var(--text); cursor:pointer; font-family:var(--font); text-align:center; }
-    .timer-preset.active { border-color:var(--accent); color:var(--accent); }
+    .timer-preset.active { border-color:var(--accent); color:var(--accent-text); }
     .timer-adjust { display:flex; align-items:center; justify-content:center; gap:1.5rem; margin-bottom:1.5rem; }
     .timer-adj-btn { width:48px; height:48px; border-radius:14px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-size:1.3rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
     .timer-adj-label { font-size:.72rem; color:var(--muted); text-align:center; }
@@ -232,23 +231,23 @@
     .history-stat { font-size:.75rem; color:var(--muted); }
     .history-stat span { color:var(--text); font-weight:500; }
     .history-exercises { display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.6rem; }
-    .history-ex-tag { font-size:.68rem; background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:.2rem .5rem; color:var(--muted); }
+    .history-ex-tag { font-size:.69rem; background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:.2rem .5rem; color:var(--muted); }
 
     /* Analysis Tab */
     .analysis-card { background:linear-gradient(160deg, var(--surface) 0%, var(--surface2) 100%); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:.75rem; box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.07); }
     .analysis-title { font-size:.85rem; font-weight:500; margin-bottom:.75rem; }
     .stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; margin-bottom:.75rem; }
     .stat-card { background:var(--surface2); border-radius:12px; padding:.85rem; }
-    .stat-label { font-size:.65rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:.3rem; }
+    .stat-label { font-size:.69rem; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:.3rem; }
     .stat-value { font-size:1.4rem; font-weight:600; letter-spacing:-.02em; }
-    .stat-sub { font-size:.68rem; color:var(--muted); margin-top:.2rem; }
+    .stat-sub { font-size:.69rem; color:var(--muted); margin-top:.2rem; }
 
     /* Streak */
     .streak-display { text-align:center; padding:1rem 0; }
-    .streak-num { font-size:3rem; font-weight:600; color:var(--yellow); }
+    .streak-num { font-size:3rem; font-weight:600; color:var(--yellow-text); }
     .streak-label { font-size:.8rem; color:var(--muted); margin-top:.25rem; }
     .week-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:.4rem; margin-top:1rem; }
-    .week-day { aspect-ratio:1; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:.62rem; color:var(--muted); background:var(--surface2); }
+    .week-day { aspect-ratio:1; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:.69rem; color:var(--muted); background:var(--surface2); }
     .week-day.done { background:var(--accent); color:#1a1a24; font-weight:500; }
     .week-day.today { border:2px solid var(--accent); }
 
@@ -257,7 +256,7 @@
     .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end; }
     .bar-fill { width:100%; border-radius:5px 5px 0 0; background:var(--accent); opacity:.7; min-height:4px; }
     .bar-fill.current { opacity:1; }
-    .bar-x { font-size:.58rem; color:var(--muted); }
+    .bar-x { font-size:.69rem; color:var(--muted); }
 
     /* Pro badge */
     .pro-gate { text-align:center; padding:2rem 1rem; }
@@ -277,9 +276,9 @@
     .month-nav-label { font-size:.95rem; font-weight:500; }
     .monthly-stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:.6rem; }
     .monthly-stat-card { background:var(--surface2); border-radius:12px; padding:.85rem; }
-    .monthly-stat-label { font-size:.62rem; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; }
+    .monthly-stat-label { font-size:.69rem; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; }
     .monthly-stat-value { font-size:1.5rem; font-weight:700; margin:.2rem 0 .1rem; letter-spacing:-.02em; }
-    .monthly-stat-sub { font-size:.68rem; color:var(--muted); }
+    .monthly-stat-sub { font-size:.69rem; color:var(--muted); }
     .monthly-report-banner { display:flex; align-items:center; gap:.75rem; background:linear-gradient(135deg,var(--surface2),var(--surface3)); border:1px solid var(--border); border-radius:14px; padding:.85rem 1rem; margin-bottom:.75rem; cursor:pointer; transition:transform .15s; }
     .monthly-report-banner:active { transform:scale(.98); }
     .monthly-report-banner-icon { font-size:1.5rem; flex-shrink:0; }
@@ -296,10 +295,10 @@
 
     /* Ad */
     .ad-banner { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--border); padding:.6rem 1rem; display:flex; align-items:center; justify-content:center; gap:.5rem; z-index:40; padding-bottom:calc(.6rem + env(safe-area-inset-bottom)); }
-    .ad-label { font-size:.6rem; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; }
+    .ad-label { font-size:.69rem; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; }
     .ad-content { font-size:.78rem; color:var(--muted); flex:1; text-align:center; }
     .sync-slot{margin-top:.3rem;text-align:right;min-height:1rem;}
-    .sync-badge{display:inline-flex;align-items:center;gap:.2rem;font-size:.58rem;font-weight:500;padding:.1rem .38rem;border-radius:20px;cursor:default;white-space:nowrap;}
+    .sync-badge{display:inline-flex;align-items:center;gap:.2rem;font-size:.69rem;font-weight:500;padding:.1rem .38rem;border-radius:20px;cursor:default;white-space:nowrap;}
     .sync-local{background:rgba(148,148,184,.15);color:var(--muted);}
     .sync-syncing{background:rgba(108,142,255,.15);color:#6c8eff;}
     .sync-synced{background:rgba(94,207,160,.15);color:#5ecfa0;}
@@ -329,7 +328,7 @@
     .wd-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:.6rem; margin-bottom:1rem; }
     .wd-stat { background:linear-gradient(145deg, var(--surface) 0%, var(--surface2) 100%); border:1px solid var(--border); border-radius:14px; padding:.85rem .6rem; text-align:center; box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.07); }
     .wd-stat-val { font-size:1.5rem; font-weight:600; letter-spacing:-.02em; }
-    .wd-stat-label { font-size:.62rem; color:var(--muted); margin-top:.2rem; text-transform:uppercase; letter-spacing:.06em; }
+    .wd-stat-label { font-size:.69rem; color:var(--muted); margin-top:.2rem; text-transform:uppercase; letter-spacing:.06em; }
     /* Monthly Calendar */
     .wd-cal { background:linear-gradient(160deg, var(--surface) 0%, var(--surface2) 100%); border:1px solid var(--border); border-radius:16px; padding:1rem; margin-bottom:1rem; box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.07); }
     .cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:.75rem; }
@@ -337,14 +336,14 @@
     .cal-nav-btn:active { transform:scale(.88); background:var(--surface3); }
     .cal-month-label { font-size:.95rem; font-weight:600; }
     .cal-weekdays { display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:.4rem; }
-    .cal-weekday { text-align:center; font-size:.65rem; color:var(--muted); padding:.25rem 0; font-weight:500; }
+    .cal-weekday { text-align:center; font-size:.69rem; color:var(--muted); padding:.25rem 0; font-weight:500; }
     .cal-weekday.sun { color:var(--accent2); }
     .cal-weekday.sat { color:var(--blue); }
     .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
     .cal-day { height:50px; border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; font-size:.82rem; color:var(--muted); background:transparent; border:none; font-family:var(--font); cursor:default; position:relative; font-weight:400; }
     .cal-day.has-workout { background:rgba(94,207,160,.22); color:var(--text); cursor:pointer; font-weight:700; border:1px solid rgba(94,207,160,.4); }
     .cal-day.has-workout:active { background:rgba(94,207,160,.4); transform:scale(.93); }
-    .cal-day.today { color:var(--accent); font-weight:700; }
+    .cal-day.today { color:var(--accent-text); font-weight:700; }
     .cal-day.today:not(.has-workout)::before { content:''; position:absolute; top:4px; left:50%; transform:translateX(-50%); width:4px; height:4px; border-radius:50%; background:var(--accent); }
     .cal-day.has-workout.today { background:rgba(94,207,160,.35); border-color:var(--accent); }
     .cal-day.other-month { color:var(--surface3); font-size:.72rem; }
@@ -352,7 +351,7 @@
     .cal-day-dot { width:14px; height:6px; border-radius:3px; flex-shrink:0; font-size:0; }
     .cal-summary { font-size:.72rem; color:var(--muted); text-align:center; margin-top:.65rem; }
     .wd-cal-legend { display:flex; flex-wrap:wrap; gap:.35rem .65rem; margin-top:.65rem; padding-top:.55rem; border-top:1px solid var(--border); }
-    .wd-cal-legend-item { display:flex; align-items:center; gap:.3rem; font-size:.65rem; color:var(--muted); }
+    .wd-cal-legend-item { display:flex; align-items:center; gap:.3rem; font-size:.69rem; color:var(--muted); }
     .wd-vol { font-size:.7rem; color:var(--muted); text-align:center; margin-top:.75rem; }
     /* Last workout card */
     .wd-last { background:linear-gradient(145deg, var(--surface) 0%, var(--surface2) 100%); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:1rem; display:flex; align-items:center; gap:.85rem; box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.07); }
@@ -361,7 +360,7 @@
     .wd-last-title { font-size:.88rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .wd-last-meta { font-size:.7rem; color:var(--muted); margin-top:.2rem; }
     .wd-last-parts { display:flex; flex-wrap:wrap; gap:.3rem; margin-top:.45rem; }
-    .wd-last-part { font-size:.62rem; background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:.15rem .45rem; color:var(--muted); }
+    .wd-last-part { font-size:.69rem; background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:.15rem .45rem; color:var(--muted); }
     /* Part balance */
     .wd-balance { background:linear-gradient(160deg, var(--surface) 0%, var(--surface2) 100%); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:1rem; box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.07); }
     .wd-balance-title { font-size:.72rem; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:.75rem; }
@@ -384,7 +383,7 @@
     .wdh-ro-fill { height:100%; width:0; border-radius:3px; transition:width .5s ease,background .5s ease; }
     .wdh-ro-empty { color:var(--muted); font-size:.75rem; }
     .wdh-legend { display:flex; align-items:center; gap:.55rem; margin:.55rem 0 0; }
-    .wdh-legend span { font-size:.62rem; color:var(--muted); white-space:nowrap; }
+    .wdh-legend span { font-size:.69rem; color:var(--muted); white-space:nowrap; }
     .wdh-legend-bar { flex:1; height:7px; border-radius:4px; }
     @media (prefers-reduced-motion:reduce) { .wdh-stage .muscle,.wdh-stage .muscle path { transition:none!important; } }
     /* Recent PRs */
@@ -394,15 +393,15 @@
     .wd-pr-row:last-child { border-bottom:none; }
     .wd-pr-name { font-size:.85rem; font-weight:400; }
     .wd-pr-right { text-align:right; }
-    .wd-pr-val { font-size:.88rem; font-weight:600; color:var(--yellow); }
-    .wd-pr-date { font-size:.65rem; color:var(--muted); margin-top:.1rem; }
+    .wd-pr-val { font-size:.88rem; font-weight:600; color:var(--yellow-text); }
+    .wd-pr-date { font-size:.69rem; color:var(--muted); margin-top:.1rem; }
     .wd-menu-row { display:flex; gap:.5rem; overflow-x:auto; padding-bottom:.25rem; margin-bottom:1rem; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
     .wd-menu-row::-webkit-scrollbar { display:none; }
     .wd-menu-chip { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:.65rem .9rem; white-space:nowrap; cursor:pointer; font-family:var(--font); flex-shrink:0; text-align:left; min-width:120px; }
     .wd-menu-chip:active { border-color:var(--accent); }
-    .wd-menu-chip-num  { font-size:.58rem; color:var(--muted); letter-spacing:.05em; margin-bottom:.15rem; }
+    .wd-menu-chip-num  { font-size:.69rem; color:var(--muted); letter-spacing:.05em; margin-bottom:.15rem; }
     .wd-menu-chip-name { font-size:.82rem; font-weight:500; color:var(--text); }
-    .wd-menu-chip-meta { font-size:.65rem; color:var(--muted); margin-top:.2rem; }
+    .wd-menu-chip-meta { font-size:.69rem; color:var(--muted); margin-top:.2rem; }
     /* Menu list (replaces horizontal chips) */
     .wd-menu-list { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; margin-bottom:1rem; }
     .wd-menu-item { display:flex; align-items:center; gap:.85rem; padding:.85rem 1rem; border-bottom:1px solid var(--border); transition:background .15s; }
@@ -410,9 +409,9 @@
     .wd-menu-item:active { background:var(--surface2); }
     .wd-menu-item-icon { width:40px; height:40px; border-radius:12px; background:rgba(94,207,160,.1); display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; }
     .wd-menu-item-body { flex:1; min-width:0; }
-    .wd-menu-item-num  { font-size:.6rem; color:var(--muted); letter-spacing:.05em; }
+    .wd-menu-item-num  { font-size:.69rem; color:var(--muted); letter-spacing:.05em; }
     .wd-menu-item-name { font-size:.9rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .wd-menu-item-meta { font-size:.68rem; color:var(--muted); margin-top:.1rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .wd-menu-item-meta { font-size:.69rem; color:var(--muted); margin-top:.1rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .wd-menu-item-start { background:var(--accent); color:#0c0c18; border:none; border-radius:10px; padding:0 .75rem; height:38px; font-size:.8rem; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-weight:700; transition:all .15s; }
     .wd-menu-item-start:active { transform:scale(.88); }
     /* Menu icon picker */
@@ -424,21 +423,21 @@
     .wd-hero::before { content:''; position:absolute; top:-70px; right:-70px; width:240px; height:240px; background:radial-gradient(circle,rgba(94,207,160,.45) 0%,transparent 60%); border-radius:50%; }
     .wd-hero::after  { content:''; position:absolute; bottom:-50px; left:-30px; width:180px; height:180px; background:radial-gradient(circle,rgba(62,174,130,.2) 0%,transparent 65%); border-radius:50%; }
     .wd-hero-deco { position:absolute; right:.5rem; bottom:-1.25rem; font-size:8rem; line-height:1; color:rgba(255,255,255,.04); pointer-events:none; user-select:none; }
-    .wd-hero-label { font-size:.68rem; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-bottom:.85rem; }
+    .wd-hero-label { font-size:.69rem; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-bottom:.85rem; }
     .wd-hero-stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.6rem; position:relative; z-index:1; }
     .wd-hero-stat { background:rgba(255,255,255,.06); border-radius:14px; padding:.8rem .5rem; text-align:center; }
     .wd-hero-stat-val { font-size:2rem; font-weight:700; letter-spacing:-.04em; line-height:1; color:var(--text); }
-    .wd-hero-stat-val.streak { color:var(--accent); }
-    .wd-hero-stat-label { font-size:.6rem; color:var(--muted); margin-top:.35rem; letter-spacing:.04em; }
+    .wd-hero-stat-val.streak { color:var(--accent-text); }
+    .wd-hero-stat-label { font-size:.69rem; color:var(--muted); margin-top:.35rem; letter-spacing:.04em; }
     /* Recent workouts list */
-    .wd-recent-title { font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:.75rem; font-weight:500; }
+    .wd-recent-title { font-size:.69rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:.75rem; font-weight:500; }
     .wd-recent-card { background:linear-gradient(145deg, var(--surface) 0%, var(--surface2) 100%); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:.625rem; cursor:pointer; transition:all .15s; box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.07); }
     .wd-recent-card:active { border-color:var(--accent); transform:scale(.98); }
     .wd-recent-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:.5rem; }
     .wd-recent-date { font-size:.88rem; font-weight:500; }
     .wd-recent-duration { font-size:.72rem; color:var(--muted); }
     .wd-recent-parts { display:flex; gap:.35rem; flex-wrap:wrap; margin-bottom:.65rem; }
-    .wd-recent-part-tag { font-size:.65rem; padding:.2rem .55rem; border-radius:20px; font-weight:500; }
+    .wd-recent-part-tag { font-size:.69rem; padding:.2rem .55rem; border-radius:20px; font-weight:500; }
     .wd-recent-vol-wrap { display:flex; align-items:center; gap:.75rem; }
     .wd-recent-vol-bar { flex:1; height:4px; background:var(--surface3); border-radius:2px; overflow:hidden; }
     .wd-recent-vol-fill { height:100%; border-radius:2px; background:var(--accent); }
@@ -447,38 +446,38 @@
     .btn-start-custom:active { background:var(--surface2); transform:scale(.97); }
     /* Start / History separation */
     .wd-start-section { background:linear-gradient(145deg, var(--surface) 0%, rgba(94,207,160,.05) 100%); border:1px solid rgba(94,207,160,.3); border-radius:20px; padding:1.1rem 1rem 1rem; margin-bottom:1.25rem; box-shadow:0 0 32px rgba(94,207,160,.1), var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.07); }
-    .wd-start-title { font-size:.75rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin-bottom:.85rem; }
+    .wd-start-title { font-size:.75rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--accent-text); margin-bottom:.85rem; }
     .wd-see-all { width:100%; padding:.55rem; background:none; border:none; color:var(--muted); font-size:.75rem; font-family:var(--font); cursor:pointer; text-align:right; margin-top:.3rem; }
     .wd-see-all:active { color:var(--text); }
     .btn-start-big { width:100%; padding:1rem; background:linear-gradient(135deg,var(--accent),var(--accent-dark)); color:#0c0c18; border:none; border-radius:14px; font-size:.95rem; font-weight:700; font-family:var(--font); cursor:pointer; margin-top:.75rem; transition:all .18s var(--spring); box-shadow:0 4px 18px rgba(94,207,160,.3); }
     .btn-start-big:active { transform:scale(.96); box-shadow:0 2px 8px rgba(94,207,160,.2); }
-    .wd-history-divider { display:flex; align-items:center; gap:.75rem; margin:0 0 1.25rem; color:var(--muted); font-size:.68rem; letter-spacing:.1em; text-transform:uppercase; }
+    .wd-history-divider { display:flex; align-items:center; gap:.75rem; margin:0 0 1.25rem; color:var(--muted); font-size:.69rem; letter-spacing:.1em; text-transform:uppercase; }
     .wd-history-divider::before, .wd-history-divider::after { content:''; flex:1; height:1px; background:var(--border); }
     /* PR badge */
-    .pr-badge { display:inline-flex; align-items:center; gap:.25rem; font-size:.65rem; font-weight:600; color:var(--yellow); background:rgba(232,113,138,.12); border:1px solid rgba(232,113,138,.25); border-radius:20px; padding:.15rem .5rem; }
+    .pr-badge { display:inline-flex; align-items:center; gap:.25rem; font-size:.69rem; font-weight:600; color:var(--yellow-text); background:rgba(232,113,138,.12); border:1px solid rgba(232,113,138,.25); border-radius:20px; padding:.15rem .5rem; }
     /* Body weight */
     .bw-summary { display:flex; gap:1rem; margin-bottom:1rem; }
     .bw-stat { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:.85rem 1rem; flex:1; }
     .bw-stat-val { font-size:1.5rem; font-weight:600; letter-spacing:-.02em; }
-    .bw-stat-label { font-size:.65rem; color:var(--muted); margin-top:.2rem; text-transform:uppercase; letter-spacing:.08em; }
+    .bw-stat-label { font-size:.69rem; color:var(--muted); margin-top:.2rem; text-transform:uppercase; letter-spacing:.08em; }
     .bw-entry { display:flex; align-items:center; justify-content:space-between; padding:.65rem 0; border-bottom:1px solid var(--border); }
     .bw-entry:last-child { border-bottom:none; }
     .bw-entry-date { font-size:.78rem; color:var(--muted); }
     .bw-entry-val { font-size:.95rem; font-weight:500; }
     .bw-entry-bf { font-size:.72rem; color:var(--muted); margin-left:.4rem; }
     .bw-trend-up   { color:var(--accent2); }
-    .bw-trend-down { color:var(--accent); }
+    .bw-trend-down { color:var(--accent-text); }
     .bw-chart { display:flex; align-items:flex-end; gap:4px; height:80px; margin:1rem 0 .5rem; }
     .bw-bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; height:100%; justify-content:flex-end; }
     .bw-bar { width:100%; border-radius:4px 4px 0 0; background:var(--blue); opacity:.7; min-height:3px; }
     .bw-bar.latest { opacity:1; }
-    .bw-bar-label { font-size:.52rem; color:var(--muted); }
+    .bw-bar-label { font-size:.69rem; color:var(--muted); }
     /* Sound selector */
     .sound-selector { display:flex; gap:.4rem; flex-wrap:wrap; margin-top:.5rem; }
     .sound-btn { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:.45rem .7rem; font-size:.75rem; color:var(--muted); cursor:pointer; font-family:var(--font); display:flex; align-items:center; gap:.35rem; transition:all .15s; }
-    .sound-btn.active { border-color:var(--accent); color:var(--accent); background:rgba(94,207,160,.1); }
-    .sound-preview { font-size:.65rem; color:var(--muted); background:none; border:none; cursor:pointer; padding:0; font-family:var(--font); }
-    .sound-desc { font-size:.6rem; color:var(--muted); opacity:.75; }
+    .sound-btn.active { border-color:var(--accent); color:var(--accent-text); background:rgba(94,207,160,.1); }
+    .sound-preview { font-size:.69rem; color:var(--muted); background:none; border:none; cursor:pointer; padding:0; font-family:var(--font); }
+    .sound-desc { font-size:.69rem; color:var(--muted); opacity:.75; }
     .vol-slider { -webkit-appearance:none; width:100%; height:4px; border-radius:2px; background:var(--border); outline:none; cursor:pointer; margin-top:.1rem; }
     .vol-slider::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; border-radius:50%; background:var(--accent); cursor:pointer; box-shadow:0 1px 6px rgba(94,207,160,.45); }
     .vol-slider::-moz-range-thumb { width:18px; height:18px; border-radius:50%; background:var(--accent); cursor:pointer; border:none; }
@@ -511,7 +510,7 @@
     .muscle-modal-title { font-size:1rem; font-weight:600; text-align:center; margin-bottom:.5rem; }
     .muscle-view-toggle { display:flex; gap:.4rem; justify-content:center; margin-bottom:1rem; }
     .muscle-view-btn { flex:1; max-width:100px; padding:.45rem; border:1px solid var(--border); border-radius:10px; background:var(--surface2); color:var(--muted); font-size:.8rem; font-family:var(--font); cursor:pointer; transition:all .15s; }
-    .muscle-view-btn.active { border-color:var(--accent); background:rgba(94,207,160,.12); color:var(--accent); }
+    .muscle-view-btn.active { border-color:var(--accent); background:rgba(94,207,160,.12); color:var(--accent-text); }
     .muscle-svg-wrap { display:flex; justify-content:center; margin-bottom:1rem; }
     .muscle-svg-wrap svg { display:block; height:min(340px,45vh); width:auto; max-width:100%; }
     .muscle-svg-wrap .skin path, .muscle-svg-wrap .muscle path { fill:#252548; stroke:#12131a; stroke-width:1.2; }
@@ -524,12 +523,17 @@
     .history-part-tabs { display:flex; overflow-x:auto; gap:.35rem; margin-bottom:.85rem; border-bottom:1px solid var(--border); padding-bottom:.5rem; -webkit-overflow-scrolling:touch; }
     .history-part-tabs::-webkit-scrollbar { display:none; }
     .history-part-tab { flex-shrink:0; padding:.45rem .85rem; border:1px solid transparent; border-radius:9px; background:var(--surface); color:var(--muted); font-size:.78rem; font-weight:600; font-family:var(--font); cursor:pointer; transition:all .15s; }
-    .history-part-tab.active { border-color:var(--accent); background:rgba(94,207,160,.12); color:var(--accent); }
+    .history-part-tab.active { border-color:var(--accent); background:rgba(94,207,160,.12); color:var(--accent-text); }
     .history-view-btn { padding:.4rem .9rem; border:none; border-radius:8px; background:none; color:var(--muted); font-size:.78rem; font-weight:600; font-family:var(--font); cursor:pointer; transition:all .15s; }
     .history-view-btn.active { background:var(--surface2); color:var(--text); }
     .history-metrics-row { display:flex; flex-wrap:wrap; gap:.35rem; justify-content:center; margin-top:.75rem; }
     .btn-graph-metric { padding:.4rem .75rem; border:1px solid var(--border); border-radius:9px; background:var(--surface2); color:var(--muted); font-size:.72rem; font-family:var(--font); cursor:pointer; transition:all .15s; }
     .btn-graph-metric.active { border-color:var(--accent2); background:rgba(232,113,138,.12); color:var(--accent2); }
+    /* キーボード・スイッチ操作時に現在位置が分かるように */
+    :focus-visible { outline:2px solid var(--accent, #6c8eff); outline-offset:2px; border-radius:4px; }
+    /* タップ領域: 見た目は変えず、擬似要素で当たり判定を44pxに広げる */
+    .set-check, .month-nav-btn, .btn-icon, .cal-nav-btn, .menu-icon-btn { position:relative; z-index:2; }
+    .set-check::after, .month-nav-btn::after, .btn-icon::after, .cal-nav-btn::after, .menu-icon-btn::after { content:''; position:absolute; left:50%; top:50%; width:44px; height:44px; transform:translate(-50%,-50%); }
   </style>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-E9Q0JQ0V92"></script>
@@ -722,11 +726,11 @@
 <!-- タイマータブ -->
 <div class="view" id="view-timer">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.85rem 1rem;margin-bottom:.6rem;">
-    <p style="font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;">🔊 サウンド設定</p>
+    <p style="font-size:.69rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;">🔊 サウンド設定</p>
     <div class="sound-selector" id="soundSelector"></div>
   </div>
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.85rem 1rem;margin-bottom:1rem;">
-    <p style="font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.65rem;">🔔 休憩終了の知らせ方</p>
+    <p style="font-size:.69rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.65rem;">🔔 休憩終了の知らせ方</p>
     <div id="timerNotifySettings" style="display:flex;flex-direction:column;gap:.5rem;"></div>
   </div>
   <div class="timer-display">
@@ -756,7 +760,7 @@
     <button class="btn-timer-start" id="btnTimerMain" onclick="toggleTimer()">▶ スタート</button>
     <button class="btn-timer-stop" onclick="resetTimer()">リセット</button>
   </div>
-  <p style="font-size:.68rem;color:var(--muted);text-align:center;margin-top:.75rem;">⬆️ この秒数がワークアウト中の休憩タイマーのデフォルトになります</p>
+  <p style="font-size:.69rem;color:var(--muted);text-align:center;margin-top:.75rem;">⬆️ この秒数がワークアウト中の休憩タイマーのデフォルトになります</p>
 
   <div class="divider" style="margin-top:1.5rem;">ストレッチ / インターバル</div>
 
@@ -826,7 +830,7 @@
           <p class="cal-month-label" id="histCalMonthLabel"></p>
           <button class="cal-nav-btn" onclick="histCalMove(1)">&rsaquo;</button>
         </div>
-        <div class="cal-days-header" style="font-size:.6rem;">
+        <div class="cal-days-header" style="font-size:.69rem;">
           <div>日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div>
         </div>
         <div class="cal-grid" id="histCalGrid"></div>
@@ -885,7 +889,7 @@
     <div class="bw-chart" id="bwChart"></div>
     <div style="display:flex;gap:4px;" id="bwChartLabels"></div>
   </div>
-  <button onclick="openBodyWeightModal()" style="width:100%;padding:.8rem;background:var(--surface);border:1px dashed var(--border);border-radius:14px;color:var(--accent);font-size:.88rem;font-weight:500;font-family:var(--font);cursor:pointer;margin-bottom:1rem;">＋ 体重を記録</button>
+  <button onclick="openBodyWeightModal()" style="width:100%;padding:.8rem;background:var(--surface);border:1px dashed var(--border);border-radius:14px;color:var(--accent-text);font-size:.88rem;font-weight:500;font-family:var(--font);cursor:pointer;margin-bottom:1rem;">＋ 体重を記録</button>
   <p class="section-label">記録履歴</p>
   <div class="card" style="padding:.5rem 1rem;">
     <div id="bwList"></div>
@@ -1395,7 +1399,7 @@ function buildTimerNotifySettings() {
     var on = item.val;
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.25rem 0;">'
       + '<div><span style="font-size:.85rem;color:var(--text);">'+item.label+'</span>'
-      + '<p style="font-size:.68rem;color:var(--muted);margin:.1rem 0 0;">'+item.desc+'</p></div>'
+      + '<p style="font-size:.69rem;color:var(--muted);margin:.1rem 0 0;">'+item.desc+'</p></div>'
       + '<button onclick="toggleRtSetting(\''+item.key+'\')" style="'
       + 'min-width:46px;height:26px;border-radius:13px;border:none;cursor:pointer;font-size:.7rem;font-weight:700;'
       + 'background:'+(on?'var(--accent)':'var(--surface2)')+';'
@@ -1470,8 +1474,8 @@ function calcBMI(weight) {
 function bmiCategory(bmi) {
   if (!bmi) return '';
   if (bmi < 18.5) return { label:'低体重', color:'var(--blue)' };
-  if (bmi < 25)   return { label:'標準',   color:'var(--accent)' };
-  if (bmi < 30)   return { label:'肥満①', color:'var(--yellow)' };
+  if (bmi < 25)   return { label:'標準',   color:'var(--accent-text)' };
+  if (bmi < 30)   return { label:'肥満①', color:'var(--yellow-text)' };
   if (bmi < 35)   return { label:'肥満②', color:'var(--accent2)' };
   return              { label:'肥満③', color:'var(--accent2)' };
 }
@@ -1546,7 +1550,7 @@ function renderBodyWeightTab() {
     }).join('');
     document.getElementById('bwChartLabels').innerHTML = chart14.map(function(e){
       var d = new Date(e.date);
-      return '<div style="flex:1;text-align:center;font-size:.52rem;color:var(--muted);">'+(d.getMonth()+1)+'/'+(d.getDate())+'</div>';
+      return '<div style="flex:1;text-align:center;font-size:.69rem;color:var(--muted);">'+(d.getMonth()+1)+'/'+(d.getDate())+'</div>';
     }).join('');
   } else {
     document.getElementById('bwChart').innerHTML = '<p style="font-size:.78rem;color:var(--muted);padding:.5rem 0;">記録が2件以上になるとグラフが表示されます</p>';
@@ -2004,7 +2008,7 @@ function renderWorkoutDashboard() {
       var vol = w.totalVolume || 0;
       var pct = Math.round((vol/maxVol)*100);
       var volStr = vol>=1000?(vol/1000).toFixed(1)+'t':vol>0?vol.toLocaleString()+'kg':'';
-      var prBadge = checkHasPR(w) ? ' <span style="font-size:.65rem;color:var(--yellow);">🏆 PR</span>' : '';
+      var prBadge = checkHasPR(w) ? ' <span style="font-size:.69rem;color:var(--yellow-text);">🏆 PR</span>' : '';
       return '<div class="wd-recent-card" onclick="openDayDetail(\''+ds+'\')">'
         +'<div class="wd-recent-top">'
         +'<span class="wd-recent-date">'+dateStr+prBadge+'</span>'
@@ -2172,7 +2176,7 @@ function openDayDetail(ds) {
       return '<div style="padding:.75rem 0;border-bottom:1px solid var(--border);">'
         + '<div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;">'
         + '<span style="font-size:.9rem;font-weight:600;">' + ex.name + '</span>'
-        + (badgeLabel ? '<span style="font-size:.62rem;font-weight:600;color:#0c0c18;background:' + badgeColor + ';border-radius:20px;padding:.15rem .55rem;white-space:nowrap;">' + badgeLabel + '</span>' : '')
+        + (badgeLabel ? '<span style="font-size:.69rem;font-weight:600;color:#0c0c18;background:' + badgeColor + ';border-radius:20px;padding:.15rem .55rem;white-space:nowrap;">' + badgeLabel + '</span>' : '')
         + '</div>'
         + setsHTML
         + '</div>';
@@ -2184,7 +2188,7 @@ function openDayDetail(ds) {
       + '</div>';
 
     return (wi > 0 ? '<div style="height:1px;background:var(--border);margin:.5rem 0;"></div>' : '')
-      + (w.name ? '<p style="font-size:.72rem;font-weight:600;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.25rem;">' + w.name + '</p>' : '')
+      + (w.name ? '<p style="font-size:.72rem;font-weight:600;color:var(--accent-text);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.25rem;">' + w.name + '</p>' : '')
       + exHTML
       + actionBtns;
   }).join('');
@@ -2945,7 +2949,7 @@ function buildSoundSelector() {
   + '<div style="width:100%;margin-top:.85rem;padding:.65rem .75rem;background:var(--surface2);border:1px solid var(--border);border-radius:11px;">'
   + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">'
   + '<span style="font-size:.7rem;color:var(--muted);">🔊 音量</span>'
-  + '<span id="volLabel" style="font-size:.75rem;font-weight:600;color:var(--accent);">'+pct+'%</span>'
+  + '<span id="volLabel" style="font-size:.75rem;font-weight:600;color:var(--accent-text);">'+pct+'%</span>'
   + '</div>'
   + '<input type="range" class="vol-slider" min="0" max="100" value="'+pct+'" oninput="setSoundVolume(this.value)">'
   + '</div>';
@@ -3047,7 +3051,7 @@ function updateIvDisplay() {
   var pct    = Math.round((ivState.timeLeft / total) * 100);
   document.getElementById('ivPhaseLabel').textContent = isWork ? '動作中' : '休憩';
   document.getElementById('ivTimeDisplay').textContent = ivState.timeLeft + '秒';
-  document.getElementById('ivTimeDisplay').style.color = isWork ? 'var(--accent)' : 'var(--yellow)';
+  document.getElementById('ivTimeDisplay').style.color = isWork ? 'var(--accent-text)' : 'var(--yellow-text)';
   document.getElementById('ivRoundDisplay').textContent = ivState.currentRound + ' / ' + ivState.rounds + ' セット';
   var bar = document.getElementById('ivProgressBar');
   bar.style.width = pct + '%';
@@ -3096,7 +3100,7 @@ function buildPartFilter() {
   var pf = document.getElementById('partFilter');
   if (!show) { pf.innerHTML = ''; return; }
   pf.innerHTML = PART_FILTER_LIST.map(function(p){
-    return '<button class="cat-btn'+(p.id===selectedPart?' active':'')+'" onclick="selectPart(\''+p.id+'\',this)" style="font-size:.68rem;">'+p.label+'</button>';
+    return '<button class="cat-btn'+(p.id===selectedPart?' active':'')+'" onclick="selectPart(\''+p.id+'\',this)" style="font-size:.69rem;">'+p.label+'</button>';
   }).join('');
 }
 
@@ -3168,11 +3172,11 @@ function renderExerciseModal(list) {
     var daysBadge = '';
     if (ex.id in lastDoneMap) {
       var d = lastDoneMap[ex.id];
-      var color = d === 0 ? 'var(--accent)' : d <= 3 ? 'var(--muted)' : d <= 7 ? 'var(--blue)' : 'var(--muted)';
-      daysBadge = '<span style="font-size:.62rem;color:'+color+';white-space:nowrap;">'+daysLabel(d)+'</span>';
+      var color = d === 0 ? 'var(--accent-text)' : d <= 3 ? 'var(--muted)' : d <= 7 ? 'var(--blue)' : 'var(--muted)';
+      daysBadge = '<span style="font-size:.69rem;color:'+color+';white-space:nowrap;">'+daysLabel(d)+'</span>';
     }
     var isFav = favorites.indexOf(ex.id) >= 0;
-    var starBtn = '<button onclick="toggleFavorite(\''+ex.id+'\',event)" style="background:none;border:none;font-size:1.15rem;cursor:pointer;padding:.1rem .15rem;line-height:1;color:'+(isFav?'var(--yellow)':'var(--border)')+';transition:color .15s;" title="お気に入り">'+(isFav?'★':'☆')+'</button>';
+    var starBtn = '<button onclick="toggleFavorite(\''+ex.id+'\',event)" style="background:none;border:none;font-size:1.15rem;cursor:pointer;padding:.1rem .15rem;line-height:1;color:'+(isFav?'var(--yellow-text)':'var(--border)')+';transition:color .15s;" title="お気に入り">'+(isFav?'★':'☆')+'</button>';
     return '<div class="exercise-list-item" onclick="addExerciseToWorkout('+JSON.stringify(ex).replace(/"/g,'&quot;')+')">'
       +'<div><p class="exercise-list-name">'+escapeHtml(ex.name)+'</p>'
       +'<p class="exercise-list-meta">'+CAT_LABELS[ex.cat]+'</p></div>'
@@ -3191,14 +3195,14 @@ function renderExerciseModal(list) {
     var group = list.filter(function(ex){ return ex.part === part; });
     if (!group.length) return;
     grouped = true;
-    html += '<p style="font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:.6rem 0 .2rem;'+(html?'border-top:1px solid var(--border);margin-top:.25rem;':'')+'">'
+    html += '<p style="font-size:.69rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:.6rem 0 .2rem;'+(html?'border-top:1px solid var(--border);margin-top:.25rem;':'')+'">'
       + PART_LABELS[part] + '</p>';
     html += group.map(exRow).join('');
   });
   // PART_ORDERに含まれない部位（full/otherなど）
   var otherGroup = list.filter(function(ex){ return PART_ORDER.indexOf(ex.part) < 0; });
   if (otherGroup.length) {
-    html += '<p style="font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:.6rem 0 .2rem;border-top:1px solid var(--border);margin-top:.25rem;">その他・全身</p>';
+    html += '<p style="font-size:.69rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:.6rem 0 .2rem;border-top:1px solid var(--border);margin-top:.25rem;">その他・全身</p>';
     html += otherGroup.map(exRow).join('');
   }
   el.innerHTML = html || '<p style="font-size:.82rem;color:var(--muted);padding:1rem 0">見つかりませんでした</p>';
@@ -3233,11 +3237,11 @@ function renderCustomExList() {
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem 0;border-bottom:1px solid var(--border);">'
       + '<div onclick="addExerciseToWorkout('+JSON.stringify(ex).replace(/"/g,'&quot;')+')" style="flex:1;cursor:pointer;">'
       + '<p style="font-size:.88rem;font-weight:500;">'+ex.name+'</p>'
-      + '<p style="font-size:.68rem;color:var(--muted);">'+catLabel+' · '+partLabel+'</p>'
+      + '<p style="font-size:.69rem;color:var(--muted);">'+catLabel+' · '+partLabel+'</p>'
       + '</div>'
       + '<div style="display:flex;gap:.3rem;flex-shrink:0;">'
-      + '<button onclick="editCustomExercise('+i+')" style="background:none;border:1px solid var(--border);border-radius:7px;padding:.22rem .5rem;font-size:.68rem;color:var(--muted);cursor:pointer;font-family:var(--font);">編集</button>'
-      + '<button onclick="deleteCustomExercise('+i+')" style="background:none;border:1px solid var(--border);border-radius:7px;padding:.22rem .5rem;font-size:.68rem;color:var(--accent2);cursor:pointer;font-family:var(--font);">削除</button>'
+      + '<button onclick="editCustomExercise('+i+')" style="background:none;border:1px solid var(--border);border-radius:7px;padding:.22rem .5rem;font-size:.69rem;color:var(--muted);cursor:pointer;font-family:var(--font);">編集</button>'
+      + '<button onclick="deleteCustomExercise('+i+')" style="background:none;border:1px solid var(--border);border-radius:7px;padding:.22rem .5rem;font-size:.69rem;color:var(--accent2);cursor:pointer;font-family:var(--font);">削除</button>'
       + '</div></div>';
   }).join('');
 }
@@ -3365,7 +3369,7 @@ function buildMbPartFilter() {
   var pf = document.getElementById('mbPartFilter');
   if (noPart.indexOf(mbSelectedCat) >= 0) { pf.innerHTML = ''; return; }
   pf.innerHTML = MB_PART_LIST.map(function(p){
-    return '<button class="cat-btn'+(p.id===mbSelectedPart?' active':'')+'" onclick="mbSetPart(\''+p.id+'\')" style="font-size:.68rem;">'+p.label+'</button>';
+    return '<button class="cat-btn'+(p.id===mbSelectedPart?' active':'')+'" onclick="mbSetPart(\''+p.id+'\')" style="font-size:.69rem;">'+p.label+'</button>';
   }).join('');
 }
 
@@ -3454,15 +3458,15 @@ function mbRenderSelected() {
       +'</div>'
       +'<div style="display:flex;align-items:center;gap:.5rem;">'
       +'<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">'
-      +'<span style="font-size:.58rem;color:var(--muted);">'+col1Label+'</span>'
+      +'<span style="font-size:.69rem;color:var(--muted);">'+col1Label+'</span>'
       +'<input type="number" style="'+inputStyle+'" placeholder="—" value="'+(e.presetWeight||'')+'" oninput="mbUpdatePreset('+i+',\'presetWeight\',this.value)">'
       +'</div>'
       +'<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">'
-      +'<span style="font-size:.58rem;color:var(--muted);">'+col2Label+'</span>'
+      +'<span style="font-size:.69rem;color:var(--muted);">'+col2Label+'</span>'
       +'<input type="number" style="'+inputStyle+'" placeholder="—" value="'+(e.presetReps||'')+'" oninput="mbUpdatePreset('+i+',\'presetReps\',this.value)">'
       +'</div>'
       +'<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">'
-      +'<span style="font-size:.58rem;color:var(--muted);">セット数</span>'
+      +'<span style="font-size:.69rem;color:var(--muted);">セット数</span>'
       +'<input type="number" style="'+inputStyle+'" placeholder="3" min="1" max="10" value="'+(e.presetSets||'')+'" oninput="mbUpdatePreset('+i+',\'presetSets\',this.value)">'
       +'</div>'
       +'</div>'
@@ -3503,7 +3507,7 @@ function renderMenuList() {
       +'<div class="menu-card-header">'
       +'<div style="display:flex;align-items:center;gap:.6rem;">'
       +'<div style="width:36px;height:36px;border-radius:10px;background:rgba(94,207,160,.1);display:flex;align-items:center;justify-content:center;font-size:1.15rem;flex-shrink:0;">'+icon+'</div>'
-      +'<div><p class="menu-card-name">'+escapeHtml(m.name)+'</p><p style="font-size:.62rem;color:var(--muted);margin-top:.1rem;">マイセット '+(i+1)+'</p></div>'
+      +'<div><p class="menu-card-name">'+escapeHtml(m.name)+'</p><p style="font-size:.69rem;color:var(--muted);margin-top:.1rem;">マイセット '+(i+1)+'</p></div>'
       +'</div>'
       +'<div style="display:flex;gap:.4rem;">'
       +'<button class="btn-use-menu" onclick="useMenu('+i+')">スタート</button>'
@@ -4000,14 +4004,14 @@ function renderHeExercises() {
         +'</div>';
     }).join('');
     var colLabels = '<div style="display:flex;gap:.35rem;margin-bottom:.25rem;padding-left:22px;">'
-      +'<span style="flex:1;font-size:.58rem;color:var(--muted);text-align:center;">'+h1+'</span>'
-      +(f[1]?'<span style="flex:1;font-size:.58rem;color:var(--muted);text-align:center;">'+h2+'</span>':'')
-      +(is3col&&f[2]?'<span style="flex:1;font-size:.58rem;color:var(--muted);text-align:center;">'+h3+'</span>':'')
+      +'<span style="flex:1;font-size:.69rem;color:var(--muted);text-align:center;">'+h1+'</span>'
+      +(f[1]?'<span style="flex:1;font-size:.69rem;color:var(--muted);text-align:center;">'+h2+'</span>':'')
+      +(is3col&&f[2]?'<span style="flex:1;font-size:.69rem;color:var(--muted);text-align:center;">'+h3+'</span>':'')
       +'<span style="width:24px;"></span></div>';
     return '<div style="background:var(--surface2);border-radius:12px;padding:.75rem .85rem;margin-bottom:.65rem;">'
       +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">'
       +'<p style="font-size:.88rem;font-weight:500;">'+ex.name+'</p>'
-      +'<button onclick="heAddSet('+ei+')" style="background:none;border:1px solid var(--border);border-radius:7px;padding:.2rem .55rem;font-size:.68rem;color:var(--accent);cursor:pointer;font-family:var(--font);">＋セット</button>'
+      +'<button onclick="heAddSet('+ei+')" style="background:none;border:1px solid var(--border);border-radius:7px;padding:.2rem .55rem;font-size:.69rem;color:var(--accent-text);cursor:pointer;font-family:var(--font);">＋セット</button>'
       +'</div>'
       +colLabels+setsHTML
       +'</div>';
@@ -4261,7 +4265,7 @@ function renderMonthlyAnalysis(targetMonth) {
   }
 
   var dPct = report.volumeDeltaPct !== null
-    ? '<span style="color:'+(report.volumeDeltaPct>=0?'var(--accent)':'var(--accent2)')+';">'
+    ? '<span style="color:'+(report.volumeDeltaPct>=0?'var(--accent-text)':'var(--accent2)')+';">'
       +(report.volumeDeltaPct>=0?'+':'')+report.volumeDeltaPct+'%</span>' : '—';
 
   var freeHtml = '<div class="analysis-card"><p class="analysis-title">📅 '+ymLabel+' のサマリー</p>'
@@ -4308,7 +4312,7 @@ function renderMonthlyAnalysis(targetMonth) {
           return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--border);">'
             +'<div style="display:flex;align-items:center;gap:.5rem;"><span style="font-size:.7rem;color:var(--muted);width:1rem;">'+(i+1)+'</span>'
             +'<span style="font-size:.88rem;">'+e.name+'</span></div>'
-            +'<span style="font-size:.85rem;font-weight:600;color:var(--accent);">'+(e.vol/1000).toFixed(1)+'t</span></div>';
+            +'<span style="font-size:.85rem;font-weight:600;color:var(--accent-text);">'+(e.vol/1000).toFixed(1)+'t</span></div>';
         }).join('')+'</div>' : '';
     var weightCard = '';
     if (report.weightTrend.length >= 2) {
@@ -4317,10 +4321,10 @@ function renderMonthlyAnalysis(targetMonth) {
       weightCard = '<div class="analysis-card"><p class="analysis-title">⚖️ 体重推移</p>'
         +'<canvas id="chartMonthWeight" style="max-height:110px;"></canvas>'
         +'<div style="display:flex;gap:1.5rem;margin-top:.75rem;">'
-        +'<div><p style="font-size:.65rem;color:var(--muted);">開始</p><p style="font-size:1rem;font-weight:600;">'+first+' kg</p></div>'
-        +'<div><p style="font-size:.65rem;color:var(--muted);">終了</p><p style="font-size:1rem;font-weight:600;">'+last+' kg</p></div>'
-        +'<div><p style="font-size:.65rem;color:var(--muted);">変化</p>'
-        +'<p style="font-size:1rem;font-weight:600;color:'+(wDiff<=0?'var(--accent)':'var(--accent2)')+';">'
+        +'<div><p style="font-size:.69rem;color:var(--muted);">開始</p><p style="font-size:1rem;font-weight:600;">'+first+' kg</p></div>'
+        +'<div><p style="font-size:.69rem;color:var(--muted);">終了</p><p style="font-size:1rem;font-weight:600;">'+last+' kg</p></div>'
+        +'<div><p style="font-size:.69rem;color:var(--muted);">変化</p>'
+        +'<p style="font-size:1rem;font-weight:600;color:'+(wDiff<=0?'var(--accent-text)':'var(--accent2)')+';">'
         +(wDiff>0?'+':'')+wDiff+' kg</p></div>'
         +'</div></div>';
     } else if (report.weightTrend.length === 1) {
@@ -4332,8 +4336,8 @@ function renderMonthlyAnalysis(targetMonth) {
         +report.prList.map(function(p){
           return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid var(--border);">'
             +'<span style="font-size:.88rem;">'+p.name+'</span>'
-            +'<div style="text-align:right;"><p style="font-size:.88rem;font-weight:600;color:var(--yellow);">'+p.weight+'kg × '+p.reps+'回</p>'
-            +'<p style="font-size:.65rem;color:var(--muted);">推定1RM '+p.est1RM+'kg</p></div></div>';
+            +'<div style="text-align:right;"><p style="font-size:.88rem;font-weight:600;color:var(--yellow-text);">'+p.weight+'kg × '+p.reps+'回</p>'
+            +'<p style="font-size:.69rem;color:var(--muted);">推定1RM '+p.est1RM+'kg</p></div></div>';
         }).join('')+'</div>' : '';
     proInner = '<div class="analysis-wrap-pc"><div class="analysis-pc-grid">'
       +partCard2+neglectCard+topCard+weightCard+prCard2+'</div></div>';
@@ -4570,8 +4574,8 @@ function renderAnalysis() {
     +' stroke-dasharray="'+Math.min(streak*10,100)+' 100" style="transition:stroke-dasharray .8s ease;"/>'
     +'</svg>'
     +'<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">'
-    +'<span id="streakNum" style="font-size:1.3rem;font-weight:700;color:var(--accent);line-height:1;">0</span>'
-    +'<span style="font-size:.55rem;color:var(--muted);">日連続</span>'
+    +'<span id="streakNum" style="font-size:1.3rem;font-weight:700;color:var(--accent-text);line-height:1;">0</span>'
+    +'<span style="font-size:.69rem;color:var(--muted);">日連続</span>'
     +'</div></div>'
     +'<div style="flex:1;">'
     +'<div class="week-grid">'+['日','月','火','水','木','金','土'].map(function(d,i){
@@ -4579,8 +4583,8 @@ function renderAnalysis() {
         return '<div class="'+cls+'">'+d+'</div>';
       }).join('')+'</div>'
     +'<div style="display:flex;gap:.75rem;margin-top:.75rem;">'
-    +'<div><p style="font-size:1.2rem;font-weight:700;" id="anaWeekWo">0</p><p style="font-size:.65rem;color:var(--muted);">今週の回数</p></div>'
-    +'<div><p style="font-size:1.2rem;font-weight:700;" id="anaWeekVol">0</p><p style="font-size:.65rem;color:var(--muted);">今週 kg</p></div>'
+    +'<div><p style="font-size:1.2rem;font-weight:700;" id="anaWeekWo">0</p><p style="font-size:.69rem;color:var(--muted);">今週の回数</p></div>'
+    +'<div><p style="font-size:1.2rem;font-weight:700;" id="anaWeekVol">0</p><p style="font-size:.69rem;color:var(--muted);">今週 kg</p></div>'
     +'</div></div></div></div>';
 
   var partCard = partKeys.length ? '<div class="analysis-card"><p class="analysis-title">💪 部位別ボリューム（今週）</p>'
@@ -4593,7 +4597,7 @@ function renderAnalysis() {
     +Object.values(personalRecords).sort(function(a,b){return b.est1RM-a.est1RM;}).slice(0,5).map(function(p){
       return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem 0;border-bottom:1px solid var(--border);">'
         +'<span style="font-size:.88rem;">'+p.name+'</span>'
-        +'<span style="font-size:.88rem;font-weight:700;color:var(--yellow);">'+p.est1RM+' kg</span>'
+        +'<span style="font-size:.88rem;font-weight:700;color:var(--yellow-text);">'+p.est1RM+' kg</span>'
         +'</div>';
     }).join('')+'</div>' : '';
 

@@ -36,18 +36,18 @@
       --border: #2e2e50;
       --text: #f2f2fa;
       --muted: #9494b8;
-      --accent: #6c8eff;
+      --accent: #6c8eff; --accent-text:#6c8eff;
       --accent-dark: #4a6ddd;
       --accent2: #ff7c6e;
-      --green: #5ecfa0;
-      --yellow: #e8718a;
+      --green: #5ecfa0; --green-text:#5ecfa0;
+      --yellow: #e8718a; --yellow-text:#e8718a;
       --purple: #b388ff;
       --font: 'Outfit', sans-serif;
       --shadow-sm: 0 2px 14px rgba(0,0,0,.38);
       --shadow-md: 0 6px 32px rgba(0,0,0,.55);
       --spring: cubic-bezier(.34,1.56,.64,1);
     }
-    [data-theme="light"] { --bg:#e8e7f5; --surface:#f4f3fc; --surface2:#e6e5f6; --surface3:#dddcf0; --border:#c8c6e6; --text:#1a1838; --muted:#686898; }
+    [data-theme="light"] { --bg:#e8e7f5; --surface:#f4f3fc; --surface2:#e6e5f6; --surface3:#dddcf0; --border:#c8c6e6; --text:#1a1838; --muted:#5f5f8f; --accent-text:#345bdb; --green-text:#2a7454; --yellow-text:#a5334d; }
     [data-theme="light"] body { background: radial-gradient(ellipse 75% 45% at 12% 4%, rgba(94,207,160,.07) 0%, transparent 100%), radial-gradient(ellipse 65% 45% at 88% 92%, rgba(108,142,255,.06) 0%, transparent 100%), var(--bg); }
     [data-theme="light"] .total-card { background: linear-gradient(145deg, #d8e4ff 0%, #eef2ff 100%); border-color: rgba(108,142,255,.45); box-shadow: 0 0 40px rgba(108,142,255,.18), inset 0 1px 0 rgba(255,255,255,.6), 0 8px 30px rgba(50,40,140,.08); }
     [data-theme="light"] .total-card::before { background: radial-gradient(circle, rgba(108,142,255,.3) 0%, transparent 60%); }
@@ -58,11 +58,11 @@
     .app-header { padding: 3rem 1.25rem 1.25rem; }
     .back-link { font-size:.75rem; color:var(--muted); text-decoration:none; letter-spacing:.1em; text-transform:uppercase; display:inline-flex; align-items:center; gap:.4rem; margin-bottom:0; }
     .app-title { font-size:1.6rem; font-weight:600; letter-spacing:-.01em; }
-    .app-title span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
+    .app-title span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent-text); }
     .app-subtitle { font-size:.8rem; color:var(--muted); margin-top:.2rem; letter-spacing:.02em; }
-    .app-subtitle span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent); }
+    .app-subtitle span { font-family:'Playfair Display',serif; font-style:italic; color:var(--accent-text); }
     .auth-chip { background:var(--surface2); border:1px solid var(--border); border-radius:20px; padding:.3rem .85rem; font-size:.72rem; color:var(--muted); cursor:pointer; font-family:var(--font); transition:all .2s; white-space:nowrap; }
-    .auth-chip.logged-in { border-color:var(--accent); color:var(--accent); }
+    .auth-chip.logged-in { border-color:var(--accent); color:var(--accent-text); }
     /* Login Notice */
     .login-notice { margin: -.25rem 1.25rem .75rem; background: rgba(148,148,184,.07); border: 1px solid rgba(148,148,184,.18); border-radius: 12px; padding: .6rem 1rem; display: flex; align-items: center; gap: .65rem; cursor: pointer; font-size: .78rem; color: var(--muted); transition: opacity .2s; }
     .login-notice:active { opacity: .7; }
@@ -83,7 +83,7 @@
 
     /* Free banner */
     .free-banner { display:none !important; margin:0 1.25rem 1.25rem; background:rgba(232,113,138,.1); border:1px solid rgba(232,113,138,.25); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
-    .free-banner-text { font-size:.8rem; color:var(--yellow); }
+    .free-banner-text { font-size:.8rem; color:var(--yellow-text); }
     .upgrade-btn { font-size:.72rem; font-weight:500; color:#1a1a24; background:var(--yellow); border:none; border-radius:8px; padding:.4rem .75rem; cursor:pointer; white-space:nowrap; font-family:var(--font); }
 
     /* Tabs */
@@ -98,7 +98,7 @@
 
     /* List */
     .list-section { padding:0 1.25rem; }
-    .section-label { font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:.75rem; }
+    .section-label { font-size:.69rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:.75rem; }
 
     .sub-card { background:linear-gradient(160deg, var(--surface) 0%, var(--surface2) 100%); border:1px solid var(--border); border-radius:16px; padding:1rem 1.1rem; margin-bottom:.625rem; display:flex; flex-direction:column; gap:.5rem; animation:slideIn .3s ease forwards; box-shadow:var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.07); }
     @keyframes slideIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
@@ -111,17 +111,17 @@
 
     .sub-name { flex:1; font-size:.95rem; font-weight:500; }
     .sub-meta { font-size:.72rem; color:var(--muted); display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
-    .payment-badge { font-size:.62rem; padding:.1rem .4rem; border-radius:6px; background:var(--surface3); color:var(--muted); }
+    .payment-badge { font-size:.69rem; padding:.1rem .4rem; border-radius:6px; background:var(--surface3); color:var(--muted); }
 
-    .days-badge { font-size:.65rem; font-weight:500; padding:.15rem .45rem; border-radius:20px; white-space:nowrap; }
+    .days-badge { font-size:.69rem; font-weight:500; padding:.15rem .45rem; border-radius:20px; white-space:nowrap; }
     .days-badge.urgent { background:rgba(255,124,110,.2); color:var(--accent2); }
-    .days-badge.soon { background:rgba(232,113,138,.15); color:var(--yellow); }
+    .days-badge.soon { background:rgba(232,113,138,.15); color:var(--yellow-text); }
     .days-badge.normal { background:rgba(136,136,160,.12); color:var(--muted); }
 
     .sub-right { text-align:right; flex-shrink:0; }
     .sub-amount { font-size:.95rem; font-weight:500; }
-    .sub-cycle { font-size:.68rem; color:var(--muted); font-weight:300; }
-    .sub-monthly-small { font-size:.68rem; color:var(--accent); margin-top:.1rem; }
+    .sub-cycle { font-size:.69rem; color:var(--muted); font-weight:300; }
+    .sub-monthly-small { font-size:.69rem; color:var(--accent-text); margin-top:.1rem; }
 
     .sub-actions { display:flex; gap:.4rem; flex-shrink:0; }
     .btn-icon { width:30px; height:30px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); font-size:.75rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
@@ -136,9 +136,9 @@
     .cal-title { font-size:1rem; font-weight:500; }
     .cal-nav { background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--text); width:32px; height:32px; cursor:pointer; font-size:.9rem; display:flex; align-items:center; justify-content:center; }
     .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
-    .cal-dow { font-size:.62rem; text-align:center; color:var(--muted); padding-bottom:.5rem; text-transform:uppercase; }
+    .cal-dow { font-size:.69rem; text-align:center; color:var(--muted); padding-bottom:.5rem; text-transform:uppercase; }
     .cal-day { aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:10px; font-size:.8rem; cursor:default; gap:2px; }
-    .cal-day.today { background:rgba(108,142,255,.2); color:var(--accent); font-weight:500; }
+    .cal-day.today { background:rgba(108,142,255,.2); color:var(--accent-text); font-weight:500; }
     .cal-day.has-bill { background:var(--surface); border:1px solid var(--border); cursor:pointer; }
     .cal-day.has-bill.urgent-day { border-color:rgba(255,124,110,.5); }
     .cal-day .bill-dot { width:5px; height:5px; border-radius:50%; background:var(--accent2); }
@@ -153,24 +153,24 @@
     .bill-popup-name { flex:1; font-size:.88rem; }
     .bill-popup-amount-wrap { text-align:right; }
     .bill-popup-amount { font-size:.88rem; font-weight:500; color:var(--accent2); }
-    .bill-popup-monthly { display:block; font-size:.68rem; color:var(--accent); margin-top:.1rem; }
+    .bill-popup-monthly { display:block; font-size:.69rem; color:var(--accent-text); margin-top:.1rem; }
 
     /* Analytics */
     .analytics-wrap { padding:0 1.25rem; }
     .analytics-section { margin-bottom:1.5rem; }
-    .analytics-title { font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:.75rem; }
+    .analytics-title { font-size:.69rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:.75rem; }
     .bar-chart { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.25rem 1rem; }
     .bar-chart-inner { display:flex; align-items:flex-end; gap:6px; height:120px; margin-bottom:.75rem; }
     .bar-wrap { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; height:100%; justify-content:flex-end; }
     .bar { width:100%; border-radius:6px 6px 0 0; background:var(--accent); opacity:.6; min-height:4px; }
     .bar.current { opacity:1; }
-    .bar-amount { font-size:.55rem; color:var(--muted); text-align:center; }
-    .bar-label { font-size:.6rem; color:var(--muted); text-align:center; }
+    .bar-amount { font-size:.69rem; color:var(--muted); text-align:center; }
+    .bar-label { font-size:.69rem; color:var(--muted); text-align:center; }
 
     .rank-item { display:flex; align-items:center; gap:.75rem; padding:.75rem 0; border-bottom:1px solid var(--border); }
     .rank-item:last-child { border-bottom:none; }
     .rank-num { font-size:.75rem; font-weight:600; color:var(--muted); width:20px; text-align:center; flex-shrink:0; }
-    .rank-num.gold { color:var(--yellow); }
+    .rank-num.gold { color:var(--yellow-text); }
     .rank-icon { width:32px; height:32px; border-radius:9px; overflow:hidden; display:flex; align-items:center; justify-content:center; background:var(--surface2); flex-shrink:0; }
     .rank-icon img { width:20px; height:20px; object-fit:contain; }
     .rank-info { flex:1; }
@@ -180,13 +180,13 @@
 
     .analysis-grid { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; margin-bottom:1rem; }
     .analysis-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1rem; }
-    .analysis-card-label { font-size:.65rem; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:.4rem; }
+    .analysis-card-label { font-size:.69rem; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:.4rem; }
     .analysis-card-value { font-size:1.3rem; font-weight:600; letter-spacing:-.02em; }
-    .analysis-card-sub { font-size:.68rem; color:var(--muted); margin-top:.2rem; }
+    .analysis-card-sub { font-size:.69rem; color:var(--muted); margin-top:.2rem; }
 
     .suggestion-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1rem 1.1rem; margin-bottom:.625rem; }
     .suggestion-header { display:flex; align-items:center; gap:.6rem; margin-bottom:.4rem; }
-    .suggestion-badge { font-size:.62rem; padding:.2rem .5rem; border-radius:20px; background:rgba(255,124,110,.15); color:var(--accent2); font-weight:500; }
+    .suggestion-badge { font-size:.69rem; padding:.2rem .5rem; border-radius:20px; background:rgba(255,124,110,.15); color:var(--accent2); font-weight:500; }
     .suggestion-name { font-size:.9rem; font-weight:500; }
     .suggestion-text { font-size:.78rem; color:var(--muted); line-height:1.5; }
 
@@ -225,7 +225,7 @@
     .icon-preview-label { font-size:.82rem; color:var(--muted); flex:1; }
     .preset-btn .p-icon { width:28px; height:28px; border-radius:7px; overflow:hidden; display:flex; align-items:center; justify-content:center; background:var(--surface3); }
     .preset-btn .p-icon img { width:20px; height:20px; object-fit:contain; }
-    .preset-btn .p-name { font-size:.62rem; color:var(--text); }
+    .preset-btn .p-name { font-size:.69rem; color:var(--text); }
 
     .divider { display:flex; align-items:center; gap:.75rem; margin:1rem 0; color:var(--muted); font-size:.75rem; }
     .divider::before, .divider::after { content:''; flex:1; height:1px; background:var(--border); }
@@ -250,13 +250,13 @@
 
     /* Ad */
     .ad-banner { position:fixed; bottom:0; left:0; right:0; background:var(--surface); border-top:1px solid var(--border); padding:.6rem 1rem; display:flex; align-items:center; justify-content:center; gap:.5rem; z-index:40; padding-bottom:calc(.6rem + env(safe-area-inset-bottom)); }
-    .ad-label { font-size:.6rem; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; }
+    .ad-label { font-size:.69rem; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; }
     .ad-content { font-size:.78rem; color:var(--muted); flex:1; text-align:center; }
 
     /* Settings */
     .data-btn { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:.55rem .9rem; font-size:.8rem; color:var(--text); cursor:pointer; font-family:var(--font); display:inline-block; }
     .sync-slot{margin-top:.3rem;text-align:right;min-height:1rem;}
-    .sync-badge{display:inline-flex;align-items:center;gap:.2rem;font-size:.58rem;font-weight:500;padding:.1rem .38rem;border-radius:20px;cursor:default;white-space:nowrap;}
+    .sync-badge{display:inline-flex;align-items:center;gap:.2rem;font-size:.69rem;font-weight:500;padding:.1rem .38rem;border-radius:20px;cursor:default;white-space:nowrap;}
     .sync-local{background:rgba(148,148,184,.15);color:var(--muted);}
     .sync-syncing{background:rgba(108,142,255,.15);color:#6c8eff;}
     .sync-synced{background:rgba(94,207,160,.15);color:#5ecfa0;}
@@ -287,6 +287,11 @@
     .back-confirm-btn:active{transform:scale(.93);}
     .back-confirm-btn-go{background:var(--accent);color:#fff;}
     .back-confirm-btn-stay{background:var(--surface3);color:var(--text);}
+    /* キーボード・スイッチ操作時に現在位置が分かるように */
+    :focus-visible { outline:2px solid var(--accent, #6c8eff); outline-offset:2px; border-radius:4px; }
+    /* タップ領域: 見た目は変えず、擬似要素で当たり判定を44pxに広げる */
+    .btn-icon, .emoji-btn { position:relative; z-index:2; }
+    .btn-icon::after, .emoji-btn::after { content:''; position:absolute; left:50%; top:50%; width:44px; height:44px; transform:translate(-50%,-50%); }
   </style>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-E9Q0JQ0V92"></script>
@@ -380,8 +385,8 @@
         <div style="display:flex;gap:6px;" id="barLabels"></div>
       </div>
       <div id="chartNotice" style="display:none;margin-top:.75rem;background:rgba(232,113,138,.1);border:1px solid rgba(232,113,138,.25);border-radius:12px;padding:.65rem 1rem;align-items:center;justify-content:space-between;gap:.75rem;">
-        <p style="font-size:.75rem;color:var(--yellow);">📊 無料プランは過去3ヶ月まで表示</p>
-        <button onclick="startCheckout()" style="font-size:.68rem;font-weight:500;color:#1a1a24;background:var(--yellow);border:none;border-radius:6px;padding:.35rem .65rem;cursor:pointer;font-family:var(--font);">全期間を見る</button>
+        <p style="font-size:.75rem;color:var(--yellow-text);">📊 無料プランは過去3ヶ月まで表示</p>
+        <button onclick="startCheckout()" style="font-size:.69rem;font-weight:500;color:#1a1a24;background:var(--yellow);border:none;border-radius:6px;padding:.35rem .65rem;cursor:pointer;font-family:var(--font);">全期間を見る</button>
       </div>
     </div>
     <div class="analytics-section">
@@ -404,14 +409,14 @@
       <p class="analytics-title">データ管理</p>
       <div style="display:flex;flex-direction:column;gap:.625rem;">
         <div class="bar-chart" style="padding:.9rem 1.1rem;">
-          <p style="font-size:.8rem;font-weight:500;margin-bottom:.5rem;">エクスポート <span style="font-size:.65rem;color:var(--yellow);background:rgba(232,113,138,.12);padding:.1rem .4rem;border-radius:8px;margin-left:.3rem;">有料</span></p>
+          <p style="font-size:.8rem;font-weight:500;margin-bottom:.5rem;">エクスポート <span style="font-size:.69rem;color:var(--yellow-text);background:rgba(232,113,138,.12);padding:.1rem .4rem;border-radius:8px;margin-left:.3rem;">有料</span></p>
           <div style="display:flex;gap:.5rem;margin-top:.5rem;">
             <button onclick="exportData('json')" class="data-btn">JSON</button>
             <button onclick="exportData('csv')" class="data-btn">CSV</button>
           </div>
         </div>
         <div class="bar-chart" style="padding:.9rem 1.1rem;">
-          <p style="font-size:.8rem;font-weight:500;margin-bottom:.5rem;">インポート <span style="font-size:.65rem;color:var(--yellow);background:rgba(232,113,138,.12);padding:.1rem .4rem;border-radius:8px;margin-left:.3rem;">有料</span></p>
+          <p style="font-size:.8rem;font-weight:500;margin-bottom:.5rem;">インポート <span style="font-size:.69rem;color:var(--yellow-text);background:rgba(232,113,138,.12);padding:.1rem .4rem;border-radius:8px;margin-left:.3rem;">有料</span></p>
           <label class="data-btn" style="cursor:pointer;margin-top:.5rem;display:inline-block;">ファイルを選択<input type="file" accept=".json" onchange="importData(event)" style="display:none;"></label>
         </div>
       </div>
@@ -430,16 +435,16 @@
             <p style="font-size:.95rem;font-weight:500;" id="planLabel">無料プラン</p>
             <p style="font-size:.75rem;color:var(--muted);margin-top:.2rem;" id="planDesc">登録5件・3ヶ月グラフ・広告あり</p>
           </div>
-          <span style="font-size:.7rem;padding:.25rem .6rem;border-radius:20px;background:rgba(108,142,255,.15);color:var(--accent);" id="planBadge">現在</span>
+          <span style="font-size:.7rem;padding:.25rem .6rem;border-radius:20px;background:rgba(108,142,255,.15);color:var(--accent-text);" id="planBadge">現在</span>
         </div>
-        <a href="index.html" style="display:block;margin-top:.9rem;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:.75rem;font-size:.85rem;color:var(--accent);text-decoration:none;">ダッシュボードでプランを管理 →</a>
+        <a href="index.html" style="display:block;margin-top:.9rem;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:.75rem;font-size:.85rem;color:var(--accent-text);text-decoration:none;">ダッシュボードでプランを管理 →</a>
       </div>
     </div>
     <div class="analytics-section">
       <p class="analytics-title">使い方ガイド</p>
       <div class="bar-chart" style="padding:1rem 1.1rem;">
         <p style="font-size:.82rem;color:var(--muted);margin-bottom:.875rem;line-height:1.5;">各機能の使い方・無料/Proプランの比較はガイドページで確認できます。</p>
-        <a href="guide.html" style="display:block;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:.75rem;font-size:.85rem;color:var(--accent);text-decoration:none;">📖 使い方ガイドを見る →</a>
+        <a href="guide.html" style="display:block;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:.75rem;font-size:.85rem;color:var(--accent-text);text-decoration:none;">📖 使い方ガイドを見る →</a>
       </div>
     </div>
     <div class="analytics-section">
@@ -483,11 +488,11 @@
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--border);">
           <span style="font-size:.85rem;">プライバシーポリシー</span>
-          <span style="font-size:.82rem;color:var(--accent);">→</span>
+          <span style="font-size:.82rem;color:var(--accent-text);">→</span>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;">
           <span style="font-size:.85rem;">利用規約</span>
-          <span style="font-size:.82rem;color:var(--accent);">→</span>
+          <span style="font-size:.82rem;color:var(--accent-text);">→</span>
         </div>
       </div>
     </div>
@@ -564,7 +569,7 @@
       <input type="date" id="fStartDate" onchange="onStartDateChange()" oninput="onStartDateChange()">
     </div>
     <div class="form-group">
-      <label>次回請求日 <span id="nextBillHint" style="font-size:.65rem;color:var(--accent);margin-left:.3rem;"></span></label>
+      <label>次回請求日 <span id="nextBillHint" style="font-size:.69rem;color:var(--accent-text);margin-left:.3rem;"></span></label>
       <input type="date" id="fDate">
     </div>
     <div class="form-group">
@@ -1195,7 +1200,7 @@ function renderBarChart() {
     return '<div class="bar-wrap"><div class="bar-amount">'+kl+'</div><div class="bar'+(isCur?' current':'')+'" style="height:'+Math.max(pct,t>0?8:2)+'%"></div></div>';
   }).join('');
   document.getElementById('barLabels').innerHTML=months.map(function(m,i){
-    return '<div style="flex:1;text-align:center;font-size:.58rem;color:'+(i===months.length-1?'var(--accent)':'var(--muted)')+'">'+ln[m.month]+'</div>';
+    return '<div style="flex:1;text-align:center;font-size:.69rem;color:'+(i===months.length-1?'var(--accent-text)':'var(--muted)')+'">'+ln[m.month]+'</div>';
   }).join('');
   var notice=document.getElementById('chartNotice');
   if (notice) notice.style.display='none';
@@ -1432,7 +1437,7 @@ function updateProUI() {
   var planBadge = document.getElementById('planBadge');
   if (planLabel) planLabel.textContent = isPro ? 'Proプラン' : '無料プラン';
   if (planDesc)  planDesc.textContent  = isPro ? '全機能が利用できます' : '全機能を無料で利用中';
-  if (planBadge) { planBadge.textContent = isPro ? '✅ 有効中' : '現在'; planBadge.style.background = isPro ? 'rgba(94,207,160,.15)' : 'rgba(108,142,255,.15)'; planBadge.style.color = isPro ? 'var(--green)' : 'var(--accent)'; }
+  if (planBadge) { planBadge.textContent = isPro ? '✅ 有効中' : '現在'; planBadge.style.background = isPro ? 'rgba(94,207,160,.15)' : 'rgba(108,142,255,.15)'; planBadge.style.color = isPro ? 'var(--green-text)' : 'var(--accent-text)'; }
 }
 
 init();

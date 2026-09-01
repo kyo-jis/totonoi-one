@@ -29,13 +29,13 @@
 
     /* TOC */
     .toc { margin:0 1.25rem 2rem; background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:1.25rem; }
-    .toc-title { font-size:.68rem; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-bottom:.875rem; }
+    .toc-title { font-size:.69rem; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-bottom:.875rem; }
     .toc-grid { display:grid; grid-template-columns:1fr 1fr; gap:.4rem; }
     .toc-item { display:flex; align-items:center; gap:.5rem; padding:.5rem .7rem; background:var(--surface2); border-radius:10px; text-decoration:none; color:var(--text); font-size:.78rem; transition:all .15s; line-height:1.3; }
     .toc-item:active { background:var(--surface3); }
     .toc-icon { font-size:1rem; flex-shrink:0; }
     .toc-name { font-weight:500; }
-    .toc-ja { font-size:.68rem; color:var(--muted); display:block; }
+    .toc-ja { font-size:.69rem; color:var(--muted); display:block; }
 
     /* Sections */
     .section { margin:0 1.25rem 2rem; }
@@ -120,8 +120,10 @@
     .share-line { background:#06c755; color:#fff; }
     .share-copy { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
 
-    .badge-new { font-size:.6rem; font-weight:600; background:rgba(94,207,160,.2); color:#5ecfa0; border-radius:20px; padding:.1rem .4rem; margin-left:.4rem; vertical-align:middle; }
-    .badge-pro { font-size:.6rem; font-weight:600; background:rgba(155,109,255,.2); color:#c89aff; border-radius:20px; padding:.1rem .4rem; margin-left:.4rem; vertical-align:middle; }
+    .badge-new { font-size:.69rem; font-weight:600; background:rgba(94,207,160,.2); color:#5ecfa0; border-radius:20px; padding:.1rem .4rem; margin-left:.4rem; vertical-align:middle; }
+    .badge-pro { font-size:.69rem; font-weight:600; background:rgba(155,109,255,.2); color:#c89aff; border-radius:20px; padding:.1rem .4rem; margin-left:.4rem; vertical-align:middle; }
+    /* キーボード・スイッチ操作時に現在位置が分かるように */
+    :focus-visible { outline:2px solid var(--accent, #6c8eff); outline-offset:2px; border-radius:4px; }
   </style>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-E9Q0JQ0V92"></script>

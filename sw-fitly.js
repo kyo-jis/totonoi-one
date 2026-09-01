@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fitly-v9';
+const CACHE_NAME = 'fitly-v10';
 const ASSETS = [
   '/fitly',
   '/fitly.html',
