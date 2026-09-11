@@ -1145,7 +1145,12 @@ var MATERIAL_UNITS = [
   { id:'question', icon:'📝', label:'問',      short:'問',    suffix:'問' },
   { id:'percent',  icon:'％', label:'％',      short:'%',     suffix:'%' },
   { id:'loc',      icon:'🔢', label:'位置No.', short:'No.',   suffix:' 位置No.' },
-  { id:'chapter',  icon:'📑', label:'章',      short:'章',    suffix:'章' }
+  { id:'chapter',  icon:'📑', label:'章',      short:'章',    suffix:'章' },
+  // 動画講座を教材として追いかけるためのもの。expo 側で足した。
+  // ここに無いと unitDef が「ページ」に落とし、こちらで編集を開いて
+  // 保存した瞬間に単位が失われる
+  { id:'episode',  icon:'🎬', label:'話',      short:'話',    suffix:'話' },
+  { id:'video',    icon:'🎞', label:'本',      short:'本',    suffix:'本' }
 ];
 function unitDef(id){ for(var i=0;i<MATERIAL_UNITS.length;i++){ if(MATERIAL_UNITS[i].id===id) return MATERIAL_UNITS[i]; } return MATERIAL_UNITS[0]; }
 // 未設定の既存教材は「ページ」として扱う（後方互換）
@@ -1808,6 +1813,8 @@ function applyMaterialUnitFields(){
   else if (_materialUnit==='question'){ lbl.textContent='解いた問数 / 全問数';           cur.placeholder='45';   tot.placeholder='200';  cur.removeAttribute('max'); }
   else if (_materialUnit==='loc')     { lbl.textContent='現在の位置No. / 全体の位置No.'; cur.placeholder='1200'; tot.placeholder='5000'; cur.removeAttribute('max'); }
   else if (_materialUnit==='chapter') { lbl.textContent='現在の章 / 全何章';             cur.placeholder='3';    tot.placeholder='12';   cur.removeAttribute('max'); }
+  else if (_materialUnit==='episode') { lbl.textContent='見た話数 / 全何話';             cur.placeholder='3';    tot.placeholder='12';   cur.removeAttribute('max'); }
+  else if (_materialUnit==='video')   { lbl.textContent='見た本数 / 全何本';             cur.placeholder='3';    tot.placeholder='10';   cur.removeAttribute('max'); }
   else                                { lbl.textContent='現在ページ / 総ページ数';       cur.placeholder='0';    tot.placeholder='300';  cur.removeAttribute('max'); }
 }
 function openMaterialModal() {
