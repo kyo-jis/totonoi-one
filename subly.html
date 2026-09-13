@@ -1350,7 +1350,9 @@ function saveSubscription() {
   var domain=selectedBtn?(selectedBtn.dataset.domain||''):(editId?(subs.find(function(x){return x.id===editId;})||{}).domain||'':'');
   var startDate=document.getElementById('fStartDate').value;
   var entry={id:editId||Date.now().toString(),name:name,icon:icon,amount:amount,currency:currency,cycle:cycle,nextBillingDate:date,domain:domain,payment:payment,customNum:customNum,customUnit:customUnit,startDate:startDate};
-  if (editId) { var idx=subs.findIndex(function(x){return x.id===editId;}); subs[idx]=entry; }
+  // 既存の項目は入れ替えず重ねる。ここで作り直すと、expo が足した
+  // フィールド（休会中かどうか等）がこちらで保存した瞬間に消える
+  if (editId) { var idx=subs.findIndex(function(x){return x.id===editId;}); subs[idx]=Object.assign({}, subs[idx], entry); }
   else subs.push(entry);
   persist();
   closeModal(); renderList(); renderCalendar();
